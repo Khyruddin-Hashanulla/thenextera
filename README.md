@@ -53,6 +53,10 @@ Run only the client:
 npm run dev:client
 ```
 
+The client application will be available at: http://localhost:5173
+
+The server API will be available at: http://localhost:8080
+
 ## Building for Production
 
 Build the client application:
@@ -66,6 +70,8 @@ Start the production server:
 ```
 npm start
 ```
+
+Access the application by navigating to the Client/dist/index.html file or by setting up a proper web server to serve the files.
 
 ## Features
 
