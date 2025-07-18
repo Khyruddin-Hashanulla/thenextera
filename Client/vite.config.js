@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  base: '/thenextera/', // Add this line for GitHub Pages deployment
   server: {
     proxy: {
       '/api': {
