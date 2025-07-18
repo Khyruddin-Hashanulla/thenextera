@@ -215,24 +215,18 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       const token = jwt.sign({ id: req.user._id, role: req.user.role }, JWT_SECRET, {
         expiresIn: "7d",
       });
-      res.redirect(`${process.env.CLIENT_URL}/auth/success?token=${token}`);
-    }
-  );
-}
-
-if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
-  // GitHub OAuth routes
-  router.get('/github',
-    passport.authenticate('github', { scope: ['user:email'] })
-  );
-
-  router.get('/github/callback',
-    passport.authenticate('github', { failureRedirect: '/login' }),
-    (req, res) => {
-      const token = jwt.sign({ id: req.user._id, role: req.user.role }, JWT_SECRET, {
-        expiresIn: "7d",
-      });
-      res.redirect(`${process.env.CLIENT_URL}/auth/success?token=${token}`);
+      
+      // Include user info in the URL
+      const userInfo = encodeURIComponent(JSON.stringify({
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        isEmailVerified: req.user.isEmailVerified
+      }));
+      
+      // Redirect to the client with the hash route
+      res.redirect(`${process.env.CLIENT_URL}/#/auth-success?token=${token}&user=${userInfo}`);
     }
   );
 }
@@ -302,3 +296,4 @@ router.post("/logout", async (req, res) => {
 });
 
 module.exports = router;
+

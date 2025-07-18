@@ -265,6 +265,12 @@ const Courses = () => {
               <h1 className="text-xl font-bold text-gray-900 ml-2">Courses</h1>
             </div>
             <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/')}
+                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 rounded-md shadow-sm text-sm font-medium text-white transition-colors"
+              >
+                Home
+              </button>
               <Link
                 to="/dashboard"
                 className="px-4 py-2 bg-gradient-to-r from-rose-500 via-pink-500 to-red-500 hover:from-pink-500 hover:to-orange-500 rounded-md shadow-sm text-sm font-medium text-black"

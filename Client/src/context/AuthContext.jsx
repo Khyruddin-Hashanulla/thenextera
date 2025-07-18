@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
+// Create the hook but don't export it here
 const useAuth = () => useContext(AuthContext);
 
+// Create the provider component but don't export it here
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -210,4 +212,5 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   return children;
 };
 
+// Export all components and hooks at once - remove any previous exports
 export { AuthProvider, useAuth, ProtectedRoute }; 

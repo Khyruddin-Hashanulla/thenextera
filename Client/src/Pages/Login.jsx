@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaGoogle, FaGithub } from 'react-icons/fa';
+import { FaGoogle } from 'react-icons/fa';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -17,17 +17,23 @@ const Login = () => {
     try {
       setError('');
       setLoading(true);
-      await login({ email, password, rememberMe });
-      navigate('/dashboard');
+      console.log('Attempting login with:', { email, rememberMe });
+      
+      const result = await login({ email, password, rememberMe });
+      console.log('Login successful:', result);
+      
+      // Use window.location for a full page reload to ensure state is fresh
+      window.location.href = '/dashboard';
     } catch (err) {
-      setError(err.response?.data || 'Failed to login');
+      console.error('Login error:', err);
+      setError(typeof err === 'string' ? err : (err.message || 'Failed to login'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleSocialLogin = (provider) => {
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/${provider}`;
+    window.location.href = `/auth/${provider}`;
   };
 
   return (
@@ -133,7 +139,8 @@ const Login = () => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6">
+              {/* Single button for Google login, centered */}
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
@@ -141,15 +148,6 @@ const Login = () => {
               >
                 <FaGoogle className="h-5 w-5 text-red-500" />
                 <span className="ml-2">Google</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSocialLogin('github')}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
-              >
-                <FaGithub className="h-5 w-5 text-gray-900" />
-                <span className="ml-2">GitHub</span>
               </button>
             </div>
           </div>

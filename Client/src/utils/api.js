@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// Use direct URL instead of environment variables
 const api = axios.create({
   baseURL: 'http://localhost:8080',
   withCredentials: true,

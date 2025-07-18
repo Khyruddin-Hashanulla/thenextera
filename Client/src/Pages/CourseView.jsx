@@ -1,55 +1,34 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
+import Navbar from '../components/Navbar';
 
 const CourseView = () => {
   const { courseId } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [enrolling, setEnrolling] = useState(false);
-  const [expandedSections, setExpandedSections] = useState({});
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [completedVideos, setCompletedVideos] = useState([]);
   const [progress, setProgress] = useState(0);
+  const [expandedSections, setExpandedSections] = useState({});
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCourse();
-    fetchProgress();
   }, [courseId]);
-
-  const fetchProgress = async () => {
-    try {
-      const response = await api.get(`/api/courses/${courseId}/progress`);
-      setCompletedVideos(response.data.completedVideos || []);
-      setProgress(response.data.progress || 0);
-      
-      // Set initial video position based on last watched
-      if (response.data.lastWatched) {
-        let totalVideos = 0;
-        let found = false;
-        for (let i = 0; i < course?.sections?.length && !found; i++) {
-          if (totalVideos + course.sections[i].videos.length > response.data.lastWatched) {
-            setCurrentSectionIndex(i);
-            setCurrentVideoIndex(response.data.lastWatched - totalVideos);
-            found = true;
-          }
-          totalVideos += course.sections[i].videos.length;
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching progress:', error);
-    }
-  };
 
   const updateProgress = async () => {
     try {
+      if (!course || !course.sections || course.sections.length === 0) {
+        console.error('Cannot update progress: Course data is not available');
+        return;
+      }
+
       // Calculate current video's overall index
       let currentOverallIndex = 0;
       for (let i = 0; i < currentSectionIndex; i++) {
@@ -89,7 +68,11 @@ const CourseView = () => {
   const handleVideoEnd = () => {
     updateProgress();
     // Auto-advance to next video if available
+    if (!course || !course.sections || course.sections.length === 0) return;
+    
     const currentSection = course.sections[currentSectionIndex];
+    if (!currentSection || !currentSection.videos) return;
+    
     if (currentVideoIndex < currentSection.videos.length - 1) {
       setCurrentVideoIndex(prev => prev + 1);
     } else if (currentSectionIndex < course.sections.length - 1) {
@@ -173,6 +156,18 @@ const CourseView = () => {
       }
 
       setCourse(processedCourse);
+      
+      // Initialize expanded sections
+      if (processedCourse.sections?.length > 0) {
+        const initialExpanded = {};
+        processedCourse.sections.forEach((_, index) => {
+          initialExpanded[index] = index === 0;
+        });
+        setExpandedSections(initialExpanded);
+      }
+      
+      // Fetch progress after setting course
+      fetchProgress(processedCourse);
     } catch (err) {
       console.error('Error fetching course:', {
         error: err.message,
@@ -189,23 +184,49 @@ const CourseView = () => {
             break;
           case 401:
             errorMessage = 'Please log in to view this course';
+            navigate('/login');
             break;
           case 403:
-            errorMessage = 'Access denied. Please enroll in the course to view content.';
+            errorMessage = 'You are not enrolled in this course';
+            navigate('/courses');
             break;
           case 404:
             errorMessage = 'Course not found';
-            break;
-          case 500:
-            errorMessage = 'Server error. Please try again later.';
+            navigate('/courses');
             break;
           default:
             errorMessage = err.response.data?.error || 'Failed to load course';
         }
       }
+      
       setError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProgress = async (courseData) => {
+    try {
+      const response = await api.get(`/api/courses/${courseId}/progress`);
+      setCompletedVideos(response.data.completedVideos || []);
+      setProgress(response.data.progress || 0);
+      
+      // Set initial video position based on last watched
+      if (response.data.lastWatched && courseData) {
+        let totalVideos = 0;
+        let found = false;
+        
+        for (let i = 0; i < courseData.sections?.length && !found; i++) {
+          if (totalVideos + courseData.sections[i].videos.length > response.data.lastWatched) {
+            setCurrentSectionIndex(i);
+            setCurrentVideoIndex(response.data.lastWatched - totalVideos);
+            found = true;
+          }
+          totalVideos += courseData.sections[i].videos.length;
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching progress:', error);
     }
   };
 
@@ -229,82 +250,56 @@ const CourseView = () => {
   };
 
   const getCurrentVideo = () => {
-    try {
-      if (!course?.sections || course.sections.length === 0) {
-        console.log('No sections available in getCurrentVideo');
-        return null;
-      }
-      
-      // Ensure valid section index
-      const validSectionIndex = Math.min(currentSectionIndex, course.sections.length - 1);
-      const currentSection = course.sections[validSectionIndex];
-      
-      if (!currentSection?.videos || currentSection.videos.length === 0) {
-        console.log('No videos in current section:', {
-          sectionIndex: validSectionIndex,
-          sectionTitle: currentSection?.title
-        });
-        return null;
-      }
-      
-      // Ensure valid video index
-      const validVideoIndex = Math.min(currentVideoIndex, currentSection.videos.length - 1);
-      const video = currentSection.videos[validVideoIndex];
-      
-      console.log('Current video:', {
-        sectionIndex: validSectionIndex,
-        videoIndex: validVideoIndex,
-        videoTitle: video?.title,
-        videoUrl: video?.url
-      });
-      
-      return video;
-    } catch (error) {
-      console.error('Error getting current video:', error);
-      return null;
-    }
+    if (!course || !course.sections || course.sections.length === 0) return null;
+    
+    // Ensure indices are within bounds
+    const validSectionIndex = Math.min(currentSectionIndex, course.sections.length - 1);
+    if (validSectionIndex < 0) return null;
+    
+    const currentSection = course.sections[validSectionIndex];
+    if (!currentSection || !currentSection.videos || currentSection.videos.length === 0) return null;
+    
+    const validVideoIndex = Math.min(currentVideoIndex, currentSection.videos.length - 1);
+    if (validVideoIndex < 0) return null;
+    
+    return currentSection.videos[validVideoIndex];
   };
 
   const getVideoEmbedUrl = (url) => {
-    if (!url) return null;
-    try {
-      // Handle direct video files from our server
-      if (url.includes('/uploads/')) {
-        return url;
+    if (!url) return '';
+    
+    // Handle YouTube URLs
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      // Extract video ID
+      let videoId = '';
+      if (url.includes('youtube.com/watch')) {
+        const urlParams = new URLSearchParams(new URL(url).search);
+        videoId = urlParams.get('v');
+      } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0];
+      } else if (url.includes('youtube.com/embed/')) {
+        videoId = url.split('youtube.com/embed/')[1].split('?')[0];
       }
-
-      const videoUrl = new URL(url);
-      if (videoUrl.hostname.includes('youtube.com') || videoUrl.hostname.includes('youtu.be')) {
-        let videoId;
-        if (videoUrl.hostname.includes('youtu.be')) {
-          videoId = videoUrl.pathname.slice(1);
-        } else {
-          videoId = videoUrl.searchParams.get('v');
-        }
-        if (!videoId) return null;
+      
+      if (videoId) {
         return `https://www.youtube.com/embed/${videoId}`;
       }
-      if (videoUrl.hostname.includes('vimeo.com')) {
-        const videoId = videoUrl.pathname.split('/').pop();
-        if (!videoId) return null;
-        return `https://player.vimeo.com/video/${videoId}`;
-      }
-      if (url.match(/\.(mp4|webm|ogg|mov|avi|mkv)$/i)) {
-        return url;
-      }
-      return null;
-    } catch (e) {
-      console.error('Invalid video URL:', e);
-      return null;
     }
+    
+    // Handle Vimeo URLs
+    if (url.includes('vimeo.com')) {
+      const vimeoId = url.split('vimeo.com/')[1].split('?')[0];
+      if (vimeoId) {
+        return `https://player.vimeo.com/video/${vimeoId}`;
+      }
+    }
+    
+    // Return the original URL for direct video files
+    return url;
   };
 
   const handleSectionChange = (sectionIndex) => {
     setCurrentSectionIndex(sectionIndex);
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionIndex]: true
-    }));
     setCurrentVideoIndex(0);
   };
 
@@ -312,10 +307,16 @@ const CourseView = () => {
     setCurrentVideoIndex(videoIndex);
   };
 
+  // Get current video
+  const currentVideo = getCurrentVideo();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 flex items-center justify-center">
-        <div className="text-xl font-semibold text-gray-800">Loading course content...</div>
+        <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading course...</h2>
+          <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
       </div>
     );
   }
@@ -323,15 +324,16 @@ const CourseView = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 flex items-center justify-center">
-        <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-md max-w-md w-full">
-          <div className="text-red-600 text-center mb-4">{error}</div>
-          <div className="text-center">
-            <Link
-              to="/courses"
-              className="text-gray-900 hover:text-black transition-colors"
+        <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
+          <p className="text-gray-800 mb-6">{error}</p>
+          <div className="flex justify-center">
+            <button
+              onClick={() => navigate('/courses')}
+              className="px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white rounded-md transition-colors"
             >
-              ← Back to Courses
-            </Link>
+              Back to Courses
+            </button>
           </div>
         </div>
       </div>
@@ -341,55 +343,23 @@ const CourseView = () => {
   if (!course) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 flex items-center justify-center">
-        <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-md max-w-md w-full">
-          <div className="text-red-600 text-center mb-4">Course not found</div>
-          <div className="text-center">
-            <Link
-              to="/courses"
-              className="text-gray-900 hover:text-black transition-colors"
+        <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Course not found</h2>
+          <div className="flex justify-center">
+            <button
+              onClick={() => navigate('/courses')}
+              className="px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white rounded-md transition-colors"
             >
-              ← Back to Courses
-            </Link>
+              Back to Courses
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  const currentVideo = getCurrentVideo();
-  console.log('Rendering with:', {
-    courseTitle: course.title,
-    sectionsCount: course.sections?.length,
-    currentSectionIndex,
-    currentVideoIndex,
-    hasCurrentVideo: Boolean(currentVideo)
-  });
-
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600">
-      {/* Success Message */}
-      {showSuccessMessage && (
-        <div className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-out">
-          <div className="flex items-center">
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span>Successfully enrolled! Welcome to the course.</span>
-            <button 
-              onClick={() => setShowSuccessMessage(false)}
-              className="ml-2 text-white hover:text-gray-200"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Welcome Message for First Access */}
-      {/* This block was removed as per the edit hint */}
-
+    <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600">
       {/* Back Button Only in Top Area */}
       <div className="fixed top-0 left-0 z-50 p-4">
         <Link
@@ -573,84 +543,73 @@ const CourseView = () => {
                   </video>
                 ) : (
                   <iframe
-                    src={`${getVideoEmbedUrl(currentVideo.url)}?enablejsapi=1`}
+                    src={getVideoEmbedUrl(currentVideo.url)}
                     className="absolute inset-0 w-full h-full"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                    onLoad={(e) => {
-                      // Add event listener for video end if it's a YouTube video
-                      if (currentVideo.url.includes('youtube.com')) {
-                        e.target.addEventListener('onStateChange', (event) => {
-                          if (event.data === 0) { // Video ended
-                            handleVideoEnd();
-                          }
-                        });
-                      }
-                    }}
+                    title={currentVideo.title}
                   />
                 )
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-white">
-                  No video available
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                  <p className="text-white">No video selected</p>
                 </div>
               )}
             </div>
 
             {/* Video Info */}
-            <div className="bg-white/30 backdrop-blur-md rounded-lg p-6 shadow-lg">
-              <h1 className="text-2xl font-bold mb-2 text-gray-900">
-                {course?.sections[currentSectionIndex]?.title || 'No section title'}
-              </h1>
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                {currentVideo?.title || 'No video title'}
-              </h2>
-              <p className="text-gray-800 mb-4">{currentVideo?.description || course?.sections[currentSectionIndex]?.description || 'No description available'}</p>
-              
-              {/* Navigation buttons */}
-              <div className="flex justify-between mt-6">
-                <button
-                  onClick={() => {
-                    if (currentVideoIndex > 0) {
-                      setCurrentVideoIndex(prev => prev - 1);
-                    } else if (currentSectionIndex > 0) {
-                      const prevSection = course.sections[currentSectionIndex - 1];
-                      setCurrentSectionIndex(prev => prev - 1);
-                      setCurrentVideoIndex(prevSection.videos.length - 1);
-                    }
-                  }}
-                  disabled={currentSectionIndex === 0 && currentVideoIndex === 0}
-                  className={`px-4 py-2 rounded-lg ${
-                    currentSectionIndex === 0 && currentVideoIndex === 0
-                      ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-red-400 hover:bg-red-500 text-white'
-                  }`}
-                >
-                  Previous Video
-                </button>
-                <button
-                  onClick={() => {
-                    const currentSection = course.sections[currentSectionIndex];
-                    if (currentVideoIndex < currentSection.videos.length - 1) {
-                      setCurrentVideoIndex(prev => prev + 1);
-                    } else if (currentSectionIndex < course.sections.length - 1) {
-                      setCurrentSectionIndex(prev => prev + 1);
-                      setCurrentVideoIndex(0);
-                    }
-                  }}
-                  disabled={
-                    currentSectionIndex === course.sections.length - 1 &&
-                    currentVideoIndex === course.sections[currentSectionIndex].videos.length - 1
-                  }
-                  className={`px-4 py-2 rounded-lg ${
-                    currentSectionIndex === course.sections.length - 1 &&
-                    currentVideoIndex === course.sections[currentSectionIndex].videos.length - 1
-                      ? 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-red-400 hover:bg-red-500 text-white'
-                  }`}
-                >
-                  Next Video
-                </button>
+            {currentVideo && (
+              <div className="bg-white/20 backdrop-blur-md rounded-lg p-4 mb-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">{currentVideo.title}</h2>
+                {currentVideo.description && (
+                  <p className="text-gray-800">{currentVideo.description}</p>
+                )}
               </div>
+            )}
+
+            {/* Navigation Controls */}
+            <div className="flex justify-between">
+              <button
+                onClick={() => {
+                  if (currentVideoIndex > 0) {
+                    setCurrentVideoIndex(prev => prev - 1);
+                  } else if (currentSectionIndex > 0) {
+                    const prevSectionIndex = currentSectionIndex - 1;
+                    setCurrentSectionIndex(prevSectionIndex);
+                    setCurrentVideoIndex(course.sections[prevSectionIndex].videos.length - 1);
+                  }
+                }}
+                disabled={currentSectionIndex === 0 && currentVideoIndex === 0}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                  currentSectionIndex === 0 && currentVideoIndex === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-white/20 hover:bg-white/30 text-gray-900'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Previous
+              </button>
+              
+              <button
+                onClick={handleVideoEnd} // Reuse the video end handler for next button
+                disabled={
+                  currentSectionIndex === course.sections.length - 1 && 
+                  currentVideoIndex === course.sections[currentSectionIndex].videos.length - 1
+                }
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                  currentSectionIndex === course.sections.length - 1 && 
+                  currentVideoIndex === course.sections[currentSectionIndex].videos.length - 1
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-white/20 hover:bg-white/30 text-gray-900'
+                }`}
+              >
+                Next
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
