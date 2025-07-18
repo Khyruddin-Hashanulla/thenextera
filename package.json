@@ -1,16 +1,23 @@
 {
-  
-  "dependencies": {
-  
-    
-  "react-hot-toast": "^2.5.2"
-  
+  "name": "nextera-learning-platform",
+  "version": "1.0.0",
+  "description": "NextEra Learning Platform",
+  "main": "Server/Server.js",
+  "scripts": {
+    "start": "node Server/Server.js",
+    "build": "cd Client && npm install && npm run build",
+    "dev": "concurrently \"cd Server && npm run dev\" \"cd Client && npm run dev\"",
+    "install-all": "npm install && cd Server && npm install && cd ../Client && npm install"
   },
-  
+  "dependencies": {
+    "react-hot-toast": "^2.5.2",
+    "concurrently": "^8.2.2",
+    "dotenv": "^16.0.3"
+  },
   "devDependencies": {
-  
-    
-  "gh-pages": "^6.3.0"
-  
+    "gh-pages": "^6.3.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

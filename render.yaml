@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: nextera
+    env: node
+    buildCommand: npm install && cd Client && npm install && npm run build
+    startCommand: node Server/Server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true 
