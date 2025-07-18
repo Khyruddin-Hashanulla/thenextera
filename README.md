@@ -1,87 +1,95 @@
 # NextEra Learning Platform
 
-A modern e-learning platform built with the MERN stack (MongoDB, Express.js, React.js, Node.js) that allows instructors to create and manage courses while providing students with an interactive learning experience.
+NextEra is a modern learning platform designed to provide an interactive and engaging educational experience.
 
-## Features
+## Project Structure
 
-- User Authentication & Authorization
-- Course Creation and Management
-- Video Content Management
-- Progress Tracking
-- Interactive Course Navigation
-- Responsive Design
-- Real-time Progress Updates
-- Video Completion Tracking
-- Section-based Course Structure
+- **Client**: Frontend React application
+- **Server**: Backend Node.js/Express API
 
-## Tech Stack
+## Prerequisites
 
-### Frontend
-- React.js
-- Tailwind CSS
-- Context API for State Management
-- React Router for Navigation
-
-### Backend
-- Node.js
-- Express.js
-- MongoDB
-- JWT Authentication
-- Passport.js
-
-## Getting Started
-
-### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB
+- Node.js (v16 or higher)
 - npm or yarn
+- MongoDB (local or Atlas)
 
-### Installation
+## Installation
 
-1. Clone the repository
-```bash
-git clone [repository-url]
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/nextera.git
+   cd nextera
+   ```
+
+2. Install all dependencies:
+   ```
+   npm run install:all
+   ```
+
+## Configuration
+
+1. Create a `.env` file in the Server directory with the following variables:
+   ```
+   PORT=8080
+   MONGODB_URI=your_mongodb_connection_string
+   JWT_SECRET=your_jwt_secret
+   SESSION_SECRET=your_session_secret
+   ```
+
+## Development
+
+Run both client and server in development mode:
 ```
-
-2. Install Server Dependencies
-```bash
-cd Server
-npm install
-```
-
-3. Install Client Dependencies
-```bash
-cd Client
-npm install
-```
-
-4. Set up environment variables
-Create `.env` file in the Server directory with:
-```
-MONGODB_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-```
-
-5. Start the Backend Server
-```bash
-cd Server
-npm start
-```
-
-6. Start the Frontend Development Server
-```bash
-cd Client
 npm run dev
 ```
 
-## Contributing
+Run only the server:
+```
+npm run dev:server
+```
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+Run only the client:
+```
+npm run dev:client
+```
+
+## Building for Production
+
+Build the client application:
+```
+npm run build
+```
+
+## Running in Production
+
+Start the production server:
+```
+npm start
+```
+
+## Features
+
+- User authentication and authorization
+- Course management
+- Interactive learning materials
+- Progress tracking
+- Responsive design
+
+## Technologies Used
+
+### Frontend
+- React
+- React Router
+- Tailwind CSS
+- Vite
+
+### Backend
+- Node.js
+- Express
+- MongoDB
+- Mongoose
+- JWT Authentication
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details 
+This project is licensed under the MIT License. 
