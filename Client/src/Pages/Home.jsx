@@ -70,11 +70,11 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600">
+    <div>
       <Navbar/>
       
       {/* Hero Section */}
-      <div className="text-white">
+      <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white">
         <div className="container mx-auto px-4 py-4 md:py-24">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">Unlock Your Potential with NextEra</h1>
@@ -102,8 +102,8 @@ const Home = () => {
       </div>
 
       {/* Featured Courses Section */}
-      <div className="container mx-auto px-4 py-12">
-        <h2 className="text-3xl font-bold text-center mb-8">Featured Courses</h2>
+      <div className="min-h-screen flex flex-col justify-center bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)]">
+        <h2 className="text-3xl font-bold text-center mb-8 text-white mt-12">Featured Courses</h2>
         
         {loading ? (
           <div className="flex justify-center">
