@@ -6,10 +6,7 @@ const cors = require("cors");
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const { fileURLToPath } = require("url"); // if using ES Modules
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express();
 
 // Serve static files from client build folder
 app.use(express.static(path.join(__dirname, "../Client/dist")));
@@ -30,7 +27,7 @@ try {
   };
 }
 
-const app = express();
+
 
 // Middleware
 app.use(express.json());
