@@ -6,6 +6,17 @@ const cors = require("cors");
 const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const { fileURLToPath } = require("url"); // if using ES Modules
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files from client build folder
+app.use(express.static(path.join(__dirname, "../Client/dist")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../Client/dist/index.html"));
+});
 
 // Try to load passport configuration
 let passport;
@@ -79,6 +90,21 @@ try {
   console.warn("Course routes not found:", error.message);
   app.use("/api/courses", (req, res) => res.status(501).json({ message: "Course routes not implemented" }));
 }
+
+
+
+
+
+
+
+app.get("/", (req, res) => {
+  res.redirect("/Home");
+});
+
+
+
+
+
 
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
