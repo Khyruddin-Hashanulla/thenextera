@@ -7,13 +7,18 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
-
-// Serve static files from client build folder
-app.use(express.static(path.join(__dirname, "../Client/dist")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../Client/dist/index.html"));
-});
+// Serve static files from client build folder in production
+if (process.env.NODE_ENV === 'production') {
+  const clientBuildPath = path.join(__dirname, '..', 'Client', 'dist');
+  console.log('Serving static files from:', clientBuildPath);
+  
+  app.use(express.static(clientBuildPath));
+  
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+}
 
 // Try to load passport configuration
 let passport;
@@ -103,16 +108,7 @@ app.get("/", (req, res) => {
 
 
 
-// Serve static files from the React app in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve any static files
-  app.use(express.static(path.join(__dirname, '../Client/dist')));
-  
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../Client/dist/index.html'));
-  });
-}
+
 
 // Database connection
 // const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nextera';
