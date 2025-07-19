@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const MongoStore = require('connect-mongo');
 const mongoose = require("mongoose");
 const cors = require("cors");
 const session = require('express-session');
@@ -37,13 +38,26 @@ app.use(cors(corsOptions));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Session configuration
+const store = MongoStore.create({
+  mongoUrl: process.env.ATLASDB_URL,
+  crypto: {
+    secret: process.env.SESSION_SECRET || 'your-secret-key'
+  },
+  touchAfter: 24 * 3600 // 24 hours
+});
+
+store.on('error', (error) => {
+  console.error('MongoDB session store error:', error);
+});
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
+  store,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    maxAge: 30 * 24 * 3600 // 30 days
   }
 }));
 
@@ -78,9 +92,12 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Database connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nextera';
+// const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/nextera';
+
+const dbUrl=process.env.ATLASDB_URL;
+
 mongoose
-  .connect(MONGODB_URI)
+  .connect(dbUrl)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
