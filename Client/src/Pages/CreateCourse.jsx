@@ -274,14 +274,14 @@ const CreateCourse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white/30 backdrop-blur-md shadow-lg rounded-xl p-6">
+        <div className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] backdrop-blur-md shadow-lg rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Create New Course</h2>
+            <h2 className="text-2xl font-bold text-gray-100">Create New Course</h2>
             <Link
               to="/courses"
-              className="flex items-center text-gray-700 hover:text-gray-900 transition-colors"
+              className="flex items-center text-gray-200 hover:text-gray-400 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L4.414 9H17a1 1 0 110 2H4.414l5.293 5.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -300,7 +300,7 @@ const CreateCourse = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Course Title */}
               <div className="col-span-2">
-                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                <label className="block text-sm font-semibold text-gray-300 mb-1">
                   Course Title
                 </label>
                 <input
@@ -316,7 +316,7 @@ const CreateCourse = () => {
 
               {/* Course Description */}
               <div className="col-span-2">
-                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                <label className="block text-sm font-semibold text-gray-300 mb-1">
                   Description
                 </label>
                 <textarea
@@ -332,7 +332,7 @@ const CreateCourse = () => {
 
               {/* Course Thumbnail */}
               <div className="col-span-2">
-                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                <label className="block text-sm font-semibold text-gray-300 mb-1">
                   Course Thumbnail
                 </label>
                 <div className="flex gap-4">
@@ -356,7 +356,7 @@ const CreateCourse = () => {
                         />
                         <button
                           type="button"
-                          className={`px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors ${
+                          className={`px-3 py-2 bg-gray-500 border-2 border-white text-blck font-medium rounded-lg ${
                             uploading ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                           disabled={uploading}
@@ -365,7 +365,7 @@ const CreateCourse = () => {
                         </button>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-300">
                       Enter URL or upload an image
                     </p>
                   </div>
@@ -384,22 +384,22 @@ const CreateCourse = () => {
             </div>
 
             {/* Course Sections */}
-            <div className="space-y-4">
+            <div className="space-y-4 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] backdrop-blur-sm rounded-lg p-4 space-y-4">
               <div className="flex justify-between items-center">
-                <label className="block text-lg font-semibold text-gray-900">
+                <label className="block text-lg font-semibold text-gray-300">
                   Course Sections
                 </label>
                 <button
                   type="button"
                   onClick={addSection}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                  className="px-3 py-2 bg-gray-500 border-2 border-white text-black font-medium rounded-lg"
                 >
                   Add Section
                 </button>
               </div>
 
               {formData.sections.map((section, sectionIndex) => (
-                <div key={sectionIndex} className="bg-white/20 backdrop-blur-sm rounded-lg p-4 space-y-4">
+                <div key={sectionIndex} className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] backdrop-blur-sm rounded-lg p-4 space-y-4">
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1 space-y-3">
                       <input
@@ -422,7 +422,7 @@ const CreateCourse = () => {
                       <button
                         type="button"
                         onClick={() => removeSection(sectionIndex)}
-                        className="text-red-500 hover:text-red-600 transition-colors"
+                        className="text-gray-500 hover:text-gray-600 transition-colors"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -434,18 +434,18 @@ const CreateCourse = () => {
                   {/* Videos */}
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <h4 className="text-sm font-semibold text-gray-900">Videos</h4>
+                      <h4 className="text-sm font-semibold text-gray-300">Videos</h4>
                       <button
                         type="button"
                         onClick={() => addVideoToSection(sectionIndex)}
-                        className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                        className="px-3 py-2 bg-gray-500 border-2 border-white text-black font-medium rounded-lg"
                       >
                         Add Video
                       </button>
                     </div>
 
                     {section.videos.map((video, videoIndex) => (
-                      <div key={videoIndex} className="bg-white/10 backdrop-blur-sm rounded-lg p-3 space-y-3">
+                        <div key={videoIndex} className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] backdrop-blur-sm rounded-lg p-3 space-y-3">
                         <div className="flex justify-between items-start gap-2">
                           <div className="flex-1 space-y-3">
                             <input
@@ -475,7 +475,7 @@ const CreateCourse = () => {
                                 />
                                 <button
                                   type="button"
-                                  className={`px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 ${
+                                  className={`px-3 py-2 bg-gray-500 border-2 border-white text-black font-medium rounded-lg ${
                                     uploading ? 'opacity-50 cursor-not-allowed' : ''
                                   }`}
                                   disabled={uploading}
@@ -504,7 +504,7 @@ const CreateCourse = () => {
                             <button
                               type="button"
                               onClick={() => removeVideoFromSection(sectionIndex, videoIndex)}
-                              className="text-red-500 hover:text-red-600 transition-colors"
+                                className="text-gray-500 hover:text-gray-600 transition-colors"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -522,14 +522,14 @@ const CreateCourse = () => {
             <div className="flex gap-4 pt-4">
               <Link
                 to="/courses"
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+                className="px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={loading}
-                className={`flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm ${
+                className={`flex-1 px-4 py-3 bg-black border-2 border-white text-white rounded-lg hover:bg-white/10 transition-colors text-sm ${
                   loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >

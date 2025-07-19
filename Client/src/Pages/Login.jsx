@@ -37,10 +37,10 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-200 via-red-400 to-pink-600  py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)]  py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] p-8 rounded-lg shadow-2xl">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-100">
             Sign in to your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
@@ -104,7 +104,7 @@ const Login = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-200">
                 Remember me
               </label>
             </div>
@@ -112,7 +112,7 @@ const Login = () => {
             <div className="text-sm">
               <Link
                 to="/forgot-password"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
+                className="font-medium text-indigo-500 hover:text-indigo-400"
               >
                 Forgot your password?
               </Link>
@@ -123,7 +123,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -135,7 +135,7 @@ const Login = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+                <span className="px-2 border-2 border-gray-400 rounded-md bg-gray-50 text-gray-500">Or continue with</span>
               </div>
             </div>
 
@@ -144,10 +144,10 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-white/90"
               >
-                <FaGoogle className="h-5 w-5 text-red-500" />
-                <span className="ml-2">Google</span>
+                <FaGoogle className="h-5 w-5 text-sky-500" />
+                <span className="ml-2 font-bold text-gray-500 hover:text-gray-400">Google</span>
               </button>
             </div>
           </div>

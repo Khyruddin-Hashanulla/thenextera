@@ -251,43 +251,44 @@ const Courses = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600">
+    <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)]">
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, courseId: null })}
         onConfirm={confirmDelete}
       />
       <nav className="shadow-lg mb-4">
-        <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 bg-black border-b border-gray-800 shadow-2xl p-2">
           <div className="flex justify-between h-20">
             <div className="flex items-center">
               <img src="/src/assets/logo.png" alt="NextEra Logo" className="w-14 h-14" />
-              <h1 className="text-xl font-bold text-gray-900 ml-2">Courses</h1>
+              <h1 className="text-lg font-bold text-white hover:text-gray-400 ml-2 cursor-pointer">Courses</h1>
             </div>
             <div className="flex items-center gap-4">
+
               <button
                 onClick={() => navigate('/')}
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 rounded-md shadow-sm text-sm font-medium text-white transition-colors"
+                className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400"
               >
                 Home
               </button>
               <Link
                 to="/dashboard"
-                className="px-4 py-2 bg-gradient-to-r from-rose-500 via-pink-500 to-red-500 hover:from-pink-500 hover:to-orange-500 rounded-md shadow-sm text-sm font-medium text-black"
+                className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400"
               >
                 Dashboard
               </Link>
               {isInstructor && (
                 <button
                   onClick={() => navigate("/courses/create")}
-                  className="px-4 py-2 bg-gradient-to-r from-rose-500 via-pink-500 to-red-500 hover:from-pink-500 hover:to-orange-500 rounded-md shadow-sm text-sm font-medium text-black"
+                  className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400"
                 >
                   Create Course
                 </button>
               )}
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg transition-colors text-gray-900 font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-white/70 backdrop-blur-sm rounded-lg transition-colors text-gray-900 font-medium"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M3 3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h5.5a.5.5 0 0 1 0 1H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5.5a.5.5 0 0 1 0 1H3zm11.646 4.646a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L17.293 11H6.5a.5.5 0 0 1 0-1h10.793l-2.647-2.646a.5.5 0 0 1 0-.708z" clipRule="evenodd"/>
@@ -314,7 +315,7 @@ const Courses = () => {
             return (
               <div
                 key={course._id}
-                className="bg-white/10 backdrop-blur-md rounded-xl shadow-lg overflow-hidden flex flex-col h-[480px]"
+                className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] backdrop-blur-md rounded-xl shadow-lg overflow-hidden flex flex-col h-[480px] border-2 border-gray-900 shadow-md transform hover:shadow-2xl transition-transform duration-900"
               >
                 <div className="relative h-72 rounded-t-xl overflow-hidden">
                   <img
@@ -327,11 +328,11 @@ const Courses = () => {
                   />
                 </div>
                 <div className="p-4 flex flex-col h-full">
-                  <h2 className="text-lg font-bold mb-2 text-gray-900 line-clamp-2">
+                  <h2 className="text-lg font-bold mb-2 text-gray-100 line-clamp-2 hover:text-gray-400 cursor-pointer transition-colors duration-300">
                     {course.title}
                   </h2>
                   <div className="flex-grow overflow-hidden">
-                    <p className="text-gray-800 text-sm leading-relaxed line-clamp-5">
+                    <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">
                       {course.description}
                     </p>
                   </div>
@@ -339,21 +340,21 @@ const Courses = () => {
                   <div className="mt-auto pt-3">
                     <div className="text-sm text-gray-700 flex items-center border-t border-gray-200 pt-3 mb-7">
                       <span className="mr-2">👨‍🏫</span>
-                      <span className="font-medium">Created by:</span>
-                      <span className="ml-1 text-gray-900 truncate">{course.creatorId?.name || "Unknown Instructor"}</span>
+                      <span className="text-gray-100 font-bold">Created by:</span>
+                      <span className="ml-1 text-black truncate">{course.creatorId?.name || "Unknown Instructor"}</span>
                     </div>
 
                     {canModify ? (
                       <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/courses/edit/${course._id}`)}
-                          className="flex-1 bg-blue-500 text-white py-2 px-3 rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                          className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(course._id)}
-                          className="flex-1 bg-red-500 text-white py-2 px-3 rounded-lg hover:bg-red-600 transition-colors text-sm"
+                          className="px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
                         >
                           Delete
                         </button>
@@ -362,7 +363,7 @@ const Courses = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/courses/${course._id}`)}
-                          className="flex-1 bg-red-500 text-white py-2 px-3 rounded-lg hover:bg-red-600 transition-colors text-sm"
+                          className=" flex-1 px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
                         >
                           View Course
                         </button>

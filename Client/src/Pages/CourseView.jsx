@@ -330,7 +330,7 @@ const CourseView = () => {
           <div className="flex justify-center">
             <button
               onClick={() => navigate('/courses')}
-              className="px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 hover:from-pink-600 hover:to-red-600 text-white rounded-md transition-colors"
+              className="px-4 py-2 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
             >
               Back to Courses
             </button>
@@ -359,7 +359,7 @@ const CourseView = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)]">
       {/* Back Button Only in Top Area */}
       <div className="fixed top-0 left-0 z-50 p-4">
         <Link
@@ -371,11 +371,12 @@ const CourseView = () => {
             className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
-            stroke="currentColor"
+            stroke="white"
+            cursor="pointer"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          <span className="ml-2 font-medium">Back to Courses</span>
+          <span className="ml-2 font-medium text-white">Back to Courses</span>
         </Link>
       </div>
 
@@ -409,19 +410,19 @@ const CourseView = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed lg:sticky top-0 left-0 h-screen w-80 bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 shadow-lg transform transition-transform duration-300 ease-in-out z-40 
+        className={`fixed lg:sticky top-0 left-0 h-screen w-80 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
           lg:translate-x-0 lg:transform-none`}
       >
         <div className="h-full p-4 pt-16 overflow-y-auto">
           {/* Course Title */}
-          <h2 className="text-xl font-bold mb-2 text-gray-900">{course?.title}</h2>
+          <h2 className="text-xl font-bold mb-2 text-white">{course?.title}</h2>
 
           {/* Progress Bar */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-medium text-gray-900">Course Progress</span>
-              <span className="text-sm font-medium text-gray-900">{progress}%</span>
+                <span className="text-sm font-medium text-white">Course Progress</span>
+              <span className="text-sm font-medium text-white">{progress}%</span>
             </div>
             <div className="h-2 bg-gray-200/50 rounded-full w-full">
               <div
@@ -429,7 +430,7 @@ const CourseView = () => {
                 style={{ width: `${progress}%` }}
               />
             </div>
-            <div className="mt-1 text-sm text-gray-700 flex justify-between">
+            <div className="mt-1 text-sm text-white flex justify-between">
               <span>Video {currentVideoIndex + 1} of {course?.sections?.reduce((total, section) => total + (section.videos?.length || 0), 0) || 0}</span>
               <span>Section {currentSectionIndex + 1} of {course?.sections?.length || 0}</span>
             </div>
@@ -448,7 +449,7 @@ const CourseView = () => {
                 return (
                   <div key={sectionIndex} className="space-y-2">
                     <div 
-                      className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-gray-700 flex items-center justify-between p-2 rounded-lg hover:bg-white/10"
+                      className="text-lg font-semibold text-white cursor-pointer hover:text-gray-700 flex items-center justify-between p-2 rounded-lg hover:bg-white/10"
                       onClick={() => toggleSection(sectionIndex)}
                     >
                       <div className="flex items-center gap-2">
@@ -467,7 +468,7 @@ const CourseView = () => {
                         </svg>
                         <span>{section.title}</span>
                       </div>
-                      <span className="text-sm text-gray-700 bg-white/20 px-2 py-1 rounded">
+                      <span className="text-sm text-white bg-white/20 px-2 py-1 rounded">
                         {section.videos?.length || 0} videos
                       </span>
                     </div>
@@ -493,8 +494,8 @@ const CourseView = () => {
                             }}
                             className={`w-full p-3 text-left rounded-lg transition-all duration-200 ${
                               isActive
-                                ? 'bg-white/30 text-gray-900'
-                                : 'hover:bg-white/20 text-gray-800'
+                                ? 'bg-white/30 text-gray-300'
+                                : 'hover:bg-white/20 text-gray-500'
                             }`}
                           >
                             <div className="flex items-center">
@@ -515,7 +516,7 @@ const CourseView = () => {
                 );
               })
             ) : (
-              <div className="text-center text-gray-700 p-4 bg-white/10 rounded-lg">
+              <div className="text-center text-white p-4 bg-white/10 rounded-lg">
                 No sections available
               </div>
             )}
@@ -551,7 +552,7 @@ const CourseView = () => {
                   />
                 )
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                <div className="absolute inset-0 flex items-center justify-center bg-white/10">
                   <p className="text-white">No video selected</p>
                 </div>
               )}
@@ -560,9 +561,9 @@ const CourseView = () => {
             {/* Video Info */}
             {currentVideo && (
               <div className="bg-white/20 backdrop-blur-md rounded-lg p-4 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">{currentVideo.title}</h2>
+                <h2 className="text-xl font-bold text-white mb-2">{currentVideo.title}</h2>
                 {currentVideo.description && (
-                  <p className="text-gray-800">{currentVideo.description}</p>
+                  <p className="text-white">{currentVideo.description}</p>
                 )}
               </div>
             )}
@@ -583,7 +584,7 @@ const CourseView = () => {
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
                   currentSectionIndex === 0 && currentVideoIndex === 0
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-white/20 hover:bg-white/30 text-gray-900'
+                    : 'bg-white/20 hover:bg-white/30 text-white'
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -602,7 +603,7 @@ const CourseView = () => {
                   currentSectionIndex === course.sections.length - 1 && 
                   currentVideoIndex === course.sections[currentSectionIndex].videos.length - 1
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-white/20 hover:bg-white/30 text-gray-900'
+                    : 'bg-white/20 hover:bg-white/30 text-white'
                 }`}
               >
                 Next

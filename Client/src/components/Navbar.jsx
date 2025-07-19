@@ -36,7 +36,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="shadow-md">
+    <nav className="bg-black border-b border-gray-800 shadow-2xl p-2">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20">
           {/* Logo and main nav links */}
@@ -45,20 +45,20 @@ const Navbar = () => {
             <div className="hidden md:flex ml-4 space-x-6">
               <button 
                 onClick={handleHomeClick}
-                className="text-xl font-bold text-gray-900 ml-2 cursor-pointer"
+                className="text-lg font-bold text-white hover:text-gray-400 ml-2 cursor-pointer"
               >
                 Home
               </button>
               <button 
                 onClick={handleCoursesClick}
-                className="text-xl font-bold text-gray-900 ml-2 cursor-pointer"
+                className="text-lg font-bold text-white hover:text-gray-400 ml-2 cursor-pointer"
               >
                 Courses
               </button>
               {user && (
                 <button
                   onClick={() => navigate('/dashboard')}
-                  className="text-xl font-bold text-gray-900 ml-2 cursor-pointer"
+                  className="text-lg font-bold text-white hover:text-gray-400 ml-2 cursor-pointer"
                 >
                   Dashboard
                 </button>
@@ -70,18 +70,18 @@ const Navbar = () => {
           <div className="hidden md:flex items-center">
             {user ? (
               <div className="flex items-center space-x-4">
-                <span className="text-white">{user.name}</span>
+                <span className="text-white hover:text-gray-200 font-medium font-bold cursor-pointer">{user.name}</span>
                 <button
                   onClick={handleLogout}
-                  className="bg-white text-pink-600 hover:bg-gray-100 px-4 py-2 rounded-md transition-colors"
+                  className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400"
                 >
                   Logout
                 </button>
               </div>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link to="/login" className="text-white hover:text-gray-200 font-medium">Log in</Link>
-                <Link to="/register" className="bg-white text-pink-600 hover:bg-gray-100 px-4 py-2 rounded-md transition-colors">Sign up</Link>
+                <Link to="/login" className="text-white font-bold hover:text-gray-400 font-medium">Log in</Link>
+                <Link to="/register" className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400">Sign up</Link>
               </div>
             )}
           </div>
@@ -108,7 +108,7 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 pt-2 pb-3 space-y-1 shadow-lg">
+        <div className="md:hidden bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] pt-2 pb-3 space-y-1 shadow-lg">
           <button 
             onClick={handleHomeClick}
             className="block w-full text-left px-4 py-2 text-white hover:bg-white/10 bg-transparent border-none font-medium"
