@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": "22.16.0"
+  },
   "name": "nextera-server",
   "version": "1.0.0",
   "description": "NextEra Learning Platform Server",
