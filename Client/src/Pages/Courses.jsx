@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const DeleteConfirmationModal = ({
   isOpen,
@@ -131,25 +133,26 @@ const Courses = () => {
   const enroll = async (courseId) => {
     try {
       setEnrolling(true);
-      console.log('Enrolling in course:', courseId);
-      console.log('User:', user);
+      console.log("Enrolling in course:", courseId);
+      console.log("User:", user);
 
       const response = await api.post(`/api/courses/enroll/${courseId}`);
-      console.log('Enrollment response:', response.data);
-      
+      console.log("Enrollment response:", response.data);
+
       // Show success message
-      const successMessage = response.data.message || "Successfully enrolled in the course!";
+      const successMessage =
+        response.data.message || "Successfully enrolled in the course!";
       alert(successMessage);
-      
+
       // Refresh course data
       await fetchCourses();
     } catch (err) {
       console.error("Error enrolling:", {
         error: err,
         response: err.response,
-        user: user
+        user: user,
       });
-      
+
       // Handle specific error cases
       let errorMessage = "Failed to enroll. Please try again.";
       if (err.response?.status === 401) {
@@ -157,9 +160,11 @@ const Courses = () => {
       } else if (err.response?.status === 403) {
         errorMessage = "You don't have permission to enroll in this course.";
       } else if (err.response?.status === 400) {
-        errorMessage = err.response.data?.error || "You are already enrolled in this course.";
+        errorMessage =
+          err.response.data?.error ||
+          "You are already enrolled in this course.";
       }
-      
+
       alert(errorMessage);
     } finally {
       setEnrolling(false);
@@ -168,8 +173,8 @@ const Courses = () => {
 
   const isEnrolled = (course) => {
     if (!course.studentsEnrolled || !user) return false;
-    return course.studentsEnrolled.some(student => {
-      const studentId = typeof student === 'string' ? student : student._id;
+    return course.studentsEnrolled.some((student) => {
+      const studentId = typeof student === "string" ? student : student._id;
       const userId = user._id || user.id || user.userId;
       return studentId === userId;
     });
@@ -233,10 +238,10 @@ const Courses = () => {
       // The original code had logout() here, but logout is not imported.
       // Assuming it was intended to be removed or handled differently if logout was a global function.
       // For now, removing it as per the new_code.
-      // await logout(); 
-      navigate('/login');
+      // await logout();
+      navigate("/login");
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -257,48 +262,7 @@ const Courses = () => {
         onClose={() => setDeleteModal({ isOpen: false, courseId: null })}
         onConfirm={confirmDelete}
       />
-      <nav className="shadow-lg mb-4">
-        <div className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 bg-black border-b border-gray-800 shadow-2xl p-2">
-          <div className="flex justify-between h-20">
-            <div className="flex items-center">
-              <img src="/src/assets/logo.png" alt="NextEra Logo" className="w-14 h-14" />
-              <h1 className="text-lg font-bold text-white hover:text-gray-400 ml-2 cursor-pointer">Courses</h1>
-            </div>
-            <div className="flex items-center gap-4">
-
-              <button
-                onClick={() => navigate('/')}
-                className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400"
-              >
-                Home
-              </button>
-              <Link
-                to="/dashboard"
-                className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400"
-              >
-                Dashboard
-              </Link>
-              {isInstructor && (
-                <button
-                  onClick={() => navigate("/courses/create")}
-                  className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors border-2 border-gray-400"
-                >
-                  Create Course
-                </button>
-              )}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-white/70 backdrop-blur-sm rounded-lg transition-colors text-gray-900 font-medium"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M3 3a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h5.5a.5.5 0 0 1 0 1H3a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h5.5a.5.5 0 0 1 0 1H3zm11.646 4.646a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L17.293 11H6.5a.5.5 0 0 1 0-1h10.793l-2.647-2.646a.5.5 0 0 1 0-.708z" clipRule="evenodd"/>
-                </svg>
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {error && (
@@ -319,10 +283,14 @@ const Courses = () => {
               >
                 <div className="relative h-72 rounded-t-xl overflow-hidden">
                   <img
-                    src={course.thumbnail || "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80"}
+                    src={
+                      course.thumbnail ||
+                      "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80"
+                    }
                     alt={course.title}
                     onError={(e) => {
-                      e.target.src = "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80";
+                      e.target.src =
+                        "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80";
                     }}
                     className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
                   />
@@ -340,14 +308,20 @@ const Courses = () => {
                   <div className="mt-auto pt-3">
                     <div className="text-sm text-gray-700 flex items-center border-t border-gray-200 pt-3 mb-7">
                       <span className="mr-2">👨‍🏫</span>
-                      <span className="text-gray-100 font-bold">Created by:</span>
-                      <span className="ml-1 text-black truncate">{course.creatorId?.name || "Unknown Instructor"}</span>
+                      <span className="text-gray-100 font-bold">
+                        Created by:
+                      </span>
+                      <span className="ml-1 text-black truncate">
+                        {course.creatorId?.name || "Unknown Instructor"}
+                      </span>
                     </div>
 
                     {canModify ? (
                       <div className="flex gap-2">
                         <button
-                          onClick={() => navigate(`/courses/edit/${course._id}`)}
+                          onClick={() =>
+                            navigate(`/courses/edit/${course._id}`)
+                          }
                           className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
                         >
                           Edit
@@ -375,11 +349,11 @@ const Courses = () => {
                           disabled={enrolling}
                           className={`flex-1 py-2 px-3 rounded-lg text-sm text-white ${
                             enrolling
-                              ? 'bg-gray-400 cursor-not-allowed'
-                              : 'bg-green-500 hover:bg-green-600 transition-colors'
+                              ? "bg-gray-400 cursor-not-allowed"
+                              : "bg-green-500 hover:bg-green-600 transition-colors"
                           }`}
                         >
-                          {enrolling ? 'Enrolling...' : 'Enroll Now'}
+                          {enrolling ? "Enrolling..." : "Enroll Now"}
                         </button>
                       </div>
                     )}
@@ -390,6 +364,7 @@ const Courses = () => {
           })}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

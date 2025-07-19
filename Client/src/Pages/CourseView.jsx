@@ -344,7 +344,7 @@ const CourseView = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Course not found</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">Course not found</h2>
           <div className="flex justify-center">
             <button
               onClick={() => navigate('/courses')}
@@ -364,7 +364,7 @@ const CourseView = () => {
       <div className="fixed top-0 left-0 z-50 p-4">
         <Link
           to="/courses"
-          className="flex items-center text-gray-900 hover:text-black transition-colors"
+          className="flex items-center text-white hover:text-black transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
