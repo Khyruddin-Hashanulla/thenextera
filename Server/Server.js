@@ -14,18 +14,6 @@ const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const path = require("path");
 const app = express();
-// Serve static files from client build folder in production
-if (process.env.NODE_ENV === "production") {
-  const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
-  console.log("Serving static files from:", clientBuildPath);
-
-  app.use(express.static(clientBuildPath));
-
-  // Handle React routing, return all requests to React app
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
-  });
-}
 
 // Try to load passport configuration
 let passport;
@@ -111,10 +99,22 @@ try {
   );
 }
 
-// Remove the problematic redirect - let React Router handle client-side routing
-// app.get("/", (req, res) => {
-//   res.redirect("/Home");
-// });
+// Serve static files from client build folder in production
+if (process.env.NODE_ENV === "production") {
+  const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
+  console.log("Serving static files from:", clientBuildPath);
+
+  app.use(express.static(clientBuildPath));
+
+  // Handle React routing - this MUST come after API routes
+  app.get("*", (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
+      return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    res.sendFile(path.join(clientBuildPath, "index.html"));
+  });
+}
 
 // Database connection
 const dbUrl = process.env.ATLASDB_URL;
