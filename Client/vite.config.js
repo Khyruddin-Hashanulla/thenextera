@@ -21,11 +21,7 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080', // your backend URL
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      '/auth': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
+        secure: false,
       },
     },
     historyApiFallback: true,
@@ -36,7 +32,7 @@ export default defineConfig({
   },
   define: {
     'process.env': {
-      VITE_API_URL: JSON.stringify('http://localhost:8080'),
-    }
-  }
+      VITE_API_URL: JSON.stringify(process.env.VITE_API_URL || 'http://localhost:8080'),
+    },
+  },
 });

@@ -111,9 +111,10 @@ try {
   );
 }
 
-app.get("/", (req, res) => {
-  res.redirect("/Home");
-});
+// Remove the problematic redirect - let React Router handle client-side routing
+// app.get("/", (req, res) => {
+//   res.redirect("/Home");
+// });
 
 // Database connection
 const dbUrl = process.env.ATLASDB_URL;
