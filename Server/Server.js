@@ -101,40 +101,19 @@ try {
 
 // Serve static files from client build folder in production
 
+// Serve static files (production only)
 if (process.env.NODE_ENV === "production") {
-  const fs = require('fs');
   const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
-  const clientFallbackPath = path.join(__dirname, "..", "Client");
-  
-  // Check if dist folder exists, fallback to Client folder if not
-  if (fs.existsSync(clientBuildPath)) {
-    console.log("Serving static files from:", clientBuildPath);
-    app.use(express.static(clientBuildPath));
-  } else {
-    console.warn("⚠️  Dist folder not found, falling back to Client folder");
-    console.log("Serving static files from:", clientFallbackPath);
-    app.use(express.static(clientFallbackPath));
-  }
+  app.use(express.static(clientBuildPath));
 
-  // Handle React routing - this MUST come after API routes
   app.get("*", (req, res) => {
-    // Don't serve index.html for API routes
-    if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
-      return res.status(404).json({ error: 'API endpoint not found' });
+    if (req.path.startsWith("/api") || req.path.startsWith("/auth")) {
+      return res.status(404).json({ error: "API endpoint not found" });
     }
-    
-    // Try to serve from dist first, fallback to Client folder
-    const distIndexPath = path.join(__dirname, "..", "Client", "dist", "index.html");
-    const fallbackIndexPath = path.join(__dirname, "..", "Client", "index.html");
-    
-    if (fs.existsSync(distIndexPath)) {
-      res.sendFile(distIndexPath);
-    } else {
-      console.warn("⚠️  Dist index.html not found, serving from Client folder");
-      res.sendFile(fallbackIndexPath);
-    }
+    res.sendFile(path.join(clientBuildPath, "index.html"));
   });
 }
+
 
 // Database connection
 const dbUrl = process.env.ATLASDB_URL;
