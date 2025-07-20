@@ -1,13 +1,22 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
-import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // base: '/thenextera/', // Add this line for GitHub Pages deployment
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
   server: {
+    port: 5173,
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8080', // your backend URL
@@ -20,6 +29,10 @@ export default defineConfig({
       },
     },
     historyApiFallback: true,
+  },
+  preview: {
+    port: 4173,
+    host: true,
   },
   define: {
     'process.env': {

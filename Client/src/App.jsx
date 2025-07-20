@@ -35,6 +35,7 @@ function App() {
         <Routes>
           {/* Set the Home component as the root route */}
           <Route path="/" element={<Home />} />
+          <Route path="/Home" element={<Home />} />
           
           <Route path="/test" element={<TestPage />} />
           <Route path="/login" element={<Login />} />
