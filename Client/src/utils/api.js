@@ -97,6 +97,39 @@ api.uploadFile = async (file, type = 'image') => {
   }
 };
 
+// Image upload helper function (for thumbnails)
+api.uploadImage = async (file) => {
+  try {
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'image');
+
+    console.log('Uploading image file:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
+    // Upload image
+    const response = await api.post('/api/courses/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    console.log('Image upload response:', response.data);
+    return response.data.url;
+  } catch (error) {
+    console.error('Image upload error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    throw error;
+  }
+};
+
 // Video upload helper function
 api.uploadVideo = async (file) => {
   try {

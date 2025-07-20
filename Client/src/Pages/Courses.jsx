@@ -256,115 +256,192 @@ const Courses = () => {
   });
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)]">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex flex-col">
+      <Navbar onLogout={handleLogout} />
+      
+      {/* Main content area that grows to fill available space */}
+      <div className="flex-grow flex flex-col">
+        <div className="container mx-auto px-4 py-8 flex-grow">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 animate-fade-in-up">
+              Explore Our Courses
+            </h1>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto animate-fade-in-up animation-delay-200">
+              Discover a world of knowledge with our expertly crafted courses
+            </p>
+          </div>
+
+          {loading && (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+            </div>
+          )}
+
+          {error && (
+            <div className="text-center py-20">
+              <div className="bg-red-500/20 border border-red-500 rounded-lg p-6 max-w-md mx-auto">
+                <p className="text-red-200 mb-4">{error}</p>
+                <button
+                  onClick={fetchCourses}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && courses.length === 0 && (
+            <div className="text-center py-20">
+              <div className="bg-gray-800/50 rounded-lg p-8 max-w-md mx-auto">
+                <h3 className="text-2xl font-semibold text-white mb-4">
+                  No Courses Available
+                </h3>
+                {isInstructor ? (
+                  <>
+                    <p className="text-gray-300 mb-6">
+                      You haven't created any courses yet. Start building your first course to share your knowledge with students.
+                    </p>
+                    <div className="flex gap-3 justify-center">
+                      <button
+                        onClick={() => navigate('/courses/create')}
+                        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+                      >
+                        Create Course
+                      </button>
+                      <button
+                        onClick={fetchCourses}
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-300 mb-6">
+                      There are currently no courses available. Check back later or contact us for more information.
+                    </p>
+                    <button
+                      onClick={fetchCourses}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      Refresh
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!loading && !error && courses.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {courses.map((course) => {
+                const canModify = canModifyCourse(course);
+                const enrolled = isEnrolled(course);
+
+                return (
+                  <div
+                    key={course._id}
+                    className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-blue-500/25 border border-gray-700 flex flex-col animate-fade-in-up"
+                  >
+                    <div className="relative h-72 rounded-t-xl overflow-hidden">
+                      <img
+                        src={
+                          course.thumbnail ||
+                          "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80"
+                        }
+                        alt={course.title}
+                        onError={(e) => {
+                          e.target.src =
+                            "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80";
+                        }}
+                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <div className="p-4 flex flex-col h-full">
+                      <h2 className="text-lg font-bold mb-2 text-gray-100 line-clamp-2 hover:text-gray-400 cursor-pointer transition-colors duration-300">
+                        {course.title}
+                      </h2>
+                      <div className="flex-grow overflow-hidden">
+                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">
+                          {course.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-auto pt-3">
+                        <div className="text-sm text-gray-700 flex items-center border-t border-gray-200 pt-3 mb-7">
+                          <span className="mr-2">👨‍🏫</span>
+                          <span className="text-gray-100 font-bold">
+                            Created by:
+                          </span>
+                          <span className="ml-1 text-black truncate">
+                            {course.creatorId?.name || "Unknown Instructor"}
+                          </span>
+                        </div>
+
+                        {canModify ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() =>
+                                navigate(`/courses/edit/${course._id}`)
+                              }
+                              className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(course._id)}
+                              className="px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ) : enrolled ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => navigate(`/courses/${course._id}`)}
+                              className=" flex-1 px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
+                            >
+                              View Course
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => enroll(course._id)}
+                              disabled={enrolling}
+                              className={`flex-1 py-2 px-3 rounded-lg text-sm text-white ${
+                                enrolling
+                                  ? "bg-gray-400 cursor-not-allowed"
+                                  : "bg-green-500 hover:bg-green-600 transition-colors"
+                              }`}
+                            >
+                              {enrolling ? "Enrolling..." : "Enroll Now"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Footer will always be at the bottom */}
+      <Footer />
+
       <DeleteConfirmationModal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, courseId: null })}
         onConfirm={confirmDelete}
+        courseTitle={
+          courses.find((c) => c._id === deleteModal.courseId)?.title || ""
+        }
       />
-      <Navbar />
-
-      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
-            {error}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {courses.map((course) => {
-            const enrolled = isEnrolled(course);
-            const canModify = canModifyCourse(course);
-
-            return (
-              <div
-                key={course._id}
-                className="bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] backdrop-blur-md rounded-xl shadow-lg overflow-hidden flex flex-col h-[480px] border-2 border-gray-900 shadow-md transform hover:shadow-2xl transition-transform duration-900"
-              >
-                <div className="relative h-72 rounded-t-xl overflow-hidden">
-                  <img
-                    src={
-                      course.thumbnail ||
-                      "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80"
-                    }
-                    alt={course.title}
-                    onError={(e) => {
-                      e.target.src =
-                        "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80";
-                    }}
-                    className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <div className="p-4 flex flex-col h-full">
-                  <h2 className="text-lg font-bold mb-2 text-gray-100 line-clamp-2 hover:text-gray-400 cursor-pointer transition-colors duration-300">
-                    {course.title}
-                  </h2>
-                  <div className="flex-grow overflow-hidden">
-                    <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">
-                      {course.description}
-                    </p>
-                  </div>
-
-                  <div className="mt-auto pt-3">
-                    <div className="text-sm text-gray-700 flex items-center border-t border-gray-200 pt-3 mb-7">
-                      <span className="mr-2">👨‍🏫</span>
-                      <span className="text-gray-100 font-bold">
-                        Created by:
-                      </span>
-                      <span className="ml-1 text-black truncate">
-                        {course.creatorId?.name || "Unknown Instructor"}
-                      </span>
-                    </div>
-
-                    {canModify ? (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() =>
-                            navigate(`/courses/edit/${course._id}`)
-                          }
-                          className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(course._id)}
-                          className="px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    ) : enrolled ? (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => navigate(`/courses/${course._id}`)}
-                          className=" flex-1 px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
-                        >
-                          View Course
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => enroll(course._id)}
-                          disabled={enrolling}
-                          className={`flex-1 py-2 px-3 rounded-lg text-sm text-white ${
-                            enrolling
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-green-500 hover:bg-green-600 transition-colors"
-                          }`}
-                        >
-                          {enrolling ? "Enrolling..." : "Enroll Now"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <Footer />
     </div>
   );
 };

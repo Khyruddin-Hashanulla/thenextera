@@ -184,7 +184,8 @@ const AuthProvider = ({ children }) => {
     forgotPassword,
     resetPassword,
     verifyEmail,
-    isInstructor: user?.role === 'Instructor' || user?.role === 'Admin'  // Changed to proper case
+    isInstructor: user?.role === 'Instructor' || user?.role === 'Admin',  // Changed to proper case
+    isAdmin: user?.role === 'Admin'  // Add missing isAdmin property
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
