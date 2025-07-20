@@ -80,6 +80,22 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Root route - API status and info
+app.get('/', (req, res) => {
+  res.json({
+    message: 'NextEra Learning Platform API',
+    status: 'running',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/auth',
+      courses: '/api/courses',
+      uploads: '/uploads'
+    },
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // API Routes
 try {
   app.use("/auth", require("./Routes/Auth"));
