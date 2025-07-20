@@ -4,7 +4,7 @@ services:
     name: nextera-api
     env: node
     plan: free
-    buildCommand: cd Server && npm install
+    buildCommand: cd Client && npm install && npm run build && cd ../Server && npm install
     startCommand: cd Server && npm start
     envVars:
       - key: NODE_ENV
