@@ -105,7 +105,7 @@ if (process.env.NODE_ENV === "production") {
   // const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
   // console.log("Serving static files from:", clientBuildPath);
   // app.use(express.static(clientBuildPath));
-  app.use(express.static(path.join(__dirname, "../Client/dist")));
+  app.use(express.static(path.join(__dirname, "../Client")));
 
   // Handle React routing - this MUST come after API routes
   app.get("*", (req, res) => {
@@ -113,7 +113,7 @@ if (process.env.NODE_ENV === "production") {
     if (req.path.startsWith('/api') || req.path.startsWith('/auth')) {
       return res.status(404).json({ error: 'API endpoint not found' });
     }
-    res.sendFile(path.join(__dirname, "../Client/dist", "index.html"));
+    res.sendFile(path.join(__dirname, "../Client", "index.html"));
   });
 }
 
