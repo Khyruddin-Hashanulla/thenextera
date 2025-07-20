@@ -32,7 +32,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://nextera-api.onrender.com
+        value: https://nextera-dx4a.onrender.com
 
 # Database (if you want to use Render's MongoDB, otherwise use your Atlas connection)
 # databases:
