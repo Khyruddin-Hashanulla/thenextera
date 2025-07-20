@@ -50,6 +50,7 @@ const corsOptions = {
   origin:
     process.env.NODE_ENV === "production"
       ? [
+          "https://nextera-frontend.onrender.com",
           "https://thenextera.onrender.com",
           "https://khyruddin-hashanulla.github.io",
         ]

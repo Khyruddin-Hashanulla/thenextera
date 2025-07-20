@@ -1,0 +1,38 @@
+services:
+  # Backend API Service
+  - type: web
+    name: nextera-api
+    env: node
+    plan: free
+    buildCommand: cd Server && npm install
+    startCommand: cd Server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: ATLASDB_URL
+        fromDatabase:
+          name: nextera-mongodb
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: JWT_SECRET
+        generateValue: true
+    healthCheckPath: /
+    
+  # Frontend Static Site
+  - type: static
+    name: nextera-frontend
+    env: static
+    plan: free
+    buildCommand: cd Client && npm install && npm run build
+    staticPublishPath: ./Client/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://nextera-api.onrender.com
+
+# Database (if you want to use Render's MongoDB, otherwise use your Atlas connection)
+# databases:
+#   - name: nextera-mongodb
+#     plan: free
