@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,7 +44,7 @@ const Navbar = () => {
           <div className="flex items-center flex-shrink-0">
             {/* Updated logo path - you may need to adjust this based on your actual logo location */}
             <div className="w-10 h-10 sm:w-14 sm:h-14 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg sm:text-xl"><img src="/src/assets/logo.png" alt="" srcset="" /></span>
+              <span className="text-white font-bold text-lg sm:text-xl"><img src={logo} alt="" srcset="" /></span>
             </div>
             <div className="hidden lg:flex ml-6 space-x-8">
               <button 
