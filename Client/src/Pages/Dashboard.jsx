@@ -241,7 +241,7 @@ const Dashboard = () => {
             title={isInstructor || isAdmin ? "My Courses" : "Available Courses"}
             value={stats.totalCourses}
             icon="📚"
-            color="from-blue-500 to-blue-600"
+            color="bg-linear-to-r from-green-500 via-emerald-500 to-teal-500"
             delay={100}
           />
           <StatCard
@@ -254,14 +254,14 @@ const Dashboard = () => {
                 : stats.enrolledCourses
             }
             icon={isInstructor || isAdmin ? "👥" : "🎓"}
-            color="from-green-500 to-green-600"
+            color="bg-linear-to-r from-red-200 via-rose-400 to-pink-600"
             delay={200}
           />
           <StatCard
             title="Completed"
             value={stats.completedCourses}
             icon="✅"
-            color="from-purple-500 to-purple-600"
+            color="bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500"
             delay={300}
           />
           <StatCard
@@ -270,7 +270,7 @@ const Dashboard = () => {
               (stats.completedCourses / Math.max(stats.totalCourses, 1)) * 100
             )}%`}
             icon="📈"
-            color="from-orange-500 to-orange-600"
+            color="bg-linear-to-r from-gray-700 via-rose-500 to-orange-400"
             delay={400}
           />
         </div>

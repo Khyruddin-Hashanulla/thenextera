@@ -146,7 +146,7 @@ const CreateCourse = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex flex-col">
+    <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex flex-col">
       <Navbar />
       
       <div className="flex-grow container mx-auto px-4 py-8">
