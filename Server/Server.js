@@ -36,8 +36,7 @@ app.use(cookieParser());
 
 const allowedOrigins = [
   "http://localhost:5173", // Dev frontend
-  "https://thenextera.onrender.com", // Production fullstack
-  "https://nextera-frontend.vercel.app", // If deployed separately on Vercel
+  "https://nextera-vaaq.onrender.com", // Production fullstack
   "https://khyruddin-hashanulla.github.io" // If using GitHub Pages
 ];
 
@@ -89,6 +88,7 @@ store.on("error", (error) => {
   console.error("MongoDB session store error:", error);
 });
 
+app.set('trust proxy', 1); // Trust first proxy (Render)
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
@@ -97,6 +97,7 @@ app.use(
     store,
     cookie: {
       secure: process.env.NODE_ENV === "production",
+      sameSite: 'none', // Important for cross-origin
       maxAge: 30 * 24 * 3600, // 30 days
     },
   })
