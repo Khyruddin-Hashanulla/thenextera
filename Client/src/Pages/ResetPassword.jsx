@@ -26,13 +26,38 @@ const ResetPassword = () => {
     try {
       setError('');
       setLoading(true);
-      await resetPassword(token, password);
+      console.log('Attempting password reset with token:', token);
+      
+      const response = await resetPassword(token, password);
+      console.log('Password reset response:', response);
+      
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
       }, 3000);
     } catch (err) {
-      setError(err.response?.data || 'Failed to reset password');
+      console.error('Password reset error:', err);
+      
+      // Better error handling for different response formats
+      let errorMessage = 'Failed to reset password';
+      
+      if (err.response) {
+        // Server responded with error status
+        if (err.response.data) {
+          if (typeof err.response.data === 'string') {
+            errorMessage = err.response.data;
+          } else if (err.response.data.error) {
+            errorMessage = err.response.data.error;
+          } else if (err.response.data.message) {
+            errorMessage = err.response.data.message;
+          }
+        }
+      } else if (err.message) {
+        // Network or other error
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

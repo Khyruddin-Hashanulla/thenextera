@@ -177,10 +177,14 @@ const AuthProvider = ({ children }) => {
   const resetPassword = async (token, newPassword) => {
     try {
       setError(null);
+      console.log('AuthContext: Making reset password request');
       const response = await api.post(`/auth/reset-password/${token}`, { password: newPassword });
+      console.log('AuthContext: Reset password response:', response.data);
       return response.data;
     } catch (err) {
-      setError(err.response?.data || 'Password reset failed');
+      console.error('AuthContext: Reset password error:', err);
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.response?.data || 'Password reset failed';
+      setError(errorMessage);
       throw err;
     }
   };

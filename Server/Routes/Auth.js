@@ -214,58 +214,162 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// Test route to debug token saving (remove after fixing)
+router.post("/test-token-save", async (req, res) => {
+  try {
+    const { email } = req.body;
+    console.log('TEST: Testing token save for email:', email);
+    
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const testToken = "test-token-123456789";
+    console.log('TEST: Setting token:', testToken);
+    
+    user.resetPasswordToken = testToken;
+    user.resetPasswordExpires = Date.now() + 3600000;
+    
+    await user.save();
+    console.log('TEST: Token saved');
+    
+    // Verify by querying again
+    const verifyUser = await User.findOne({ email });
+    console.log('TEST: Retrieved token:', verifyUser.resetPasswordToken);
+    console.log('TEST: Retrieved expiry:', verifyUser.resetPasswordExpires);
+    
+    // Try to find by token
+    const tokenUser = await User.findOne({ resetPasswordToken: testToken });
+    console.log('TEST: Found user by token:', tokenUser ? 'YES' : 'NO');
+    
+    res.json({
+      message: "Test completed",
+      tokenSaved: verifyUser.resetPasswordToken === testToken,
+      foundByToken: !!tokenUser
+    });
+  } catch (error) {
+    console.error('TEST: Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Request Password Reset
 router.post("/forgot-password", async (req, res) => {
   try {
     const { email } = req.body;
+    console.log('Forgot password request for email:', email);
+    
     const user = await User.findOne({ email });
+    console.log('User found:', user ? 'YES' : 'NO');
     
     if (!user) {
-      return res.status(404).json("User not found");
+      console.log('User not found, returning error');
+      return res.status(404).json({ error: "User not found" });
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
+    console.log('Generated reset token:', resetToken);
+    console.log('Token expiry time:', Date.now() + 3600000);
+    
+    // Set the token and expiry
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
-    await user.save();
+    
+    console.log('Before save - user.resetPasswordToken:', user.resetPasswordToken);
+    console.log('Before save - user.resetPasswordExpires:', user.resetPasswordExpires);
+    
+    // Save the user with token
+    const savedUser = await user.save();
+    console.log('User saved successfully');
+    console.log('After save - savedUser.resetPasswordToken:', savedUser.resetPasswordToken);
+    console.log('After save - savedUser.resetPasswordExpires:', savedUser.resetPasswordExpires);
+    
+    // Verify the token was actually saved by querying again
+    const verifyUser = await User.findOne({ email });
+    console.log('Verification - user.resetPasswordToken:', verifyUser.resetPasswordToken);
+    console.log('Verification - user.resetPasswordExpires:', verifyUser.resetPasswordExpires);
 
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
-      try {
-        await sendPasswordResetEmail(email, resetToken);
-        res.json("Password reset email sent");
-      } catch (emailError) {
-        console.error("Failed to send password reset email:", emailError);
-        res.status(500).json("Failed to send password reset email. Please try again later.");
-      }
-    } else {
-      res.status(500).json("Email service is not configured. Please contact support.");
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      return res.status(500).json({ 
+        error: "Email service not configured. Please contact administrator." 
+      });
+    }
+
+    try {
+      await sendPasswordResetEmail(email, resetToken);
+      console.log('Password reset email sent successfully for token:', resetToken);
+      res.json({ 
+        message: "Password reset email sent successfully. Please check your inbox." 
+      });
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      res.status(500).json({ 
+        error: "Failed to send password reset email. Please try again." 
+      });
     }
   } catch (error) {
-    res.status(500).json("Server error: " + error.message);
+    console.error('Forgot password error:', error);
+    res.status(500).json({ error: "Server error: " + error.message });
   }
 });
 
 // Reset Password
 router.post("/reset-password/:token", async (req, res) => {
   try {
+    const token = req.params.token;
+    console.log('Reset password attempt with token:', token);
+    console.log('Current time:', Date.now());
+    console.log('Request body:', req.body);
+    
+    // First, let's see if any user has this token (regardless of expiry)
+    const userWithToken = await User.findOne({ resetPasswordToken: token });
+    console.log('User found with token (ignoring expiry):', userWithToken ? 'YES' : 'NO');
+    
+    if (userWithToken) {
+      console.log('Token expires at:', userWithToken.resetPasswordExpires);
+      console.log('Token expired?', userWithToken.resetPasswordExpires < Date.now());
+    }
+    
+    // Now check with expiry
     const user = await User.findOne({
-      resetPasswordToken: req.params.token,
+      resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() }
     });
+    
+    console.log('User found with valid token:', user ? 'YES' : 'NO');
 
     if (!user) {
-      return res.status(400).json("Invalid or expired reset token");
+      console.log('Token validation failed - returning error');
+      return res.status(400).json({ 
+        error: "Invalid or expired reset token. Please request a new password reset." 
+      });
     }
 
+    if (!req.body.password) {
+      return res.status(400).json({ error: "Password is required" });
+    }
+
+    if (req.body.password.length < 6) {
+      return res.status(400).json({ 
+        error: "Password must be at least 6 characters long" 
+      });
+    }
+
+    console.log('Updating password for user:', user.email);
     const hash = await bcrypt.hash(req.body.password, 10);
     user.password = hash;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
 
-    res.json("Password reset successful");
+    console.log('Password reset successful for user:', user.email);
+    res.json({ 
+      message: "Password reset successful! You can now log in with your new password." 
+    });
   } catch (error) {
-    res.status(500).json("Server error: " + error.message);
+    console.error('Reset password error:', error);
+    res.status(500).json({ error: "Server error: " + error.message });
   }
 });
 

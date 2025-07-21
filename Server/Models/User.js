@@ -12,6 +12,7 @@ const userSchema = new Schema({
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationOTP: String,
   emailVerificationExpires: Date,
+  resetPasswordToken: String,
   resetPasswordOTP: String,
   resetPasswordExpires: Date,
   rememberMeOTP: String,
