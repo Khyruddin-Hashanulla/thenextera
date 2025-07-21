@@ -35,6 +35,8 @@ app.use(cookieParser());
 // CORS configuration
 
 const allowedOrigins = [
+  "https://thenextera.in",
+  "https://www.thenextera.in",
   "http://localhost:5173", // Dev frontend
   "https://nextera-vaaq.onrender.com", // Production fullstack
   "https://khyruddin-hashanulla.github.io" // If using GitHub Pages
