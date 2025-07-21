@@ -160,10 +160,10 @@ router.post("/login", async (req, res) => {
     const { email, password, rememberMe } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: "Invalid credentials" });
+    if (!user) return res.status(400).json({ error: "No account found with this email address. Please check your email or sign up." });
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).json({ error: "Invalid credentials" });
+    if (!valid) return res.status(400).json({ error: "Incorrect password. Please try again or reset your password." });
 
     // Check if email is verified - this is now mandatory
     if (!user.isEmailVerified) {

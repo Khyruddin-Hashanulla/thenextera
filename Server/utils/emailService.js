@@ -110,13 +110,6 @@ const sendPasswordResetEmail = async (email, token) => {
           </a>
         </div>
         
-        <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 15px; margin: 20px 0;">
-          <p style="margin: 0 0 10px 0; font-weight: bold;">If the button doesn't work, copy and paste this link:</p>
-          <p style="word-break: break-all; background-color: #ffffff; padding: 10px; border: 1px solid #ccc; border-radius: 3px; font-family: monospace; font-size: 12px; margin: 0;">
-            ${resetUrl}
-          </p>
-        </div>
-        
         <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 15px; margin: 20px 0;">
           <p style="margin: 0; font-size: 14px; color: #856404;">
             <strong>📱 Mobile Users:</strong><br>

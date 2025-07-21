@@ -129,7 +129,14 @@ const AuthProvider = ({ children }) => {
         response: err.response?.data,
         status: err.response?.status
       });
-      setError(err.response?.data?.message || err.response?.data || 'Login failed');
+      
+      // Extract the error message properly from backend response
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          err.response?.data || 
+                          'Login failed. Please try again.';
+      
+      setError(errorMessage);
       throw err;
     }
   };

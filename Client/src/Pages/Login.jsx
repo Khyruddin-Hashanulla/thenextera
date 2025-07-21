@@ -30,7 +30,15 @@ const Login = () => {
       }, 100); // Delay just enough to let context update
     } catch (err) {
       console.error('Login error:', err);
-      setError(typeof err === 'string' ? err : (err.message || 'Failed to login'));
+      
+      // Extract the proper error message from the backend response
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          err.response?.data || 
+                          err.message || 
+                          'Failed to login. Please try again.';
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
