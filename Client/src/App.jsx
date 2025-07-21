@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Home from './Pages/Home'; // Import the new Home component
 import Login from './Pages/Login';
 import Register from './Pages/Register';
+import VerifyOTP from './Pages/VerifyOTP';
 import Dashboard from './Pages/Dashboard';
 import Courses from './Pages/Courses';
 import CreateCourse from './Pages/CreateCourse';
@@ -45,6 +46,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/role-update" element={<RoleUpdate />} />
+          <Route path="/verify-otp" element={<VerifyOTP />} />
           
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/courses" element={<Courses />} />

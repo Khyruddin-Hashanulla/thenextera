@@ -69,6 +69,28 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyOTP = async (otpData) => {
+    try {
+      setError(null);
+      const response = await api.post('/auth/verify-otp', otpData);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data || 'OTP verification failed');
+      throw err;
+    }
+  };
+
+  const resendOTP = async (emailData) => {
+    try {
+      setError(null);
+      const response = await api.post('/auth/resend-verification', emailData);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data || 'Failed to resend OTP');
+      throw err;
+    }
+  };
+
   const login = async (credentials) => {
     try {
       setError(null);
@@ -179,6 +201,8 @@ const AuthProvider = ({ children }) => {
     loading,
     error,
     register,
+    verifyOTP,
+    resendOTP,
     login,
     logout,
     forgotPassword,

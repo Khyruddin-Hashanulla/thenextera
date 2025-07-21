@@ -31,24 +31,15 @@ const Register = () => {
       const registerResponse = await register(formData);
       console.log('Registration successful:', registerResponse);
       
-      // Automatically log in after successful registration
-      const loginResponse = await login({
-        email: formData.email,
-        password: formData.password
-      });
-      console.log('Auto-login successful:', loginResponse);
-
-      // Store user data in localStorage
-      if (loginResponse.user) {
-        localStorage.setItem('user', JSON.stringify(loginResponse.user));
-        localStorage.setItem('token', loginResponse.token);
-      }
+      // Show success message and redirect to OTP verification
+      alert('Registration successful! Please check your email for the 6-digit OTP code to verify your account.');
       
-      // Navigate to dashboard after successful login
-      navigate('/dashboard');
+      // Navigate to OTP verification page (you'll need to create this)
+      navigate('/verify-otp', { state: { email: formData.email } });
+      
     } catch (err) {
-      console.error('Registration/Login error:', err);
-      setError(err.response?.data?.message || err.response?.data || 'Failed to register. Please try again.');
+      console.error('Registration error:', err);
+      setError(err.response?.data?.error || 'Registration failed');
     } finally {
       setLoading(false);
     }
