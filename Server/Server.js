@@ -99,6 +99,18 @@ try {
 }
 
 // Serve static files (production only)
+// if (process.env.NODE_ENV === "production") {
+//   const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
+//   app.use(express.static(clientBuildPath));
+
+//   app.get("*", (req, res) => {
+//     if (req.path.startsWith("/api") || req.path.startsWith("/auth")) {
+//       return res.status(404).json({ error: "API endpoint not found" });
+//     }
+//     res.sendFile(path.join(clientBuildPath, "index.html"));
+//   });
+// }
+
 if (process.env.NODE_ENV === "production") {
   const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
   app.use(express.static(clientBuildPath));
