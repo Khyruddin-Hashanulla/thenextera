@@ -4,12 +4,13 @@
   "description": "NextEra Learning Platform",
   "main": "Server/Server.js",
   "scripts": {
-    "start": "node Server/Server.js",
+    "start": "cd Server && npm install && node Server.js",
     "dev:server": "cd Server && npm run dev",
     "dev:client": "cd Client && npm run dev",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "build": "cd Client && npm run build",
-    "install:all": "npm install && cd Server && npm install && cd ../Client && npm install"
+    "build": "cd Client && npm install && npm run build",
+    "install:all": "npm install && cd Server && npm install && cd ../Client && npm install",
+    "prod": "npm run build && cd Server && npm start"
   },
   "dependencies": {
     "concurrently": "^8.2.2",
