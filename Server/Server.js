@@ -33,18 +33,45 @@ app.use(express.json());
 app.use(cookieParser());
 
 // CORS configuration
+
+const allowedOrigins = [
+  "http://localhost:5173", // Dev frontend
+  "https://thenextera.onrender.com", // Production fullstack
+  "https://nextera-frontend.vercel.app", // If deployed separately on Vercel
+  "https://khyruddin-hashanulla.github.io" // If using GitHub Pages
+];
+
 const corsOptions = {
-  origin:
-    process.env.NODE_ENV === "production"
-      ? [
-          "https://nextera-frontend.onrender.com",
-          "https://thenextera.onrender.com",
-          "https://khyruddin-hashanulla.github.io",
-        ]
-      : "http://localhost:5173",
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS blocked for this origin"));
+    }
+  },
   credentials: true,
 };
+
+if (process.env.NODE_ENV !== "production") {
+  corsOptions.origin = "http://localhost:5173";
+}
+
 app.use(cors(corsOptions));
+
+
+// const corsOptions = {
+//   origin:
+//     process.env.NODE_ENV === "production"
+//       ? [
+//           "https://thenextera.onrender.com",
+//           "https://khyruddin-hashanulla.github.io",
+//         ]
+//       : "http://localhost:5173",
+//   credentials: true,
+// };
+// app.use(cors(corsOptions));
+
+
 
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
