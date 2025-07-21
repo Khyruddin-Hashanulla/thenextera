@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: thenextera-frontend
+    env: static
+    buildCommand: cd Client && npm run build
+    staticPublishPath: ./Client/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
