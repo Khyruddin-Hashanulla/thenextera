@@ -312,7 +312,7 @@ const CourseView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 flex items-center justify-center">
+      <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading course...</h2>
           <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -323,7 +323,7 @@ const CourseView = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 flex items-center justify-center">
+      <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
           <p className="text-gray-800 mb-6">{error}</p>
@@ -342,7 +342,7 @@ const CourseView = () => {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-200 via-red-400 to-pink-600 flex items-center justify-center">
+      <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-white mb-4">Course not found</h2>
           <div className="flex justify-center">

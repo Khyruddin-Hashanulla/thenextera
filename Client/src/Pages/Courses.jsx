@@ -256,7 +256,7 @@ const Courses = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex flex-col">
+    <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex flex-col">
       <Navbar onLogout={handleLogout} />
       
       {/* Main content area that grows to fill available space */}
@@ -345,7 +345,7 @@ const Courses = () => {
                     key={course._id}
                     className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-blue-500/25 border border-gray-700 flex flex-col animate-fade-in-up"
                   >
-                    <div className="relative h-72 rounded-t-xl overflow-hidden">
+                    <div className="relative h-52 rounded-t-xl overflow-hidden">
                       <img
                         src={
                           course.thumbnail ||
@@ -369,13 +369,13 @@ const Courses = () => {
                         </p>
                       </div>
 
-                      <div className="mt-auto pt-3">
+                      <div className="mt-auto pt-2">
                         <div className="text-sm text-gray-700 flex items-center border-t border-gray-200 pt-3 mb-7">
                           <span className="mr-2">👨‍🏫</span>
                           <span className="text-gray-100 font-bold">
                             Created by:
                           </span>
-                          <span className="ml-1 text-black truncate">
+                          <span className="ml-1 text-white font-bold truncate">
                             {course.creatorId?.name || "Unknown Instructor"}
                           </span>
                         </div>
@@ -386,7 +386,7 @@ const Courses = () => {
                               onClick={() =>
                                 navigate(`/courses/edit/${course._id}`)
                               }
-                              className="flex-1 px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
+                              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border-2 border-white text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/25 transition-colors"
                             >
                               Edit
                             </button>
@@ -401,7 +401,7 @@ const Courses = () => {
                           <div className="flex gap-2">
                             <button
                               onClick={() => navigate(`/courses/${course._id}`)}
-                              className=" flex-1 px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
+                              className=" flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border-2 border-white text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/25 transition-colors"
                             >
                               View Course
                             </button>

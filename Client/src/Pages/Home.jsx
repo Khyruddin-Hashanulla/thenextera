@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
 import Navbar from "../components/Navbar";
 import "../animations.css";
+import logo from "../assets/logo.png";
 
 const Home = () => {
   const [featuredCourses, setFeaturedCourses] = useState([]);
@@ -665,7 +666,7 @@ const Home = () => {
               <div className="flex items-center mb-6">
                 <div className="w-12 h-12 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] rounded-xl flex items-center justify-center mr-4">
                   <span className="text-white font-bold text-xl">
-                    <img src="/src/assets/logo.png" alt="" srcset="" />
+                    <img src={logo} alt="" srcset="" />
                   </span>
                 </div>
                 <h3 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
