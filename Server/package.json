@@ -8,6 +8,7 @@
   "main": "Server.js",
   "scripts": {
     "start": "node Server.js",
+    "build": "cd ../Client && npm install && npm run build",
     "dev": "nodemon Server.js"
   },
   "dependencies": {
