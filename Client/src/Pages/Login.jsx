@@ -23,7 +23,11 @@ const Login = () => {
       console.log('Login successful:', result);
       
       // Use window.location for a full page reload to ensure state is fresh
-      window.location.href = '/dashboard';
+      // window.location.href = '/dashboard';
+      navigate('/dashboard');
+      setTimeout(() => {
+        setLoading(false);
+      }, 100); // Delay just enough to let context update
     } catch (err) {
       console.error('Login error:', err);
       setError(typeof err === 'string' ? err : (err.message || 'Failed to login'));
