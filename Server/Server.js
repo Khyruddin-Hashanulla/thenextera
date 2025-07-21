@@ -1,10 +1,9 @@
 const dotenv = require("dotenv");
-
 dotenv.config();
 
 // DNS configuration to help with SRV resolution
-const dns = require('dns');
-dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']); // Use Google and Cloudflare DNS
+const dns = require("dns");
+dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]); // Use Google and Cloudflare DNS
 
 const express = require("express");
 const MongoStore = require("connect-mongo");
@@ -99,8 +98,6 @@ try {
   );
 }
 
-// Serve static files from client build folder in production
-
 // Serve static files (production only)
 if (process.env.NODE_ENV === "production") {
   const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
@@ -114,60 +111,22 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-
 // Database connection
+// const MONGO_URL = process.env.MONGO_URL;
 const dbUrl = process.env.ATLASDB_URL;
-const fallbackUrl = process.env.MONGO_URI; // Direct connection string as fallback
-
-// Debug logging
-console.log('Environment variables loaded:');
-console.log('ATLASDB_URL exists:', !!process.env.ATLASDB_URL);
-console.log('MONGO_URI exists:', !!process.env.MONGO_URI);
-
-if (!dbUrl && !fallbackUrl) {
-  console.error('❌ Neither ATLASDB_URL nor MONGO_URI is defined in environment variables');
-  console.error('Make sure your .env file contains one of: ATLASDB_URL=your_srv_connection_string or MONGO_URI=your_direct_connection_string');
-  process.exit(1);
-}
-
-// Try SRV connection first, then fallback to direct connection
-const connectToDatabase = async () => {
-  if (dbUrl) {
-    console.log('🔄 Attempting to connect to MongoDB using SRV connection...');
-    try {
-      await mongoose.connect(dbUrl);
-      console.log("✅ Connected to MongoDB successfully using SRV connection");
-      console.log("Database name:", mongoose.connection.name);
-      return;
-    } catch (err) {
-      console.warn("⚠️ SRV connection failed:", err.message);
-      if (fallbackUrl) {
-        console.log('🔄 Trying fallback direct connection...');
-      } else {
-        throw err;
-      }
-    }
-  }
-  
-  if (fallbackUrl) {
-    try {
-      await mongoose.connect(fallbackUrl);
-      console.log("✅ Connected to MongoDB successfully using direct connection");
-      console.log("Database name:", mongoose.connection.name);
-    } catch (err) {
-      console.error("❌ MongoDB connection error (direct connection):");
-      console.error("Error name:", err.name);
-      console.error("Error message:", err.message);
-      throw err;
-    }
-  }
-};
 
 // Connect to database
-connectToDatabase().catch((err) => {
-  console.error("❌ Failed to connect to MongoDB with all available methods");
-  console.error("Full error:", err);
-});
+main()
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((err) => {
+    console.log(err);
+  });
+
+async function main() {
+  await mongoose.connect(dbUrl);
+}
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
