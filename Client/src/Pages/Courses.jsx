@@ -258,7 +258,7 @@ const Courses = () => {
   return (
     <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex flex-col">
       <Navbar onLogout={handleLogout} />
-      
+
       {/* Main content area that grows to fill available space */}
       <div className="flex-grow flex flex-col">
         <div className="container mx-auto px-4 py-8 flex-grow">
@@ -300,11 +300,12 @@ const Courses = () => {
                 {isInstructor ? (
                   <>
                     <p className="text-gray-300 mb-6">
-                      You haven't created any courses yet. Start building your first course to share your knowledge with students.
+                      You haven't created any courses yet. Start building your
+                      first course to share your knowledge with students.
                     </p>
                     <div className="flex gap-3 justify-center">
                       <button
-                        onClick={() => navigate('/courses/create')}
+                        onClick={() => navigate("/courses/create")}
                         className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
                       >
                         Create Course
@@ -320,7 +321,8 @@ const Courses = () => {
                 ) : (
                   <>
                     <p className="text-gray-300 mb-6">
-                      There are currently no courses available. Check back later or contact us for more information.
+                      There are currently no courses available. Check back later
+                      or contact us for more information.
                     </p>
                     <button
                       onClick={fetchCourses}
@@ -343,9 +345,10 @@ const Courses = () => {
                 return (
                   <div
                     key={course._id}
-                    className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-2xl overflow-hidden transform hover:scale-105 transition-all duration-300 hover:shadow-blue-500/25 border border-gray-700 flex flex-col animate-fade-in-up"
+                    className="group bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700/50 hover:border-blue-500/30 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 animate-fade-in-up flex flex-col h-[520px]"
                   >
-                    <div className="relative h-52 rounded-t-xl overflow-hidden">
+                    {/* Course Thumbnail */}
+                    <div className="relative h-48 overflow-hidden">
                       <img
                         src={
                           course.thumbnail ||
@@ -356,70 +359,149 @@ const Courses = () => {
                           e.target.src =
                             "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80";
                         }}
-                        className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
                       />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                    <div className="p-4 flex flex-col h-full">
-                      <h2 className="text-lg font-bold mb-2 text-gray-100 line-clamp-2 hover:text-gray-400 cursor-pointer transition-colors duration-300">
+                    {/* Course Content */}
+                    <div className="p-6 flex flex-col flex-grow">
+                      <h3 className="text-xl font-bold mb-3 text-white group-hover:text-blue-300 transition-colors line-clamp-2">
                         {course.title}
-                      </h2>
-                      <div className="flex-grow overflow-hidden">
-                        <p className="text-gray-300 text-sm leading-relaxed line-clamp-5">
+                      </h3>
+
+                      <div className="flex-grow overflow-hidden mb-4">
+                        <p className="text-gray-400 text-sm leading-relaxed line-clamp-4 group-hover:text-gray-300 transition-colors">
                           {course.description}
                         </p>
                       </div>
 
-                      <div className="mt-auto pt-2">
-                        <div className="text-sm text-gray-700 flex items-center border-t border-gray-200 pt-3 mb-7">
+                      {/* Course Info */}
+                      <div className="mt-auto">
+                        <div className="flex items-center text-sm text-gray-500 border-t border-gray-700/50 pt-4 mb-4">
                           <span className="mr-2">👨‍🏫</span>
-                          <span className="text-gray-100 font-bold">
+                          <span className="text-gray-400 font-medium">
                             Created by:
                           </span>
-                          <span className="ml-1 text-white font-bold truncate">
+                          <span className="ml-1 text-gray-300 truncate font-semibold">
                             {course.creatorId?.name || "Unknown Instructor"}
                           </span>
                         </div>
 
+                        {/* Action Buttons */}
                         {canModify ? (
-                          <div className="flex gap-2">
+                          <div className="flex gap-3">
                             <button
                               onClick={() =>
                                 navigate(`/courses/edit/${course._id}`)
                               }
-                              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border-2 border-white text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/25 transition-colors"
+                              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
                             >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
                               Edit
                             </button>
                             <button
                               onClick={() => handleDelete(course._id)}
-                              className="px-6 py-3 bg-black border-2 border-white text-white font-medium rounded-lg hover:bg-white/10 transition-colors"
+                              className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-500/25 flex items-center justify-center gap-2"
                             >
-                              Delete
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
                             </button>
                           </div>
                         ) : enrolled ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => navigate(`/courses/${course._id}`)}
-                              className=" flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 border-2 border-white text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/25 transition-colors"
+                          <button
+                            onClick={() => navigate(`/courses/${course._id}`)}
+                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
+                          >
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              View Course
-                            </button>
-                          </div>
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                            View Course
+                          </button>
                         ) : (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => enroll(course._id)}
-                              disabled={enrolling}
-                              className={`flex-1 py-2 px-3 rounded-lg text-sm text-white ${
-                                enrolling
-                                  ? "bg-gray-400 cursor-not-allowed"
-                                  : "bg-green-500 hover:bg-green-600 transition-colors"
-                              }`}
-                            >
-                              {enrolling ? "Enrolling..." : "Enroll Now"}
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => enroll(course._id)}
+                            disabled={enrolling}
+                            className={`w-full px-6 py-3 font-semibold rounded-xl transition-all duration-300 transform shadow-lg flex items-center justify-center gap-2 ${
+                              enrolling
+                                ? "bg-gray-600 cursor-not-allowed text-gray-300"
+                                : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white hover:scale-105 hover:shadow-green-500/25"
+                            }`}
+                          >
+                            {enrolling ? (
+                              <>
+                                <svg
+                                  className="w-5 h-5 animate-spin"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                  />
+                                </svg>
+                                Enrolling...
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                  />
+                                </svg>
+                                Enroll Now
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -430,7 +512,7 @@ const Courses = () => {
           )}
         </div>
       </div>
-      
+
       {/* Footer will always be at the bottom */}
       <Footer />
 
