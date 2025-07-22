@@ -219,7 +219,20 @@ try {
 
 // Simple test route to verify debug routes work
 app.get('/debug/test', (req, res) => {
+  console.log('🔥 DEBUG TEST ROUTE HIT!');
   res.json({ message: 'Debug route working!', timestamp: new Date().toISOString() });
+});
+
+// Basic health check route that should always work
+app.get('/health', (req, res) => {
+  console.log('❤️ HEALTH CHECK ROUTE HIT!');
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    port: process.env.PORT || 8081
+  });
 });
 
 // Alternative API route for iPhone session testing (should bypass all routing issues)
