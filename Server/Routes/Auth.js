@@ -2,14 +2,10 @@ const express = require("express");
 const router = express.Router();
 const User = require("../Models/User");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { sendVerificationOTP, sendPasswordResetEmail } = require("../utils/emailService");
 const passport = require("passport");
 const { requireAuth } = require("../middleware/auth");
-
-// Ensure JWT_SECRET has a fallback value if environment variable is not set
-const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-key';
 
 // Generate 6-digit OTP
 const generateOTP = () => {
@@ -437,27 +433,46 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
-      const token = jwt.sign({ id: req.user._id, role: req.user.role }, JWT_SECRET, {
-        expiresIn: "7d",
+      // Create session instead of JWT token
+      req.session.userId = req.user._id.toString();
+      req.session.userRole = req.user.role;
+      req.session.userName = req.user.name;
+      req.session.userEmail = req.user.email;
+      req.session.loginTime = new Date();
+      req.session.isAuthenticated = true;
+      req.session.rememberMe = false;
+      
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error('Google OAuth session save error:', err);
+          return res.redirect('/login?error=session_failed');
+        }
+        
+        console.log('Google OAuth login successful:', {
+          userId: req.user._id,
+          role: req.user.role,
+          sessionId: req.sessionID
+        });
+        
+        // Include user info in the URL (no token needed)
+        const userInfo = encodeURIComponent(JSON.stringify({
+          id: req.user._id,
+          name: req.user.name,
+          email: req.user.email,
+          role: req.user.role,
+          isEmailVerified: req.user.isEmailVerified
+        }));
+        
+        const redirectUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        res.redirect(`${redirectUrl}/auth/success?user=${userInfo}&sessionId=${req.sessionID}`);
       });
-      
-      // Include user info in the URL
-      const userInfo = encodeURIComponent(JSON.stringify({
-        id: req.user._id,
-        name: req.user.name,
-        email: req.user.email,
-        role: req.user.role,
-        isEmailVerified: req.user.isEmailVerified
-      }));
-      
-      // Redirect to the client with the hash route
-      res.redirect(`${process.env.CLIENT_URL}/#/auth-success?token=${token}&user=${userInfo}`);
     }
   );
 }
 
 // Update user role
-router.put("/update-role/:userId", async (req, res) => {
+router.put("/update-role/:userId", requireAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
@@ -478,21 +493,30 @@ router.put("/update-role/:userId", async (req, res) => {
     user.role = properRole;
     await user.save();
 
-    // Generate new token with updated role
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    // Update session with new role if this is the current user
+    if (req.session.userId === userId) {
+      req.session.userRole = properRole;
+      
+      // Save session with updated role
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session update error after role change:', err);
+        } else {
+          console.log('Session updated with new role:', properRole);
+        }
+      });
+    }
 
     res.json({
       message: "Role updated successfully",
-      token,
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         isEmailVerified: user.isEmailVerified
-      }
+      },
+      sessionUpdated: req.session.userId === userId
     });
   } catch (error) {
     console.error("Error updating role:", error);
