@@ -71,6 +71,26 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// iPhone/Safari Cross-Site Cookie Compatibility Middleware
+app.use((req, res, next) => {
+  // Ensure Access-Control-Allow-Credentials is always sent
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // For iPhone/Safari - ensure proper CORS headers for cross-site requests
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
+  // iPhone/Safari specific headers for better cookie handling
+  if (req.isMobile) {
+    res.setHeader('Vary', 'Origin, User-Agent');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  }
+  
+  next();
+});
+
 
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -156,9 +176,11 @@ app.use(
       httpOnly: true, // Prevent XSS attacks
       maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
       domain: undefined, // Let browser handle domain
-      // Mobile browser compatibility
+      // iPhone/Safari specific compatibility settings
       path: '/', // Explicit path for mobile browsers
       priority: 'high', // High priority for mobile cookie handling
+      // Additional iPhone/Safari compatibility
+      partitioned: false, // Disable partitioned cookies for cross-site
     },
     // Enhanced production settings
     proxy: isProduction, // Trust proxy in production
@@ -195,46 +217,41 @@ try {
   );
 }
 
-// Mobile authentication test routes
-try {
-  const mobileAuthTest = require('./mobile-auth-test');
-  app.use('/debug', mobileAuthTest);
-  console.log('✅ Mobile auth test routes loaded successfully');
-} catch (error) {
-  console.error('❌ Mobile auth test routes failed to load:', error.message);
-}
-
-// Enhanced session debugging route (for deployment troubleshooting)
+// Enhanced session debugging route (for deployment troubleshooting) - MUST come before /debug routes
 app.get('/debug/session', (req, res) => {
   const sessionInfo = {
-    timestamp: new Date().toISOString(),
+    sessionExists: !!req.session,
+    sessionId: req.sessionID,
+    userId: req.session?.userId,
+    userRole: req.session?.userRole,
+    isAuthenticated: req.session?.isAuthenticated || false,
+    sessionData: req.session,
+    cookies: req.headers.cookie,
+    userAgent: req.headers['user-agent'],
+    origin: req.headers.origin,
+    referer: req.headers.referer,
+    isMobile: req.isMobile,
     environment: process.env.NODE_ENV,
-    hasSession: !!req.session,
-    sessionId: req.session?.id,
-    sessionData: req.session ? {
-      userId: req.session.userId,
-      userRole: req.session.userRole,
-      isAuthenticated: req.session.isAuthenticated,
-      keys: Object.keys(req.session)
-    } : null,
-    cookies: {
-      received: req.headers.cookie || 'No cookies received',
-      sessionCookie: req.cookies['connect.sid'] || 'No session cookie'
+    timestamp: new Date().toISOString(),
+    // iPhone/Safari specific debugging
+    isSafari: /Safari/.test(req.headers['user-agent']) && !/Chrome/.test(req.headers['user-agent']),
+    isIOS: /iPhone|iPad|iPod/.test(req.headers['user-agent']),
+    cookieSettings: {
+      secure: req.app.get('trust proxy') ? true : false,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      httpOnly: true,
+      crossSite: req.headers.origin !== `https://${req.headers.host}`
     },
+    mobileWarnings: req.isMobile ? [
+      'Mobile browsers have stricter cookie policies',
+      'Cross-origin cookies may be blocked',
+      'Session persistence may require user interaction'
+    ] : [],
     headers: {
-      origin: req.headers.origin,
-      referer: req.headers.referer,
-      userAgent: req.headers['user-agent']?.substring(0, 100) + '...',
-      host: req.headers.host
-    },
-    mobileDetection: {
-      isMobile: req.isMobile,
-      userAgent: req.headers['user-agent'],
-      mobileWarnings: req.isMobile ? [
-        'Mobile browsers have stricter cookie policies',
-        'Cross-origin cookies may be blocked',
-        'Session persistence may require user interaction'
-      ] : []
+      'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
+      'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+      'vary': res.getHeader('Vary'),
+      'cache-control': res.getHeader('Cache-Control')
     },
     sessionConfig: {
       secure: isProduction,
@@ -244,9 +261,24 @@ app.get('/debug/session', (req, res) => {
     }
   };
   
-  console.log('🔍 Session Debug Request:', sessionInfo);
+  // Set iPhone/Safari specific headers for this debug response
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.headers.origin) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  
+  console.log('🔍 Enhanced Session Debug Info (iPhone/Safari):', sessionInfo);
   res.json(sessionInfo);
 });
+
+// Mobile authentication test routes (after specific debug routes)
+try {
+  const mobileAuthTest = require('./mobile-auth-test');
+  app.use('/debug', mobileAuthTest);
+  console.log('✅ Mobile auth test routes loaded successfully');
+} catch (error) {
+  console.error('❌ Mobile auth test routes failed to load:', error.message);
+}
 
 try {
   const courseRoutes = require("./Routes/Courses");
