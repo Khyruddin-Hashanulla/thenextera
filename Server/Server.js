@@ -38,7 +38,6 @@ const allowedOrigins = [
   "https://thenextera.in",
   "https://www.thenextera.in",
   "http://localhost:5173", // Dev frontend
-  "http://localhost:5174", // Dev frontend (alternate port)
   "https://nextera-vaaq.onrender.com", // Production fullstack
   "https://khyruddin-hashanulla.github.io" // If using GitHub Pages
 ];
@@ -155,10 +154,6 @@ main()
 
 async function main() {
   await mongoose.connect(dbUrl, {
-    // SSL/TLS configuration for MongoDB Atlas
-    ssl: true,
-    sslValidate: true,
-    // Connection options
     serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
     socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
     maxPoolSize: 10, // Maintain up to 10 socket connections
