@@ -303,7 +303,7 @@ if (process.env.NODE_ENV === "production") {
   app.use(express.static(clientBuildPath));
 
   app.get("*", (req, res) => {
-    if (req.path.startsWith("/api") || req.path.startsWith("/auth")) {
+    if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/debug")) {
       return res.status(404).json({ error: "API endpoint not found" });
     }
     res.sendFile(path.join(clientBuildPath, "index.html"));
