@@ -18,6 +18,17 @@ Server/.env
 
 # Logs
 logs
+
+# Debug and test files
+debug-*.js
+test-*.js
+test-*.sh
+cookies.txt
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
 *.log
 npm-debug.log*
 yarn-debug.log*
