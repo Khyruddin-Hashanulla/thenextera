@@ -151,9 +151,9 @@ const detectMobile = (req, res, next) => {
 
 app.use(detectMobile);
 
-// Mobile session compatibility fix
-const mobileSessionFix = require('./mobile-session-fix');
-app.use(mobileSessionFix);
+// Mobile session compatibility fix - temporarily disabled for debugging
+// const mobileSessionFix = require('./mobile-session-fix');
+// app.use(mobileSessionFix);
 
 console.log('🔧 Session Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
@@ -217,37 +217,17 @@ try {
   );
 }
 
-// Simple test route to verify debug routes work
-app.get('/debug/test', (req, res) => {
-  console.log('🔥 DEBUG TEST ROUTE HIT!');
-  res.json({ message: 'Debug route working!', timestamp: new Date().toISOString() });
-});
 
-// Basic health check route that should always work
-app.get('/health', (req, res) => {
-  console.log('❤️ HEALTH CHECK ROUTE HIT!');
-  res.json({ 
-    status: 'OK', 
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    port: process.env.PORT || 8081
-  });
-});
 
-// Alternative API route for iPhone session testing (should bypass all routing issues)
-app.get('/api/iphone-session-test', (req, res) => {
+// Simple session debug route for iPhone/Safari testing
+app.get('/debug/session', (req, res) => {
   const sessionInfo = {
-    message: 'iPhone session test route working!',
     sessionExists: !!req.session,
-    sessionId: req.sessionID,
     isAuthenticated: req.session?.isAuthenticated || false,
     userId: req.session?.userId,
-    userAgent: req.headers['user-agent'],
     isIOS: /iPhone|iPad|iPod/.test(req.headers['user-agent']),
     isSafari: /Safari/.test(req.headers['user-agent']) && !/Chrome/.test(req.headers['user-agent']),
     cookies: req.headers.cookie,
-    origin: req.headers.origin,
     timestamp: new Date().toISOString()
   };
   
@@ -256,72 +236,17 @@ app.get('/api/iphone-session-test', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
   }
   
-  console.log('📱 iPhone Session Test:', sessionInfo);
   res.json(sessionInfo);
 });
 
-// Enhanced session debugging route (for deployment troubleshooting) - MUST come before /debug routes
-app.get('/debug/session', (req, res) => {
-  const sessionInfo = {
-    sessionExists: !!req.session,
-    sessionId: req.sessionID,
-    userId: req.session?.userId,
-    userRole: req.session?.userRole,
-    isAuthenticated: req.session?.isAuthenticated || false,
-    sessionData: req.session,
-    cookies: req.headers.cookie,
-    userAgent: req.headers['user-agent'],
-    origin: req.headers.origin,
-    referer: req.headers.referer,
-    isMobile: req.isMobile,
-    environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-    // iPhone/Safari specific debugging
-    isSafari: /Safari/.test(req.headers['user-agent']) && !/Chrome/.test(req.headers['user-agent']),
-    isIOS: /iPhone|iPad|iPod/.test(req.headers['user-agent']),
-    cookieSettings: {
-      secure: req.app.get('trust proxy') ? true : false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      httpOnly: true,
-      crossSite: req.headers.origin !== `https://${req.headers.host}`
-    },
-    mobileWarnings: req.isMobile ? [
-      'Mobile browsers have stricter cookie policies',
-      'Cross-origin cookies may be blocked',
-      'Session persistence may require user interaction'
-    ] : [],
-    headers: {
-      'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
-      'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
-      'vary': res.getHeader('Vary'),
-      'cache-control': res.getHeader('Cache-Control')
-    },
-    sessionConfig: {
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      httpOnly: true,
-      maxAge: 30 * 24 * 3600 * 1000
-    }
-  };
-  
-  // Set iPhone/Safari specific headers for this debug response
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  if (req.headers.origin) {
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
-  }
-  
-  console.log('🔍 Enhanced Session Debug Info (iPhone/Safari):', sessionInfo);
-  res.json(sessionInfo);
-});
-
-// Mobile authentication test routes (after specific debug routes)
-try {
-  const mobileAuthTest = require('./mobile-auth-test');
-  app.use('/debug', mobileAuthTest);
-  console.log('✅ Mobile auth test routes loaded successfully');
-} catch (error) {
-  console.error('❌ Mobile auth test routes failed to load:', error.message);
-}
+// Mobile authentication test routes - temporarily disabled for debugging
+// try {
+//   const mobileAuthTest = require('./mobile-auth-test');
+//   app.use('/debug', mobileAuthTest);
+//   console.log('✅ Mobile auth test routes loaded successfully');
+// } catch (error) {
+//   console.error('❌ Mobile auth test routes failed to load:', error.message);
+// }
 
 try {
   const courseRoutes = require("./Routes/Courses");
