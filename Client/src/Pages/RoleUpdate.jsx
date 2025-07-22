@@ -13,7 +13,7 @@ const RoleUpdate = () => {
       setLoading(true);
       setError('');
 
-      const response = await api.put(`/auth/update-role/${userData.id}`, {
+      const response = await api.put(`/api/auth/update-role/${userData.id}`, {
         role: 'Instructor'  // Changed to proper case
       });
 

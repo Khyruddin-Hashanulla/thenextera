@@ -37,34 +37,37 @@ app.use(cookieParser());
 const allowedOrigins = [
   "https://thenextera.in",
   "https://www.thenextera.in",
-  "http://localhost:5173", // Dev frontend
+  "http://localhost:5173", // Dev frontend (Vite default)
+  "http://localhost:5174", // Dev frontend (alternative port)
+  "http://localhost:3000", // Dev frontend (React default)
   "https://nextera-vaaq.onrender.com", // Production fullstack
-  "https://khyruddin-hashanulla.github.io" // If using GitHub Pages
+  "https://khyruddin-hashanulla.github.io", // GitHub Pages
+  
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS blocked for this origin"));
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) {
+      return callback(null, true);
     }
+    
+    // In development, allow any localhost origin
+    if (process.env.NODE_ENV !== "production" && origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    
+    // Check against allowed origins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    console.warn(`CORS blocked origin: ${origin}`);
+    callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
   },
-  credentials: true,
+  credentials: true, // Essential for session cookies
+  optionsSuccessStatus: 200, // For legacy browser support
 };
-
-if (process.env.NODE_ENV !== "production") {
-  // Allow multiple localhost ports in development
-  corsOptions.origin = function (origin, callback) {
-    if (!origin || origin.startsWith('http://localhost:')) {
-      callback(null, true);
-    } else if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("CORS blocked for this origin"));
-    }
-  };
-}
 
 app.use(cors(corsOptions));
 
@@ -72,30 +75,71 @@ app.use(cors(corsOptions));
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Session configuration
+// Enhanced session configuration for production stability
 const store = MongoStore.create({
   mongoUrl: process.env.ATLASDB_URL,
   crypto: {
     secret: process.env.SESSION_SECRET || "your-secret-key",
   },
   touchAfter: 24 * 3600, // 24 hours
+  // Enhanced production settings
+  collectionName: 'sessions',
+  ttl: 30 * 24 * 60 * 60, // 30 days in seconds
+  autoRemove: 'native', // Use MongoDB's native TTL
+  autoRemoveInterval: 10, // Check every 10 minutes
+  // Connection stability
+  stringify: false,
+  serialize: (session) => {
+    // Custom serialization for better session data handling
+    return JSON.stringify(session);
+  },
+  unserialize: (session) => {
+    // Custom deserialization
+    return JSON.parse(session);
+  }
 });
 
+// Enhanced session store error handling for production
 store.on("error", (error) => {
-  console.error("MongoDB session store error:", error);
+  console.error("❌ MongoDB session store error:", error);
+  console.error("Session store connection status:", {
+    timestamp: new Date().toISOString(),
+    error: error.message,
+    stack: error.stack
+  });
+});
+
+store.on("connected", () => {
+  console.log("✅ MongoDB session store connected successfully");
+});
+
+store.on("disconnected", () => {
+  console.warn("⚠️ MongoDB session store disconnected");
 });
 
 app.set('trust proxy', 1); // Trust first proxy (Render)
 
-// Detect if we're actually in production (has HTTPS) vs local development
-const isProduction = process.env.NODE_ENV === "production" && process.env.PORT;
-const isLocalDev = !process.env.PORT || process.env.PORT === "8081";
+// Better production detection - only true if actually deployed
+const isProduction = process.env.NODE_ENV === "production" && (process.env.RENDER || process.env.VERCEL || process.env.NETLIFY);
+
+// Mobile browser detection middleware for enhanced session handling
+const detectMobile = (req, res, next) => {
+  const userAgent = req.headers['user-agent'] || '';
+  req.isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  next();
+};
+
+app.use(detectMobile);
+
+// Mobile session compatibility fix
+const mobileSessionFix = require('./mobile-session-fix');
+app.use(mobileSessionFix);
 
 console.log('🔧 Session Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
   isProduction,
-  isLocalDev
+  HTTPS_DETECTED: !!process.env.RENDER || !!process.env.VERCEL
 });
 
 app.use(
@@ -104,13 +148,21 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store,
+    name: 'nextera.sid', // Custom session name
+    rolling: true, // Reset expiry on each request
     cookie: {
-      secure: isProduction && !isLocalDev, // Only secure in actual production with HTTPS
-      sameSite: isProduction && !isLocalDev ? 'none' : 'lax', // 'none' only for production
+      secure: isProduction, // HTTPS required in production
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
       httpOnly: true, // Prevent XSS attacks
       maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
       domain: undefined, // Let browser handle domain
+      // Mobile browser compatibility
+      path: '/', // Explicit path for mobile browsers
+      priority: 'high', // High priority for mobile cookie handling
     },
+    // Enhanced production settings
+    proxy: isProduction, // Trust proxy in production
+    unset: 'destroy', // Destroy session when unset
   })
 );
 
@@ -129,13 +181,13 @@ if (missingEnvVars.length > 0) {
 // API Routes
 try {
   const authRoutes = require("./Routes/Auth");
-  app.use("/auth", authRoutes);
+  app.use("/api/auth", authRoutes);
   console.log("✅ Auth routes loaded successfully");
 } catch (error) {
   console.error("❌ Auth routes failed to load:", error.message);
   console.error("Full error:", error);
   console.error("Stack trace:", error.stack);
-  app.use("/auth", (req, res) =>
+  app.use("/api/auth", (req, res) =>
     res.status(501).json({ 
       message: "Authentication routes not implemented",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -143,25 +195,48 @@ try {
   );
 }
 
-// Session debugging route (for deployment troubleshooting)
+// Enhanced session debugging route (for deployment troubleshooting)
 app.get('/debug/session', (req, res) => {
-  res.json({
+  const sessionInfo = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
     hasSession: !!req.session,
     sessionId: req.session?.id,
-    isAuthenticated: req.session?.isAuthenticated,
-    userId: req.session?.userId,
-    userRole: req.session?.userRole,
-    userName: req.session?.userName,
-    userEmail: req.session?.userEmail,
-    cookieSettings: {
-      secure: req.session?.cookie?.secure,
-      sameSite: req.session?.cookie?.sameSite,
-      httpOnly: req.session?.cookie?.httpOnly,
-      maxAge: req.session?.cookie?.maxAge,
-      domain: req.session?.cookie?.domain
+    sessionData: req.session ? {
+      userId: req.session.userId,
+      userRole: req.session.userRole,
+      isAuthenticated: req.session.isAuthenticated,
+      keys: Object.keys(req.session)
+    } : null,
+    cookies: {
+      received: req.headers.cookie || 'No cookies received',
+      sessionCookie: req.cookies['connect.sid'] || 'No session cookie'
     },
-    environment: process.env.NODE_ENV || 'development'
-  });
+    headers: {
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      userAgent: req.headers['user-agent']?.substring(0, 100) + '...',
+      host: req.headers.host
+    },
+    mobileDetection: {
+      isMobile: req.isMobile,
+      userAgent: req.headers['user-agent'],
+      mobileWarnings: req.isMobile ? [
+        'Mobile browsers have stricter cookie policies',
+        'Cross-origin cookies may be blocked',
+        'Session persistence may require user interaction'
+      ] : []
+    },
+    sessionConfig: {
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      httpOnly: true,
+      maxAge: 30 * 24 * 3600 * 1000
+    }
+  };
+  
+  console.log('🔍 Session Debug Request:', sessionInfo);
+  res.json(sessionInfo);
 });
 
 try {

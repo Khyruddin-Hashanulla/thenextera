@@ -41,7 +41,7 @@ function App() {
           <Route path="/test" element={<TestPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/auth/success" element={<AuthSuccess />} />
+          <Route path="/api/auth/success" element={<AuthSuccess />} />
           <Route path="/verify-email/:token" element={<EmailVerification />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />

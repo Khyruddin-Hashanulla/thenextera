@@ -17,7 +17,7 @@ const AuthProvider = ({ children }) => {
     // Check for remember me token
     const checkRememberMe = async () => {
       try {
-        const response = await api.get('/auth/check-remember-me');
+        const response = await api.get('/api/auth/check-remember-me');
         if (response.data.user) {
           setUser(response.data.user);
           localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -59,7 +59,7 @@ const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       setError(null);
-      const response = await api.post('/auth/register', userData);
+      const response = await api.post('/api/auth/register', userData);
       return response.data;
     } catch (err) {
       setError(err.response?.data || 'Registration failed');
@@ -70,7 +70,7 @@ const AuthProvider = ({ children }) => {
   const verifyOTP = async (otpData) => {
     try {
       setError(null);
-      const response = await api.post('/auth/verify-otp', otpData);
+      const response = await api.post('/api/auth/verify-otp', otpData);
       return response.data;
     } catch (err) {
       setError(err.response?.data || 'OTP verification failed');
@@ -81,7 +81,7 @@ const AuthProvider = ({ children }) => {
   const resendOTP = async (emailData) => {
     try {
       setError(null);
-      const response = await api.post('/auth/resend-verification', emailData);
+      const response = await api.post('/api/auth/resend-verification', emailData);
       return response.data;
     } catch (err) {
       setError(err.response?.data || 'Failed to resend OTP');
@@ -92,7 +92,7 @@ const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       setError(null);
-      const response = await api.post('/auth/login', credentials);
+      const response = await api.post('/api/auth/login', credentials);
       
       console.log('Full login response:', response.data);
       
@@ -155,7 +155,7 @@ const AuthProvider = ({ children }) => {
     try {
       // Try to call the logout endpoint to destroy session on server
       try {
-        const response = await api.post('/auth/logout');
+        const response = await api.post('/api/auth/logout');
         console.log('Server logout successful:', response.data);
       } catch (err) {
         console.warn('Logout request failed:', err);
@@ -188,7 +188,7 @@ const AuthProvider = ({ children }) => {
   const forgotPassword = async (email) => {
     try {
       setError(null);
-      const response = await api.post('/auth/forgot-password', { email });
+      const response = await api.post('/api/auth/forgot-password', { email });
       return response.data;
     } catch (err) {
       setError(err.response?.data || 'Password reset request failed');
@@ -200,7 +200,7 @@ const AuthProvider = ({ children }) => {
     try {
       setError(null);
       console.log('AuthContext: Making reset password request');
-      const response = await api.post(`/auth/reset-password/${token}`, { password: newPassword });
+      const response = await api.post(`/api/auth/reset-password/${token}`, { password: newPassword });
       console.log('AuthContext: Reset password response:', response.data);
       return response.data;
     } catch (err) {
@@ -214,7 +214,7 @@ const AuthProvider = ({ children }) => {
   const verifyEmail = async (token) => {
     try {
       setError(null);
-      const response = await api.get(`/auth/verify-email/${token}`);
+      const response = await api.get(`/api/auth/verify-email/${token}`);
       return response.data;
     } catch (err) {
       setError(err.response?.data || 'Email verification failed');
