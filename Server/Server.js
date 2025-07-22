@@ -217,6 +217,36 @@ try {
   );
 }
 
+// Simple test route to verify debug routes work
+app.get('/debug/test', (req, res) => {
+  res.json({ message: 'Debug route working!', timestamp: new Date().toISOString() });
+});
+
+// Alternative API route for iPhone session testing (should bypass all routing issues)
+app.get('/api/iphone-session-test', (req, res) => {
+  const sessionInfo = {
+    message: 'iPhone session test route working!',
+    sessionExists: !!req.session,
+    sessionId: req.sessionID,
+    isAuthenticated: req.session?.isAuthenticated || false,
+    userId: req.session?.userId,
+    userAgent: req.headers['user-agent'],
+    isIOS: /iPhone|iPad|iPod/.test(req.headers['user-agent']),
+    isSafari: /Safari/.test(req.headers['user-agent']) && !/Chrome/.test(req.headers['user-agent']),
+    cookies: req.headers.cookie,
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  };
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.headers.origin) {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
+  }
+  
+  console.log('📱 iPhone Session Test:', sessionInfo);
+  res.json(sessionInfo);
+});
+
 // Enhanced session debugging route (for deployment troubleshooting) - MUST come before /debug routes
 app.get('/debug/session', (req, res) => {
   const sessionInfo = {
