@@ -86,6 +86,18 @@ store.on("error", (error) => {
 });
 
 app.set('trust proxy', 1); // Trust first proxy (Render)
+
+// Detect if we're actually in production (has HTTPS) vs local development
+const isProduction = process.env.NODE_ENV === "production" && process.env.PORT;
+const isLocalDev = !process.env.PORT || process.env.PORT === "8081";
+
+console.log('🔧 Session Configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  isProduction,
+  isLocalDev
+});
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
@@ -93,11 +105,11 @@ app.use(
     saveUninitialized: false,
     store,
     cookie: {
-      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // 'none' for production cross-origin
+      secure: isProduction && !isLocalDev, // Only secure in actual production with HTTPS
+      sameSite: isProduction && !isLocalDev ? 'none' : 'lax', // 'none' only for production
       httpOnly: true, // Prevent XSS attacks
       maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
-      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Let browser handle domain
+      domain: undefined, // Let browser handle domain
     },
   })
 );
