@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { sendVerificationOTP, sendPasswordResetEmail } = require("../utils/emailService");
 const passport = require("passport");
+const { requireAuth } = require("../middleware/auth");
 
 // Ensure JWT_SECRET has a fallback value if environment variable is not set
 const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-key';
@@ -173,45 +174,98 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Generate tokens
-    const tokenExpiry = rememberMe ? "30d" : "7d";
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
-      expiresIn: tokenExpiry,
-    });
+    // Create session instead of JWT token
+    req.session.userId = user._id.toString();
+    req.session.userRole = user.role;
+    req.session.userName = user.name;
+    req.session.userEmail = user.email;
+    req.session.loginTime = new Date();
+    req.session.isAuthenticated = true;
 
+    // Handle remember me with session maxAge
     if (rememberMe) {
+      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+      req.session.rememberMe = true;
+      
       const rememberMeToken = crypto.randomBytes(32).toString("hex");
       user.rememberMeToken = rememberMeToken;
       await user.save();
-      res.cookie('rememberMe', rememberMeToken, { 
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production'
-      });
+    } else {
+      req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+      req.session.rememberMe = false;
     }
 
-    // Log the user data being sent
-    console.log('Login successful:', {
-      userId: user._id,
-      role: user.role,
-      name: user.name,
-      email: user.email
-    });
+    // Save session explicitly to ensure it's written to MongoDB
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ error: "Session creation failed" });
+      }
 
-    res.json({ 
-      token, 
-      user: { 
-        id: user._id,  // Use _id consistently
+      // Log the user data being sent
+      console.log('Login successful:', {
+        userId: user._id,
+        role: user.role,
         name: user.name,
         email: user.email,
-        role: user.role,
-        isEmailVerified: user.isEmailVerified 
-      } 
+        sessionId: req.sessionID,
+        sessionData: req.session
+      });
+
+      res.json({ 
+        success: true,
+        user: { 
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified 
+        },
+        sessionId: req.sessionID // Optional: for debugging
+      });
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: "Server error: " + error.message });
   }
+});
+
+// Logout route - destroy session
+router.post("/logout", (req, res) => {
+  if (!req.session) {
+    return res.status(400).json({ error: "No active session" });
+  }
+
+  const sessionId = req.sessionID;
+  
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Session destruction error:', err);
+      return res.status(500).json({ error: "Logout failed" });
+    }
+    
+    res.clearCookie('connect.sid'); // Clear session cookie
+    console.log('Session destroyed:', sessionId);
+    
+    res.json({ 
+      success: true, 
+      message: "Logged out successfully" 
+    });
+  });
+});
+
+// Test route to verify session-based middleware
+router.get("/test-auth", requireAuth, (req, res) => {
+  res.json({
+    message: "Session-based authentication working!",
+    user: req.user,
+    sessionId: req.sessionID,
+    sessionData: {
+      userId: req.session.userId,
+      userRole: req.session.userRole,
+      isAuthenticated: req.session.isAuthenticated
+    }
+  });
 });
 
 // Test route to debug token saving (remove after fixing)
@@ -443,26 +497,6 @@ router.put("/update-role/:userId", async (req, res) => {
   } catch (error) {
     console.error("Error updating role:", error);
     res.status(500).json({ error: "Error updating role" });
-  }
-});
-
-// Logout
-router.post("/logout", async (req, res) => {
-  try {
-    // Clear remember me token if it exists
-    if (req.cookies.rememberMe) {
-      res.clearCookie('rememberMe');
-    }
-
-    // Clear session if using session-based auth
-    if (req.session) {
-      req.session.destroy();
-    }
-
-    res.json({ message: "Logged out successfully" });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ error: "Error during logout" });
   }
 });
 

@@ -95,14 +95,20 @@ const AuthProvider = ({ children }) => {
     try {
       setError(null);
       const response = await api.post('/auth/login', credentials);
-      const { user, token } = response.data;
+      
+      console.log('Full login response:', response.data);
+      
+      // Handle session-based response structure
+      const { user, success, sessionId } = response.data;
       
       console.log('Login response:', {
         user,
-        hasToken: !!token
+        success,
+        hasSessionId: !!sessionId
       });
       
-      if (user && token) {
+      // Check if login was successful and user data exists
+      if (success && user) {
         // Ensure consistent id field
         const normalizedUser = {
           ...user,
@@ -113,12 +119,18 @@ const AuthProvider = ({ children }) => {
         console.log('Normalized user data:', normalizedUser);
         
         setUser(normalizedUser);
-        localStorage.setItem('token', token);
+        // Store user data but no token (session-based auth)
         localStorage.setItem('user', JSON.stringify(normalizedUser));
         
-        // Set the token in the API instance
-        api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        // Remove JWT token from API headers (using session cookies now)
+        delete api.defaults.headers.common['Authorization'];
+        
+        // Ensure cookies are sent with requests for session-based auth
+        api.defaults.withCredentials = true;
+        
+        console.log('Login successful - session-based authentication active');
       } else {
+        console.error('Login failed - invalid response structure:', response.data);
         throw new Error('Invalid response from server');
       }
       
@@ -143,25 +155,30 @@ const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Try to call the logout endpoint
+      // Try to call the logout endpoint to destroy session on server
       try {
-        await api.post('/auth/logout');
+        const response = await api.post('/auth/logout');
+        console.log('Server logout successful:', response.data);
       } catch (err) {
         console.warn('Logout request failed:', err);
         // Continue with local cleanup even if server request fails
       }
 
-      // Clear local storage
-      localStorage.removeItem('token');
+      // Clear local storage (remove token reference since we're using sessions)
+      localStorage.removeItem('token'); // Keep for backward compatibility
       localStorage.removeItem('user');
       
-      // Clear auth header
+      // Clear auth header (not needed for sessions but good cleanup)
       delete api.defaults.headers.common['Authorization'];
+      
+      // Ensure cookies are still sent for future requests
+      api.defaults.withCredentials = true;
       
       // Clear user state
       setUser(null);
       setError(null);
       
+      console.log('Client logout completed - session should be destroyed');
       return true;
     } catch (err) {
       console.error('Logout failed:', err);

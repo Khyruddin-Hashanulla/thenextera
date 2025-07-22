@@ -60,20 +60,6 @@ if (process.env.NODE_ENV !== "production") {
 app.use(cors(corsOptions));
 
 
-// const corsOptions = {
-//   origin:
-//     process.env.NODE_ENV === "production"
-//       ? [
-//           "https://thenextera.onrender.com",
-//           "https://khyruddin-hashanulla.github.io",
-//         ]
-//       : "http://localhost:5173",
-//   credentials: true,
-// };
-// app.use(cors(corsOptions));
-
-
-
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -100,7 +86,7 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       sameSite: 'none', // Important for cross-origin
-      maxAge: 30 * 24 * 3600, // 30 days
+      maxAge: 30 * 24 * 3600 * 1000, // ✅ 30 days in milliseconds
     },
   })
 );

@@ -3,7 +3,7 @@ const router = express.Router();
 const Course = require("../Models/Course");
 const User = require("../Models/User");
 const mongoose = require("mongoose");
-const { auth, isInstructor } = require("../Middleware/auth");
+const { requireAuth, requireTeacher } = require("../middleware/auth");
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
@@ -83,7 +83,7 @@ const upload = multer({
 });
 
 // Handle video uploads
-router.post('/upload/video', auth, isInstructor, upload.single('video'), async (req, res) => {
+router.post('/upload/video', requireAuth, requireTeacher, upload.single('video'), async (req, res) => {
   try {
     if (!req.file) {
       console.log('No video file received');
@@ -114,7 +114,7 @@ router.post('/upload/video', auth, isInstructor, upload.single('video'), async (
 });
 
 // Handle image uploads
-router.post('/upload', auth, isInstructor, upload.single('file'), async (req, res) => {
+router.post('/upload', requireAuth, requireTeacher, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -159,7 +159,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get a specific course
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
     // Log request details
     console.log('Course fetch request:', {
@@ -401,7 +401,7 @@ const formatCourseData = (course, user, req) => {
 };
 
 // Add course (Instructor/Admin only)
-router.post("/add", auth, isInstructor, async (req, res) => {
+router.post("/add", requireAuth, requireTeacher, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -490,7 +490,7 @@ router.post("/add", auth, isInstructor, async (req, res) => {
 });
 
 // Update course (Instructor/Admin only)
-router.put("/:id", auth, isInstructor, async (req, res) => {
+router.put("/:id", requireAuth, requireTeacher, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -592,7 +592,7 @@ router.put("/:id", auth, isInstructor, async (req, res) => {
 });
 
 // Delete course (Instructor/Admin only)
-router.delete("/:id", auth, isInstructor, async (req, res) => {
+router.delete("/:id", requireAuth, requireTeacher, async (req, res) => {
   try {
     console.log('Delete request received:', {
       courseId: req.params.id,
@@ -671,7 +671,7 @@ router.delete("/:id", auth, isInstructor, async (req, res) => {
 });
 
 // Enroll in course (Authenticated users only)
-router.post("/enroll/:courseId", auth, async (req, res) => {
+router.post("/enroll/:courseId", requireAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
     const userId = req.user._id || req.user.id || req.user.userId;
@@ -789,7 +789,7 @@ router.post("/enroll/:courseId", auth, async (req, res) => {
 });
 
 // Unenroll from course (for debugging)
-router.post("/unenroll/:courseId", auth, async (req, res) => {
+router.post("/unenroll/:courseId", requireAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
     const userId = req.user.userId;
@@ -819,7 +819,7 @@ router.post("/unenroll/:courseId", auth, async (req, res) => {
 });
 
 // Update course progress
-router.post('/:id/progress', auth, async (req, res) => {
+router.post('/:id/progress', requireAuth, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) {
@@ -881,7 +881,7 @@ router.post('/:id/progress', auth, async (req, res) => {
 });
 
 // Get course progress (Authenticated users only)
-router.get("/:courseId/progress", auth, async (req, res) => {
+router.get("/:courseId/progress", requireAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
     const userId = req.user._id;

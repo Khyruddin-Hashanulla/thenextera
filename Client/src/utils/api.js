@@ -3,31 +3,26 @@ import axios from 'axios';
 // Use environment variable for API URL, fallback to localhost for development
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
-  withCredentials: true,
+  withCredentials: true, // Essential for session-based authentication
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Add a request interceptor to add the token
+// Add a request interceptor for session-based authentication
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      // Log request details for debugging
-      console.log('API Request:', {
-        method: config.method,
-        url: config.url,
-        hasToken: !!token,
-        headers: {
-          ...config.headers,
-          Authorization: config.headers.Authorization ? 'Bearer [REDACTED]' : undefined
-        }
-      });
-    } else {
-      console.warn('No token found in localStorage');
-    }
+    // For session-based auth, we don't need to add tokens
+    // The session cookie will be automatically sent with withCredentials: true
+    
+    // Log request details for debugging
+    console.log('API Request:', {
+      method: config.method,
+      url: config.url,
+      withCredentials: config.withCredentials,
+      hasAuthHeader: !!config.headers.Authorization
+    });
+    
     return config;
   },
   (error) => {
@@ -47,30 +42,30 @@ api.interceptors.response.use(
       status: response.status,
       url: response.config.url,
       method: response.config.method,
-      data: response.data
+      hasSessionData: !!response.data.sessionId
     });
     return response;
   },
   (error) => {
     console.error('API Error:', {
-      message: error.message,
       status: error.response?.status,
-      data: error.response?.data,
       url: error.config?.url,
       method: error.config?.method,
-      headers: error.config?.headers ? {
-        ...error.config.headers,
-        Authorization: error.config.headers.Authorization ? 'Bearer [REDACTED]' : undefined
-      } : undefined
+      message: error.message,
+      data: error.response?.data
     });
 
+    // Handle session expiration or authentication errors
     if (error.response?.status === 401) {
-      // Handle unauthorized access
-      console.log('Unauthorized access, clearing credentials');
-      localStorage.removeItem('token');
+      console.warn('Authentication failed - session may have expired');
+      // Clear local user data if session is invalid
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      localStorage.removeItem('token'); // Remove legacy token
+      
+      // Optionally redirect to login or dispatch logout action
+      // This depends on your app's routing setup
     }
+
     return Promise.reject(error);
   }
 );
@@ -172,4 +167,4 @@ api.uploadVideo = async (file) => {
   }
 };
 
-export default api; 
+export default api;

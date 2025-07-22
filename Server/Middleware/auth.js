@@ -1,74 +1,65 @@
-const jwt = require('jsonwebtoken');
-const User = require('../Models/User');
-
-// Ensure JWT_SECRET has a fallback value
-const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-secret-key';
-
-const auth = async (req, res, next) => {
-    try {
-        const token = req.header('Authorization')?.replace('Bearer ', '');
-        
-        if (!token) {
-            console.log('No token provided');
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-
-        try {
-            const decoded = jwt.verify(token, JWT_SECRET);
-            console.log('Token verified:', {
-                userId: decoded.id,
-                role: decoded.role,
-                exp: new Date(decoded.exp * 1000).toISOString()
-            });
-
-            const user = await User.findById(decoded.id);
-            if (!user) {
-                console.log('User not found for ID:', decoded.id);
-                return res.status(401).json({ error: 'User not found' });
-            }
-
-            // Ensure role matches between token and database
-            if (decoded.role !== user.role) {
-                console.log('Role mismatch:', {
-                    tokenRole: decoded.role,
-                    dbRole: user.role,
-                    userId: decoded.id
-                });
-                return res.status(401).json({ error: 'Invalid token' });
-            }
-
-            console.log('Auth successful:', { 
-                userId: user._id, 
-                role: user.role,
-                name: user.name
-            });
-
-            // Set user info in request object
-            req.user = {
-                userId: user._id.toString(),
-                _id: user._id,
-                id: user._id.toString(), // Add id field for compatibility
-                role: user.role,
-                name: user.name,
-                email: user.email
-            };
-
-            next();
-        } catch (err) {
-            console.error('Token verification failed:', err);
-            return res.status(401).json({ error: 'Invalid token' });
-        }
-    } catch (err) {
-        console.error('Auth middleware error:', err);
-        res.status(500).json({ error: 'Server error' });
-    }
+const requireAuth = (req, res, next) => {
+  if (!req.session || !req.session.isAuthenticated || !req.session.userId) {
+    return res.status(401).json({ 
+      error: "Authentication required. Please log in.",
+      requiresAuth: true 
+    });
+  }
+  
+  // Add user info to request object for easy access
+  // Include both id and _id for compatibility with existing routes
+  req.user = {
+    id: req.session.userId,
+    _id: req.session.userId,  // For compatibility with existing course routes
+    userId: req.session.userId, // Alternative access pattern
+    role: req.session.userRole,
+    name: req.session.userName,
+    email: req.session.userEmail
+  };
+  
+  next();
 };
 
-const isInstructor = (req, res, next) => {
-    if (req.user.role !== 'Instructor' && req.user.role !== 'Admin') {
-        return res.status(403).json({ error: 'Access denied. Instructor role required.' });
+// Role-based authorization middleware
+const requireRole = (roles) => {
+  return (req, res, next) => {
+    if (!req.session || !req.session.isAuthenticated) {
+      return res.status(401).json({ error: "Authentication required" });
     }
+    
+    const userRole = req.session.userRole;
+    const allowedRoles = Array.isArray(roles) ? roles : [roles];
+    
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({ 
+        error: `Access denied. Required role: ${allowedRoles.join(' or ')}` 
+      });
+    }
+    
+    // Add user info to request object for easy access
+    // Include both id and _id for compatibility with existing routes
+    req.user = {
+      id: req.session.userId,
+      _id: req.session.userId,  // For compatibility with existing course routes
+      userId: req.session.userId, // Alternative access pattern
+      role: req.session.userRole,
+      name: req.session.userName,
+      email: req.session.userEmail
+    };
+    
     next();
+  };
 };
 
-module.exports = { auth, isInstructor }; 
+// Admin only middleware
+const requireAdmin = requireRole(['Admin']);
+
+// Teacher or Admin middleware
+const requireTeacher = requireRole(['Teacher', 'Admin']);
+
+module.exports = {
+  requireAuth,
+  requireRole,
+  requireAdmin,
+  requireTeacher
+};
