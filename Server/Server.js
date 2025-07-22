@@ -93,11 +93,11 @@ app.use(
     saveUninitialized: false,
     store,
     cookie: {
-      secure: false, // Disable secure for local development
-      sameSite: 'lax', // Use 'lax' for local development
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      sameSite: process.env.NODE_ENV === "production" ? 'none' : 'lax', // 'none' for production cross-origin
       httpOnly: true, // Prevent XSS attacks
-      maxAge: 30 * 24 * 3600 * 1000, // ✅ 30 days in milliseconds
-      domain: undefined, // Let browser handle domain for localhost
+      maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
+      domain: process.env.NODE_ENV === "production" ? undefined : undefined, // Let browser handle domain
     },
   })
 );
@@ -130,6 +130,27 @@ try {
     })
   );
 }
+
+// Session debugging route (for deployment troubleshooting)
+app.get('/debug/session', (req, res) => {
+  res.json({
+    hasSession: !!req.session,
+    sessionId: req.session?.id,
+    isAuthenticated: req.session?.isAuthenticated,
+    userId: req.session?.userId,
+    userRole: req.session?.userRole,
+    userName: req.session?.userName,
+    userEmail: req.session?.userEmail,
+    cookieSettings: {
+      secure: req.session?.cookie?.secure,
+      sameSite: req.session?.cookie?.sameSite,
+      httpOnly: req.session?.cookie?.httpOnly,
+      maxAge: req.session?.cookie?.maxAge,
+      domain: req.session?.cookie?.domain
+    },
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 try {
   const courseRoutes = require("./Routes/Courses");
