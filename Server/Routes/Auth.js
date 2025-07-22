@@ -264,6 +264,21 @@ router.get("/test-auth", requireAuth, (req, res) => {
   });
 });
 
+// Session status endpoint for debugging (no auth required)
+router.get("/session-status", (req, res) => {
+  res.json({
+    hasSession: !!req.session,
+    sessionId: req.sessionID,
+    isAuthenticated: req.session?.isAuthenticated || false,
+    userId: req.session?.userId || null,
+    userRole: req.session?.userRole || null,
+    userName: req.session?.userName || null,
+    loginTime: req.session?.loginTime || null,
+    cookieMaxAge: req.session?.cookie?.maxAge || null,
+    sessionData: req.session || null
+  });
+});
+
 // Test route to debug token saving (remove after fixing)
 router.post("/test-token-save", async (req, res) => {
   try {

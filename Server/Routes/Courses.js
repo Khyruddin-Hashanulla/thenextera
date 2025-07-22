@@ -4,142 +4,202 @@ const Course = require("../Models/Course");
 const User = require("../Models/User");
 const mongoose = require("mongoose");
 const { requireAuth, requireTeacher } = require("../middleware/auth");
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
+const { 
+  uploadThumbnail, 
+  uploadVideo, 
+  uploadFromUrl, 
+  extractYouTubeId, 
+  getYouTubeThumbnail,
+  validateImageUrl,
+  validateVideoUrl,
+  deleteFromCloudinary,
+  DEFAULT_THUMBNAIL_URL 
+} = require('../config/cloudinary');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: async function (req, file, cb) {
-    const type = file.fieldname === 'video' ? 'videos' : 'images';
-    const dir = path.join(__dirname, `../uploads/${type}`);
-    try {
-      await fs.mkdir(dir, { recursive: true });
-      cb(null, dir);
-    } catch (error) {
-      cb(error);
-    }
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-// File filter
-const fileFilter = (req, file, cb) => {
-  console.log('Received file:', {
-    fieldname: file.fieldname,
-    originalname: file.originalname,
-    mimetype: file.mimetype
-  });
-
-  if (file.fieldname === 'video') {
-    // Accept video files
-    const validVideoTypes = [
-      'video/mp4',
-      'video/webm',
-      'video/ogg',
-      'video/quicktime',  // For .mov files
-      'video/x-msvideo',  // For .avi files
-      'video/x-matroska'  // For .mkv files
-    ];
-
-    if (validVideoTypes.includes(file.mimetype)) {
-      console.log('Valid video file accepted');
-      cb(null, true);
-    } else {
-      console.log('Invalid video file rejected');
-      cb(new Error(`Invalid video file type. Supported types: ${validVideoTypes.join(', ')}`));
-    }
-  } else {
-    // Accept image files
-    if (file.mimetype.startsWith('image/')) {
-      console.log('Valid image file accepted');
-      cb(null, true);
-    } else {
-      console.log('Invalid image file rejected');
-      cb(new Error('Please upload a valid image file'));
-    }
-  }
-};
-
-// Configure multer with file size limits
-const upload = multer({ 
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: (req, file) => {
-      const limit = file.fieldname === 'video' ? 500 * 1024 * 1024 : 5 * 1024 * 1024; // 500MB for videos, 5MB for images
-      console.log('File size limit:', {
-        fieldname: file.fieldname,
-        size: file.size,
-        limit: limit
-      });
-      return limit;
-    }
-  }
-});
-
-// Handle video uploads
-router.post('/upload/video', requireAuth, requireTeacher, upload.single('video'), async (req, res) => {
+// Upload thumbnail from file
+router.post('/upload/thumbnail', requireAuth, requireTeacher, uploadThumbnail.single('thumbnail'), async (req, res) => {
   try {
-    if (!req.file) {
-      console.log('No video file received');
-      return res.status(400).json({ error: 'No video file uploaded' });
-    }
-
-    console.log('Processing uploaded video:', {
-      originalname: req.file.originalname,
-      filename: req.file.filename,
-      mimetype: req.file.mimetype,
-      size: req.file.size
+    console.log('Thumbnail upload request:', {
+      hasSession: !!req.session,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+      hasFile: !!req.file,
+      sessionId: req.session?.id,
+      contentType: req.headers['content-type'],
+      bodyKeys: Object.keys(req.body || {}),
+      filesKeys: Object.keys(req.files || {}),
+      fileDetails: req.file ? {
+        fieldname: req.file.fieldname,
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : null
     });
 
-    // Create URL for the uploaded file
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${baseUrl}/uploads/videos/${req.file.filename}`;
+    if (!req.file) {
+      return res.status(400).json({ error: 'No thumbnail file provided' });
+    }
 
-    console.log('Generated video URL:', fileUrl);
-
-    res.json({ 
-      message: 'Video uploaded successfully',
-      url: fileUrl
+    console.log('Thumbnail uploaded successfully:', req.file.path);
+    
+    res.json({
+      success: true,
+      url: req.file.path,
+      publicId: req.file.filename
     });
   } catch (error) {
-    console.error('Error uploading video:', error);
-    res.status(500).json({ error: error.message || 'Error uploading video' });
+    console.error('Thumbnail upload error:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload thumbnail',
+      details: error.message 
+    });
   }
 });
 
-// Handle image uploads
-router.post('/upload', requireAuth, requireTeacher, upload.single('file'), async (req, res) => {
+// Upload thumbnail from URL
+router.post('/upload/thumbnail-url', requireAuth, requireTeacher, async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+    console.log('Thumbnail URL upload request:', {
+      hasSession: !!req.session,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+      url: req.body.url,
+      sessionId: req.session?.id
+    });
+
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'No URL provided' });
     }
 
-    const type = req.body.type || 'image';
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${baseUrl}/uploads/${type}s/${req.file.filename}`;
+    // Check if it's a YouTube URL
+    const youtubeId = extractYouTubeId(url);
+    let thumbnailUrl;
+    
+    if (youtubeId) {
+      // Use YouTube thumbnail
+      thumbnailUrl = getYouTubeThumbnail(youtubeId);
+      
+      // Upload YouTube thumbnail to Cloudinary for consistency
+      try {
+        const cloudinaryUrl = await uploadFromUrl(thumbnailUrl, 'image', 'course-thumbnails');
+        thumbnailUrl = cloudinaryUrl;
+      } catch (error) {
+        console.warn('Failed to upload YouTube thumbnail to Cloudinary, using direct URL:', error);
+      }
+    } else {
+      // Validate if it's a direct image URL
+      const isValidImage = await validateImageUrl(url);
+      if (!isValidImage) {
+        return res.status(400).json({ error: 'Invalid image URL provided' });
+      }
+      
+      // Upload to Cloudinary
+      thumbnailUrl = await uploadFromUrl(url, 'image', 'course-thumbnails');
+    }
 
-    res.json({ 
-      message: 'File uploaded successfully',
-      url: fileUrl
+    res.json({
+      success: true,
+      url: thumbnailUrl,
+      isYouTube: !!youtubeId
     });
   } catch (error) {
-    console.error('Error uploading file:', error);
-    res.status(500).json({ error: error.message || 'Error uploading file' });
+    console.error('Thumbnail URL upload error:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload thumbnail from URL',
+      details: error.message 
+    });
   }
 });
 
-// Serve uploaded files
-router.get('/uploads/:type/:filename', (req, res) => {
-  const { type, filename } = req.params;
-  const filePath = path.join(__dirname, `../uploads/${type}`, filename);
-  res.sendFile(filePath);
+// Upload video from file
+router.post('/upload/video', requireAuth, requireTeacher, uploadVideo.single('video'), async (req, res) => {
+  try {
+    console.log('Video upload request:', {
+      hasSession: !!req.session,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+      hasFile: !!req.file,
+      sessionId: req.session?.id
+    });
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No video file provided' });
+    }
+
+    console.log('Video uploaded successfully:', req.file.path);
+    
+    res.json({
+      success: true,
+      url: req.file.path,
+      publicId: req.file.filename,
+      duration: req.file.duration || 0
+    });
+  } catch (error) {
+    console.error('Video upload error:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload video',
+      details: error.message 
+    });
+  }
 });
+
+// Upload video from URL
+router.post('/upload/video-url', requireAuth, requireTeacher, async (req, res) => {
+  try {
+    console.log('Video URL upload request:', {
+      hasSession: !!req.session,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+      url: req.body.url,
+      sessionId: req.session?.id
+    });
+
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'No URL provided' });
+    }
+
+    // Check if it's a YouTube URL
+    const youtubeId = extractYouTubeId(url);
+    let videoUrl;
+    
+    if (youtubeId) {
+      // For YouTube videos, we'll store the embed URL
+      videoUrl = `https://www.youtube.com/embed/${youtubeId}`;
+    } else {
+      // Validate if it's a direct video URL
+      const isValidVideo = await validateVideoUrl(url);
+      if (!isValidVideo) {
+        return res.status(400).json({ error: 'Invalid video URL provided' });
+      }
+      
+      // Upload to Cloudinary
+      videoUrl = await uploadFromUrl(url, 'video', 'course-videos');
+    }
+
+    res.json({
+      success: true,
+      url: videoUrl,
+      isYouTube: !!youtubeId,
+      youtubeId: youtubeId
+    });
+  } catch (error) {
+    console.error('Video URL upload error:', error);
+    res.status(500).json({ 
+      error: 'Failed to upload video from URL',
+      details: error.message 
+    });
+  }
+});
+
+
 
 // Get all courses (Public)
 router.get("/", async (req, res) => {
@@ -908,6 +968,25 @@ router.get("/:courseId/progress", requireAuth, async (req, res) => {
     console.error("Error fetching progress:", error);
     res.status(500).json({ error: "Error fetching progress" });
   }
+});
+
+// Test authentication endpoint
+router.get('/test-auth', requireAuth, requireTeacher, (req, res) => {
+  res.json({
+    success: true,
+    message: 'Authentication working',
+    user: {
+      id: req.user.id,
+      role: req.user.role,
+      name: req.user.name,
+      email: req.user.email
+    },
+    session: {
+      isAuthenticated: req.session.isAuthenticated,
+      userId: req.session.userId,
+      userRole: req.session.userRole
+    }
+  });
 });
 
 module.exports = router;

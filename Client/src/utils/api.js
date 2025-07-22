@@ -4,9 +4,8 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
   withCredentials: true, // Essential for session-based authentication
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  // Don't set global Content-Type - let axios set it automatically based on data type
+  // This allows FormData to be sent as multipart/form-data for file uploads
 });
 
 // Add a request interceptor for session-based authentication
@@ -14,6 +13,12 @@ api.interceptors.request.use(
   (config) => {
     // For session-based auth, we don't need to add tokens
     // The session cookie will be automatically sent with withCredentials: true
+    
+    // Set Content-Type for non-FormData requests
+    if (!(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json';
+    }
+    // For FormData, let axios set multipart/form-data automatically
     
     // Log request details for debugging
     console.log('API Request:', {
@@ -70,16 +75,15 @@ api.interceptors.response.use(
   }
 );
 
-// File upload helper function
+// File upload helper function (for thumbnails)
 api.uploadFile = async (file, type = 'image') => {
   try {
     // Create form data
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', type);
+    formData.append('thumbnail', file); // Backend expects 'thumbnail' field name
 
-    // Upload file
-    const response = await api.post('/api/courses/upload', formData, {
+    // Upload file to thumbnail endpoint
+    const response = await api.post('/api/courses/upload/thumbnail', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -97,8 +101,7 @@ api.uploadImage = async (file) => {
   try {
     // Create form data
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', 'image');
+    formData.append('thumbnail', file); // Backend expects 'thumbnail' field name
 
     console.log('Uploading image file:', {
       name: file.name,
@@ -106,8 +109,8 @@ api.uploadImage = async (file) => {
       size: file.size
     });
 
-    // Upload image
-    const response = await api.post('/api/courses/upload', formData, {
+    // Upload image to thumbnail endpoint
+    const response = await api.post('/api/courses/upload/thumbnail', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

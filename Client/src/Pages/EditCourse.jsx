@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import api from "../utils/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import MediaUpload from '../components/MediaUpload';
 
 const EditCourse = () => {
   const { courseId } = useParams();
@@ -158,17 +159,12 @@ const EditCourse = () => {
     }
   };
 
-  const handleThumbnailUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleThumbnailUpload = (url) => {
+    setFormData(prev => ({ ...prev, thumbnail: url }));
+  };
 
-    try {
-      const thumbnailUrl = await api.uploadImage(file);
-      setFormData(prev => ({ ...prev, thumbnail: thumbnailUrl }));
-    } catch (error) {
-      console.error('Thumbnail upload failed:', error);
-      setError('Failed to upload thumbnail. Please try again.');
-    }
+  const handleVideoUpload = (sectionIndex, videoIndex) => (url) => {
+    handleVideoChange(sectionIndex, videoIndex, 'url', url);
   };
 
   const handleSubmit = async (e) => {
@@ -303,20 +299,12 @@ const EditCourse = () => {
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleThumbnailUpload}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                        <button
-                          type="button"
-                          className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
-                        >
-                          Upload Image
-                        </button>
-                      </div>
+                      <MediaUpload
+                        type="thumbnail"
+                        onSuccess={handleThumbnailUpload}
+                        onError={(error) => setError(`Thumbnail upload failed: ${error}`)}
+                        placeholder="Enter image URL or YouTube video URL..."
+                      />
                     </div>
                   </div>
                 </div>
@@ -412,34 +400,13 @@ const EditCourse = () => {
                                   placeholder="Video URL or upload file"
                                   className="flex-1 px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm"
                                 />
-                                <div className="relative">
-                                  <input
-                                    type="file"
-                                    accept="video/*"
-                                    onChange={(e) => handleFileUpload(e, sectionIndex, videoIndex)}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    disabled={uploading}
-                                  />
-                                  <button
-                                    type="button"
-                                    className={`px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors ${
-                                      uploading ? 'opacity-50 cursor-not-allowed' : ''
-                                    }`}
-                                    disabled={uploading}
-                                  >
-                                    📁
-                                  </button>
-                                </div>
+                                <MediaUpload
+                                  type="video"
+                                  onSuccess={handleVideoUpload(sectionIndex, videoIndex)}
+                                  onError={(error) => setError(`Video upload failed: ${error}`)}
+                                  placeholder="Enter video URL or YouTube URL..."
+                                />
                               </div>
-
-                              {uploadProgress[`${sectionIndex}-${videoIndex}`] > 0 && uploadProgress[`${sectionIndex}-${videoIndex}`] < 100 && (
-                                <div className="w-full bg-gray-400 rounded-full h-1">
-                                  <div
-                                    className="bg-blue-600 h-1 rounded-full transition-all duration-300"
-                                    style={{ width: `${uploadProgress[`${sectionIndex}-${videoIndex}`]}%` }}
-                                  />
-                                </div>
-                              )}
 
                               <textarea
                                 value={video.description}

@@ -38,6 +38,7 @@ const allowedOrigins = [
   "https://thenextera.in",
   "https://www.thenextera.in",
   "http://localhost:5173", // Dev frontend
+  "http://localhost:5174", // Dev frontend (alternate port)
   "https://nextera-vaaq.onrender.com", // Production fullstack
   "https://khyruddin-hashanulla.github.io" // If using GitHub Pages
 ];
@@ -54,7 +55,16 @@ const corsOptions = {
 };
 
 if (process.env.NODE_ENV !== "production") {
-  corsOptions.origin = "http://localhost:5173";
+  // Allow multiple localhost ports in development
+  corsOptions.origin = function (origin, callback) {
+    if (!origin || origin.startsWith('http://localhost:')) {
+      callback(null, true);
+    } else if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS blocked for this origin"));
+    }
+  };
 }
 
 app.use(cors(corsOptions));
@@ -84,9 +94,11 @@ app.use(
     saveUninitialized: false,
     store,
     cookie: {
-      secure: process.env.NODE_ENV === "production",
-      sameSite: 'none', // Important for cross-origin
+      secure: false, // Disable secure for local development
+      sameSite: 'lax', // Use 'lax' for local development
+      httpOnly: true, // Prevent XSS attacks
       maxAge: 30 * 24 * 3600 * 1000, // ✅ 30 days in milliseconds
+      domain: undefined, // Let browser handle domain for localhost
     },
   })
 );
@@ -115,17 +127,6 @@ try {
 }
 
 // Serve static files (production only)
-// if (process.env.NODE_ENV === "production") {
-//   const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
-//   app.use(express.static(clientBuildPath));
-
-//   app.get("*", (req, res) => {
-//     if (req.path.startsWith("/api") || req.path.startsWith("/auth")) {
-//       return res.status(404).json({ error: "API endpoint not found" });
-//     }
-//     res.sendFile(path.join(clientBuildPath, "index.html"));
-//   });
-// }
 
 if (process.env.NODE_ENV === "production") {
   const clientBuildPath = path.join(__dirname, "..", "Client", "dist");
@@ -153,7 +154,20 @@ main()
   });
 
 async function main() {
-  await mongoose.connect(dbUrl);
+  await mongoose.connect(dbUrl, {
+    // SSL/TLS configuration for MongoDB Atlas
+    ssl: true,
+    sslValidate: true,
+    // Connection options
+    serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    serverApi: {
+      version: '1',
+      strict: true,
+      deprecationErrors: true,
+    }
+  });
 }
 
 const PORT = process.env.PORT || 8080;
@@ -161,3 +175,4 @@ app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
 });
+// Restart trigger

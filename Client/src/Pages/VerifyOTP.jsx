@@ -92,10 +92,10 @@ const VerifyOTP = () => {
     <div className="min-h-screen flex items-center justify-center bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-100">
             Verify Your Email
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-100">
             We've sent a 6-digit code to
           </p>
           <p className="text-center text-sm font-medium text-blue-600">
@@ -129,7 +129,7 @@ const VerifyOTP = () => {
             <div className="text-green-600 text-sm text-center">{resendMessage}</div>
           )}
 
-          <div className="text-center text-sm text-gray-600">
+          <div className="text-center text-sm text-gray-100">
             {timeLeft > 0 ? (
               <p>Code expires in: <span className="font-mono font-bold">{formatTime(timeLeft)}</span></p>
             ) : (

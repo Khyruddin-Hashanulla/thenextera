@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const { DEFAULT_THUMBNAIL_URL } = require('../config/cloudinary');
 
 const progressSchema = new Schema({
   userId: { 
@@ -73,7 +74,25 @@ const sectionSchema = new Schema({
 const courseSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String, default: '' },
-  thumbnail: { type: String, default: '' },
+  thumbnail: { 
+    type: String, 
+    default: DEFAULT_THUMBNAIL_URL,
+    validate: {
+      validator: function(v) {
+        // If empty or null, use default
+        if (!v) return true;
+        // Basic URL validation
+        try {
+          new URL(v);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      message: 'Thumbnail must be a valid URL'
+    }
+  },
+  thumbnailPublicId: { type: String, default: '' }, // For Cloudinary deletion
   sections: {
     type: [sectionSchema],
     required: true,
@@ -114,6 +133,12 @@ courseSchema.pre('save', function(next) {
     // Update timestamp
     this.updatedAt = new Date();
 
+    // Set default thumbnail if empty or invalid
+    if (!this.thumbnail || this.thumbnail.trim() === '') {
+      this.thumbnail = DEFAULT_THUMBNAIL_URL;
+      this.thumbnailPublicId = '';
+    }
+
     // Ensure sections exist
     if (!this.sections) {
       this.sections = [];
@@ -132,6 +157,11 @@ courseSchema.pre('save', function(next) {
     next(error);
   }
 });
+
+// Method to get safe thumbnail URL with fallback
+courseSchema.methods.getSafeThumbnail = function() {
+  return this.thumbnail && this.thumbnail.trim() !== '' ? this.thumbnail : DEFAULT_THUMBNAIL_URL;
+};
 
 // Add indexes for better query performance
 courseSchema.index({ creatorId: 1 });

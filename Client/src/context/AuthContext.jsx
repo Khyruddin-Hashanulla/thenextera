@@ -33,28 +33,26 @@ const AuthProvider = ({ children }) => {
       }
     };
 
-    const token = localStorage.getItem('token');
+    // Remove JWT token logic - using session-based authentication only
+    localStorage.removeItem('token'); // Clean up any old JWT tokens
+    
+    // Remove any Authorization headers that might interfere with session cookies
+    delete api.defaults.headers.common['Authorization'];
+    
     const storedUser = localStorage.getItem('user');
     
-    if (token) {
-      // Set the token in the API instance
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-          setLoading(false);
-        } catch (err) {
-          console.error('Failed to parse stored user data:', err);
-          localStorage.removeItem('user');
-          checkRememberMe();
-        }
-      } else {
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to parse stored user data:', err);
+        localStorage.removeItem('user');
         checkRememberMe();
       }
     } else {
-      setLoading(false);
+      checkRememberMe();
     }
   }, []);
 

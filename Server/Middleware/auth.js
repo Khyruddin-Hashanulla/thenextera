@@ -54,8 +54,8 @@ const requireRole = (roles) => {
 // Admin only middleware
 const requireAdmin = requireRole(['Admin']);
 
-// Teacher or Admin middleware
-const requireTeacher = requireRole(['Teacher', 'Admin']);
+// Teacher, Instructor, or Admin middleware
+const requireTeacher = requireRole(['Teacher', 'Instructor', 'Admin']);
 
 module.exports = {
   requireAuth,
