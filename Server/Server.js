@@ -195,6 +195,15 @@ try {
   );
 }
 
+// Mobile authentication test routes
+try {
+  const mobileAuthTest = require('./mobile-auth-test');
+  app.use('/debug', mobileAuthTest);
+  console.log('✅ Mobile auth test routes loaded successfully');
+} catch (error) {
+  console.error('❌ Mobile auth test routes failed to load:', error.message);
+}
+
 // Enhanced session debugging route (for deployment troubleshooting)
 app.get('/debug/session', (req, res) => {
   const sessionInfo = {
