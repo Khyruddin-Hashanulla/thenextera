@@ -106,13 +106,28 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Validate critical environment variables
+const requiredEnvVars = ['SESSION_SECRET', 'ATLASDB_URL'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.warn('Missing environment variables:', missingEnvVars);
+}
+
 // API Routes
 try {
-  app.use("/auth", require("./Routes/Auth"));
+  const authRoutes = require("./Routes/Auth");
+  app.use("/auth", authRoutes);
+  console.log("✅ Auth routes loaded successfully");
 } catch (error) {
-  console.warn("Auth routes not found:", error.message);
+  console.error("❌ Auth routes failed to load:", error.message);
+  console.error("Full error:", error);
+  console.error("Stack trace:", error.stack);
   app.use("/auth", (req, res) =>
-    res.status(501).json({ message: "Authentication routes not implemented" })
+    res.status(501).json({ 
+      message: "Authentication routes not implemented",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   );
 }
 
@@ -165,7 +180,7 @@ async function main() {
   });
 }
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);

@@ -5,7 +5,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { sendVerificationOTP, sendPasswordResetEmail } = require("../utils/emailService");
 const passport = require("passport");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth } = require("../Middleware/auth");
 
 // Generate 6-digit OTP
 const generateOTP = () => {

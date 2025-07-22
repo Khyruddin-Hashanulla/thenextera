@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Use environment variable for API URL, fallback to localhost for development
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8081',
   withCredentials: true, // Essential for session-based authentication
   // Don't set global Content-Type - let axios set it automatically based on data type
   // This allows FormData to be sent as multipart/form-data for file uploads
