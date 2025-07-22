@@ -23,10 +23,13 @@ console.log('\n📦 Testing Module Imports:');
 // Test each dependency
 const dependencies = [
   { name: 'User Model', path: './Models/User' },
+  { name: 'Course Model', path: './Models/Course' },
   { name: 'Email Service', path: './utils/emailService' },
-  { name: 'Auth Middleware', path: './middleware/auth' },
+  { name: 'Auth Middleware', path: './Middleware/auth' },
+  { name: 'Cloudinary Config', path: './config/cloudinary' },
   { name: 'Passport Config', path: './config/passport' },
-  { name: 'Auth Routes', path: './Routes/Auth' }
+  { name: 'Auth Routes', path: './Routes/Auth' },
+  { name: 'Course Routes', path: './Routes/Courses' }
 ];
 
 dependencies.forEach(dep => {

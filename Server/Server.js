@@ -132,11 +132,18 @@ try {
 }
 
 try {
-  app.use("/api/courses", require("./Routes/Courses"));
+  const courseRoutes = require("./Routes/Courses");
+  app.use("/api/courses", courseRoutes);
+  console.log("✅ Course routes loaded successfully");
 } catch (error) {
-  console.warn("Course routes not found:", error.message);
+  console.error("❌ Course routes failed to load:", error.message);
+  console.error("Full error:", error);
+  console.error("Stack trace:", error.stack);
   app.use("/api/courses", (req, res) =>
-    res.status(501).json({ message: "Course routes not implemented" })
+    res.status(501).json({ 
+      message: "Course routes not implemented",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   );
 }
 

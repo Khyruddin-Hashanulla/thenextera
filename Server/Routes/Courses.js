@@ -3,7 +3,7 @@ const router = express.Router();
 const Course = require("../Models/Course");
 const User = require("../Models/User");
 const mongoose = require("mongoose");
-const { requireAuth, requireTeacher } = require("../middleware/auth");
+const { requireAuth, requireTeacher } = require("../Middleware/auth");
 const { 
   uploadThumbnail, 
   uploadVideo, 
