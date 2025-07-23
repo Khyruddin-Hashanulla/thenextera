@@ -233,6 +233,12 @@ app.get('/debug/session', (req, res) => {
     isAuthenticated: req.session?.isAuthenticated || false,
     userId: req.session?.userId,
     userRole: req.session?.userRole,
+    userName: req.session?.userName,
+    userEmail: req.session?.userEmail,
+    loginTime: req.session?.loginTime,
+    
+    // Full session data for debugging
+    fullSessionData: req.session || {},
     
     // Device Detection
     isIPhone,

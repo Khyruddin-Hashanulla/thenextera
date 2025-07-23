@@ -204,45 +204,100 @@ router.post("/login", async (req, res) => {
       req.session.touch();
     }
 
-    // Save session explicitly to ensure it's written to MongoDB
-    req.session.save((err) => {
-      if (err) {
-        console.error('Session save error:', err);
-        return res.status(500).json({ error: "Session creation failed" });
-      }
-
-      // Log the user data being sent
-      console.log('Login successful:', {
-        userId: user._id,
-        role: user.role,
-        name: user.name,
-        email: user.email,
-        sessionId: req.sessionID,
-        isIPhoneSafari,
-        sessionData: req.session
+    // iPhone Safari: Force session regeneration for better persistence
+    if (isIPhoneSafari) {
+      console.log('🍎 iPhone Safari: Regenerating session for better persistence');
+      req.session.regenerate((err) => {
+        if (err) {
+          console.error('iPhone Safari session regeneration error:', err);
+          return res.status(500).json({ error: "Session creation failed" });
+        }
+        
+        // Re-set all session data after regeneration
+        req.session.userId = user._id.toString();
+        req.session.userRole = user.role;
+        req.session.userName = user.name;
+        req.session.userEmail = user.email;
+        req.session.loginTime = new Date();
+        req.session.isAuthenticated = true;
+        req.session.isIPhoneSafari = true;
+        req.session.iphoneLoginTime = new Date().toISOString();
+        
+        if (rememberMe) {
+          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+          req.session.rememberMe = true;
+        } else {
+          req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000;
+          req.session.rememberMe = false;
+        }
+        
+        // Force save after regeneration
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error('iPhone Safari session save error after regeneration:', saveErr);
+            return res.status(500).json({ error: "Session save failed" });
+          }
+          
+          console.log('🍎 iPhone Safari session regenerated and saved successfully:', {
+            sessionId: req.sessionID,
+            isAuthenticated: req.session.isAuthenticated,
+            userId: req.session.userId
+          });
+          
+          // Set iPhone Safari specific headers
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+          res.setHeader('Pragma', 'no-cache');
+          res.setHeader('Expires', '0');
+          res.setHeader('Set-Cookie-SameSite', 'None');
+          
+          res.json({ 
+            success: true,
+            user: { 
+              id: user._id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+              isEmailVerified: user.isEmailVerified 
+            },
+            sessionId: req.sessionID,
+            isIPhoneSafari: true,
+            sessionRegenerated: true
+          });
+        });
       });
+    } else {
+      // Regular session save for non-iPhone Safari browsers
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ error: "Session creation failed" });
+        }
 
-      // iPhone Safari: Set additional response headers for better cookie handling
-      if (isIPhoneSafari) {
-        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
-        res.setHeader('Pragma', 'no-cache');
-        res.setHeader('Expires', '0');
-        res.setHeader('Set-Cookie-SameSite', 'None');
-      }
-
-      res.json({ 
-        success: true,
-        user: { 
-          id: user._id,
+        // Log the user data being sent
+        console.log('Login successful:', {
+          userId: user._id,
+          role: user.role,
           name: user.name,
           email: user.email,
-          role: user.role,
-          isEmailVerified: user.isEmailVerified 
-        },
-        sessionId: req.sessionID, // Optional: for debugging
-        isIPhoneSafari // Help frontend identify iPhone Safari users
+          sessionId: req.sessionID,
+          isIPhoneSafari,
+          sessionData: req.session
+        });
+
+        res.json({ 
+          success: true,
+          user: { 
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            isEmailVerified: user.isEmailVerified 
+          },
+          sessionId: req.sessionID,
+          isIPhoneSafari
+        });
       });
-    });
+    }
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: "Server error: " + error.message });
