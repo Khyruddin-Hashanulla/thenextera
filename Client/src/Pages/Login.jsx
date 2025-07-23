@@ -22,12 +22,12 @@ const Login = () => {
       const result = await login({ email, password, rememberMe });
       console.log('Login successful:', result);
       
-      // Use window.location for a full page reload to ensure state is fresh
-      // window.location.href = '/dashboard';
-      navigate('/dashboard');
-      setTimeout(() => {
-        setLoading(false);
-      }, 100); // Delay just enough to let context update
+      // iPhone Safari fix: Use window.location.href for proper session persistence
+      // This is critical for iPhone Safari to save the session cookie properly
+      window.location.href = '/dashboard';
+      
+      // Note: No need for setTimeout or navigate() when using window.location.href
+      // The page will reload and the session will be properly established
     } catch (err) {
       console.error('Login error:', err);
       
