@@ -207,7 +207,7 @@ app.use(
       secure: false, // DISABLE secure for iPhone Safari testing
       sameSite: 'lax', // Use lax instead of none for iPhone Safari
       httpOnly: false, // Allow JavaScript access for iPhone Safari debugging
-      maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
+      maxAge: 7 * 24 * 3600 * 1000, // 7 days - shorter for iPhone Safari
       domain: undefined, // Let browser handle domain
       // iPhone/Safari specific compatibility settings
       path: '/', // Explicit path for mobile browsers
@@ -263,6 +263,44 @@ try {
 }
 
 
+
+// iPhone Safari Cookie Debug Endpoint
+app.get('/debug/cookies', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  
+  const debugInfo = {
+    timestamp: new Date().toISOString(),
+    isIPhoneSafari,
+    userAgent,
+    headers: {
+      cookie: req.headers.cookie,
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      'user-agent': req.headers['user-agent']
+    },
+    cookies: req.cookies,
+    sessionID: req.sessionID,
+    sessionExists: !!req.session,
+    sessionData: req.session ? {
+      isAuthenticated: req.session.isAuthenticated,
+      userId: req.session.userId,
+      keys: Object.keys(req.session)
+    } : null,
+    rawCookieHeader: req.get('Cookie'),
+    allHeaders: req.headers
+  };
+  
+  // Force set cookies for iPhone Safari
+  if (isIPhoneSafari) {
+    res.setHeader('Set-Cookie', [
+      `debug-test=working; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=3600`,
+      `nextera-debug=${Date.now()}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=3600`
+    ]);
+  }
+  
+  res.json(debugInfo);
+});
 
 // Enhanced session debug route for iPhone/Safari testing
 app.get('/debug/session', (req, res) => {

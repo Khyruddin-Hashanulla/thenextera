@@ -14,10 +14,27 @@ const iphoneSafariSessionPersistence = (req, res, next) => {
       // Set session cookie explicitly for iPhone Safari
       if (req.sessionID && req.session) {
         const cookieValue = `nextera.sid=s%3A${req.sessionID}.${req.session.cookie.signature || 'signature'}`;
-        res.setHeader('Set-Cookie', [
-          `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`,
-          `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`
-        ]);
+        // Multiple cookie setting strategies for iPhone Safari
+        const sessionCookie = `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
+        const authCookie = `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
+        const simpleCookie = `nextera-simple=${req.sessionID}; Path=/; Max-Age=604800`;
+        
+        res.setHeader('Set-Cookie', [sessionCookie, authCookie, simpleCookie]);
+        
+        // Also try setting individual cookies
+        res.cookie('nextera.sid', `s%3A${req.sessionID}.signature`, {
+          path: '/',
+          httpOnly: false,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 604800000
+        });
+        
+        console.log('🍎 iPhone Safari: Multiple cookie strategies applied:', {
+          sessionCookie,
+          authCookie,
+          simpleCookie
+        });
         
         console.log('🍎 iPhone Safari: Forcing session cookie in response');
       }
@@ -28,10 +45,27 @@ const iphoneSafariSessionPersistence = (req, res, next) => {
     res.json = function(data) {
       // Set session cookie explicitly for iPhone Safari
       if (req.sessionID && req.session) {
-        res.setHeader('Set-Cookie', [
-          `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`,
-          `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`
-        ]);
+        // Multiple cookie setting strategies for iPhone Safari
+        const sessionCookie = `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
+        const authCookie = `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
+        const simpleCookie = `nextera-simple=${req.sessionID}; Path=/; Max-Age=604800`;
+        
+        res.setHeader('Set-Cookie', [sessionCookie, authCookie, simpleCookie]);
+        
+        // Also try setting individual cookies
+        res.cookie('nextera.sid', `s%3A${req.sessionID}.signature`, {
+          path: '/',
+          httpOnly: false,
+          secure: false,
+          sameSite: 'lax',
+          maxAge: 604800000
+        });
+        
+        console.log('🍎 iPhone Safari: Multiple cookie strategies applied:', {
+          sessionCookie,
+          authCookie,
+          simpleCookie
+        });
         
         console.log('🍎 iPhone Safari: Forcing session cookie in JSON response');
       }
@@ -44,6 +78,15 @@ const iphoneSafariSessionPersistence = (req, res, next) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.setHeader('Vary', 'User-Agent, Cookie');
+    
+    // Additional iPhone Safari cookie compatibility headers
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie');
+    res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
+    
+    // Force cookie acceptance for iPhone Safari
+    res.setHeader('P3P', 'CP="NOI ADM DEV PSAi COM NAV OUR OTRo STP IND DEM"');
   }
   
   next();
