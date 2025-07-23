@@ -159,6 +159,34 @@ app.use(detectMobile);
 const iphoneSafariFix = require('./iphone-safari-fix');
 app.use(iphoneSafariFix);
 
+// iPhone Safari session persistence fix - forces session cookies
+const iphoneSafariSessionPersistence = require('./iphone-safari-session-persistence');
+app.use(iphoneSafariSessionPersistence);
+
+// iPhone Safari session debugging middleware
+app.use((req, res, next) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  
+  if (isIPhoneSafari) {
+    console.log('🍎 iPhone Safari Request Debug:', {
+      method: req.method,
+      url: req.url,
+      sessionId: req.sessionID,
+      sessionExists: !!req.session,
+      cookies: req.headers.cookie,
+      hasSessionCookie: req.headers.cookie ? req.headers.cookie.includes('nextera.sid') : false,
+      sessionData: req.session ? {
+        isAuthenticated: req.session.isAuthenticated,
+        userId: req.session.userId,
+        keys: Object.keys(req.session)
+      } : null
+    });
+  }
+  
+  next();
+});
+
 console.log('🔧 Session Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
@@ -166,10 +194,11 @@ console.log('🔧 Session Configuration:', {
   HTTPS_DETECTED: !!process.env.RENDER || !!process.env.VERCEL
 });
 
+// iPhone Safari session configuration with enhanced compatibility
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
-    resave: false,
+    resave: true, // Force session save for iPhone Safari compatibility
     saveUninitialized: false,
     store,
     name: 'nextera.sid', // Custom session name
@@ -177,7 +206,7 @@ app.use(
     cookie: {
       secure: isProduction, // HTTPS required in production
       sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
-      httpOnly: true, // Prevent XSS attacks
+      httpOnly: false, // Allow JavaScript access for iPhone Safari debugging
       maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
       domain: undefined, // Let browser handle domain
       // iPhone/Safari specific compatibility settings
@@ -189,6 +218,18 @@ app.use(
     // Enhanced production settings
     proxy: isProduction, // Trust proxy in production
     unset: 'destroy', // Destroy session when unset
+    
+    // iPhone Safari specific session handling
+    genid: function(req) {
+      const userAgent = req.headers['user-agent'] || '';
+      const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+      
+      if (isIPhoneSafari) {
+        console.log('🍎 iPhone Safari: Generating new session ID');
+      }
+      
+      return require('uid-safe').sync(24); // Generate session ID
+    }
   })
 );
 
