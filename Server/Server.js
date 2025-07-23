@@ -204,10 +204,10 @@ app.use(
     name: 'nextera.sid', // Custom session name
     rolling: true, // Reset expiry on each request
     cookie: {
-      secure: false, // DISABLE secure for iPhone Safari testing
-      sameSite: 'lax', // Use lax instead of none for iPhone Safari
-      httpOnly: false, // Allow JavaScript access for iPhone Safari debugging
-      maxAge: 7 * 24 * 3600 * 1000, // 7 days - shorter for iPhone Safari
+      secure: isProduction, // HTTPS required in production for iPhone Safari
+      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
+      httpOnly: true, // Secure cookie - no JavaScript access
+      maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
       domain: undefined, // Let browser handle domain
       // iPhone/Safari specific compatibility settings
       path: '/', // Explicit path for mobile browsers

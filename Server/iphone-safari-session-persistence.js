@@ -15,19 +15,20 @@ const iphoneSafariSessionPersistence = (req, res, next) => {
       if (req.sessionID && req.session) {
         const cookieValue = `nextera.sid=s%3A${req.sessionID}.${req.session.cookie.signature || 'signature'}`;
         // Multiple cookie setting strategies for iPhone Safari
-        const sessionCookie = `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
-        const authCookie = `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
-        const simpleCookie = `nextera-simple=${req.sessionID}; Path=/; Max-Age=604800`;
+        const isProduction = process.env.NODE_ENV === 'production';
+        const sessionCookie = `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=true; Secure=${isProduction}; SameSite=${isProduction ? 'None' : 'Lax'}; Max-Age=2592000`;
+        const authCookie = `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=true; Secure=${isProduction}; SameSite=${isProduction ? 'None' : 'Lax'}; Max-Age=2592000`;
+        const simpleCookie = `nextera-simple=${req.sessionID}; Path=/; HttpOnly=false; Secure=${isProduction}; SameSite=${isProduction ? 'None' : 'Lax'}; Max-Age=2592000`;
         
         res.setHeader('Set-Cookie', [sessionCookie, authCookie, simpleCookie]);
         
         // Also try setting individual cookies
         res.cookie('nextera.sid', `s%3A${req.sessionID}.signature`, {
           path: '/',
-          httpOnly: false,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 604800000
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax',
+          maxAge: 2592000000
         });
         
         console.log('🍎 iPhone Safari: Multiple cookie strategies applied:', {
@@ -46,19 +47,20 @@ const iphoneSafariSessionPersistence = (req, res, next) => {
       // Set session cookie explicitly for iPhone Safari
       if (req.sessionID && req.session) {
         // Multiple cookie setting strategies for iPhone Safari
-        const sessionCookie = `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
-        const authCookie = `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=604800`;
-        const simpleCookie = `nextera-simple=${req.sessionID}; Path=/; Max-Age=604800`;
+        const isProduction = process.env.NODE_ENV === 'production';
+        const sessionCookie = `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=true; Secure=${isProduction}; SameSite=${isProduction ? 'None' : 'Lax'}; Max-Age=2592000`;
+        const authCookie = `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=true; Secure=${isProduction}; SameSite=${isProduction ? 'None' : 'Lax'}; Max-Age=2592000`;
+        const simpleCookie = `nextera-simple=${req.sessionID}; Path=/; HttpOnly=false; Secure=${isProduction}; SameSite=${isProduction ? 'None' : 'Lax'}; Max-Age=2592000`;
         
         res.setHeader('Set-Cookie', [sessionCookie, authCookie, simpleCookie]);
         
         // Also try setting individual cookies
         res.cookie('nextera.sid', `s%3A${req.sessionID}.signature`, {
           path: '/',
-          httpOnly: false,
-          secure: false,
-          sameSite: 'lax',
-          maxAge: 604800000
+          httpOnly: true,
+          secure: isProduction,
+          sameSite: isProduction ? 'none' : 'lax',
+          maxAge: 2592000000
         });
         
         console.log('🍎 iPhone Safari: Multiple cookie strategies applied:', {
