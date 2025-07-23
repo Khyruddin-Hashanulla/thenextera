@@ -204,66 +204,91 @@ router.post("/login", async (req, res) => {
       req.session.touch();
     }
 
-    // iPhone Safari: Force session regeneration for better persistence
+    // iPhone Safari: Enhanced session persistence with multiple save attempts
     if (isIPhoneSafari) {
-      console.log('🍎 iPhone Safari: Regenerating session for better persistence');
-      req.session.regenerate((err) => {
-        if (err) {
-          console.error('iPhone Safari session regeneration error:', err);
-          return res.status(500).json({ error: "Session creation failed" });
+      console.log('🍎 iPhone Safari: Applying enhanced session persistence strategy');
+      
+      // Force session touch and reload before saving
+      req.session.touch();
+      req.session.reload((reloadErr) => {
+        if (reloadErr) {
+          console.warn('iPhone Safari session reload warning:', reloadErr);
         }
         
-        // Re-set all session data after regeneration
+        // Set session data with explicit values
         req.session.userId = user._id.toString();
         req.session.userRole = user.role;
         req.session.userName = user.name;
         req.session.userEmail = user.email;
-        req.session.loginTime = new Date();
+        req.session.loginTime = new Date().toISOString();
         req.session.isAuthenticated = true;
         req.session.isIPhoneSafari = true;
         req.session.iphoneLoginTime = new Date().toISOString();
+        req.session.iphoneSessionTest = 'test-value-' + Date.now();
         
-        if (rememberMe) {
-          req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
-          req.session.rememberMe = true;
-        } else {
-          req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000;
-          req.session.rememberMe = false;
-        }
-        
-        // Force save after regeneration
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error('iPhone Safari session save error after regeneration:', saveErr);
-            return res.status(500).json({ error: "Session save failed" });
-          }
-          
-          console.log('🍎 iPhone Safari session regenerated and saved successfully:', {
-            sessionId: req.sessionID,
-            isAuthenticated: req.session.isAuthenticated,
-            userId: req.session.userId
-          });
-          
-          // Set iPhone Safari specific headers
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          res.setHeader('Set-Cookie-SameSite', 'None');
-          
-          res.json({ 
-            success: true,
-            user: { 
-              id: user._id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-              isEmailVerified: user.isEmailVerified 
-            },
-            sessionId: req.sessionID,
-            isIPhoneSafari: true,
-            sessionRegenerated: true
-          });
+        console.log('🍎 iPhone Safari session data before save:', {
+          sessionId: req.sessionID,
+          userId: req.session.userId,
+          isAuthenticated: req.session.isAuthenticated,
+          sessionKeys: Object.keys(req.session)
         });
+        
+        // Multiple save attempts for iPhone Safari
+        let saveAttempts = 0;
+        const maxSaveAttempts = 3;
+        
+        const attemptSave = () => {
+          saveAttempts++;
+          console.log(`🍎 iPhone Safari save attempt ${saveAttempts}/${maxSaveAttempts}`);
+          
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error(`iPhone Safari session save error (attempt ${saveAttempts}):`, saveErr);
+              
+              if (saveAttempts < maxSaveAttempts) {
+                console.log('🍎 Retrying iPhone Safari session save...');
+                setTimeout(attemptSave, 100); // Retry after 100ms
+                return;
+              } else {
+                return res.status(500).json({ 
+                  error: "Session save failed after multiple attempts",
+                  attempts: saveAttempts
+                });
+              }
+            }
+            
+            console.log('🍎 iPhone Safari session saved successfully:', {
+              sessionId: req.sessionID,
+              attempt: saveAttempts,
+              isAuthenticated: req.session.isAuthenticated,
+              userId: req.session.userId,
+              sessionData: req.session
+            });
+            
+            // Set iPhone Safari specific headers
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            res.setHeader('Vary', 'User-Agent, Origin');
+            
+            res.json({ 
+              success: true,
+              user: { 
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                isEmailVerified: user.isEmailVerified 
+              },
+              sessionId: req.sessionID,
+              isIPhoneSafari: true,
+              saveAttempts: saveAttempts,
+              sessionPersisted: true
+            });
+          });
+        };
+        
+        attemptSave();
       });
     } else {
       // Regular session save for non-iPhone Safari browsers

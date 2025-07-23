@@ -123,6 +123,10 @@ const store = MongoStore.create({
 store.on("error", (error) => {
   console.error("❌ MongoDB session store error:", error);
   console.error("Session store connection status:", {
+    readyState: store.client?.readyState,
+    error: error.message
+  });
+  console.error("Session store connection status:", {
     timestamp: new Date().toISOString(),
     error: error.message,
     stack: error.stack
@@ -283,17 +287,46 @@ app.get('/debug/session', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
   }
   
-  // Force session save for iPhone Safari
+  // iPhone Safari: Enhanced debug with session store verification
   if (isIPhoneSafari && req.session) {
     req.session.debugAccess = new Date().toISOString();
+    req.session.debugTest = 'debug-test-' + Date.now();
+    
+    console.log('🍎 iPhone Safari debug - Session before save:', {
+      sessionId: req.sessionID,
+      sessionKeys: Object.keys(req.session),
+      isAuthenticated: req.session.isAuthenticated,
+      userId: req.session.userId,
+      fullSession: req.session
+    });
+    
     req.session.save((err) => {
       if (err) {
         console.error('Debug session save error:', err);
         sessionInfo.sessionSaveError = err.message;
       } else {
         sessionInfo.sessionSaved = true;
+        console.log('🍎 iPhone Safari debug - Session saved successfully');
       }
-      res.json(sessionInfo);
+      
+      // Try to reload session to verify persistence
+      req.session.reload((reloadErr) => {
+        if (reloadErr) {
+          console.error('Debug session reload error:', reloadErr);
+          sessionInfo.sessionReloadError = reloadErr.message;
+        } else {
+          console.log('🍎 iPhone Safari debug - Session reloaded:', {
+            sessionId: req.sessionID,
+            isAuthenticated: req.session.isAuthenticated,
+            userId: req.session.userId,
+            debugTest: req.session.debugTest
+          });
+          sessionInfo.sessionReloaded = true;
+          sessionInfo.reloadedSessionData = req.session;
+        }
+        
+        res.json(sessionInfo);
+      });
     });
   } else {
     res.json(sessionInfo);
