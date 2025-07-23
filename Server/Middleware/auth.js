@@ -1,8 +1,43 @@
 const requireAuth = (req, res, next) => {
+  // iPhone Safari session persistence fix
+  const userAgent = req.headers['user-agent'] || '';
+  const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  
+  if (isIPhoneSafari) {
+    console.log('🍎 iPhone Safari auth check - Session details:', {
+      sessionExists: !!req.session,
+      sessionId: req.sessionID,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      cookies: req.headers.cookie
+    });
+    
+    // Force session touch for iPhone Safari
+    if (req.session) {
+      req.session.touch();
+      req.session.lastAuthCheck = new Date().toISOString();
+    }
+  }
+  
   if (!req.session || !req.session.isAuthenticated || !req.session.userId) {
+    console.log('❌ Authentication failed:', {
+      sessionExists: !!req.session,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      userAgent: isIPhoneSafari ? 'iPhone Safari' : 'Other',
+      sessionId: req.sessionID
+    });
+    
     return res.status(401).json({ 
       error: "Authentication required. Please log in.",
-      requiresAuth: true 
+      requiresAuth: true,
+      isIPhoneSafari,
+      sessionDebug: {
+        sessionExists: !!req.session,
+        sessionId: req.sessionID,
+        hasAuthFlag: req.session?.isAuthenticated,
+        hasUserId: !!req.session?.userId
+      }
     });
   }
   
@@ -16,6 +51,17 @@ const requireAuth = (req, res, next) => {
     name: req.session.userName,
     email: req.session.userEmail
   };
+  
+  // iPhone Safari: Force session save after successful auth
+  if (isIPhoneSafari && req.session) {
+    req.session.save((err) => {
+      if (err) {
+        console.error('iPhone Safari session save error:', err);
+      } else {
+        console.log('✅ iPhone Safari session saved successfully');
+      }
+    });
+  }
   
   next();
 };

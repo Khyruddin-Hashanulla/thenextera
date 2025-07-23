@@ -191,6 +191,19 @@ router.post("/login", async (req, res) => {
       req.session.rememberMe = false;
     }
 
+    // iPhone Safari detection for enhanced session handling
+    const userAgent = req.headers['user-agent'] || '';
+    const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    
+    if (isIPhoneSafari) {
+      console.log('🍎 iPhone Safari login detected - applying enhanced session persistence');
+      req.session.isIPhoneSafari = true;
+      req.session.iphoneLoginTime = new Date().toISOString();
+      
+      // Set additional iPhone Safari session flags
+      req.session.touch();
+    }
+
     // Save session explicitly to ensure it's written to MongoDB
     req.session.save((err) => {
       if (err) {
@@ -205,8 +218,17 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         sessionId: req.sessionID,
+        isIPhoneSafari,
         sessionData: req.session
       });
+
+      // iPhone Safari: Set additional response headers for better cookie handling
+      if (isIPhoneSafari) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        res.setHeader('Set-Cookie-SameSite', 'None');
+      }
 
       res.json({ 
         success: true,
@@ -217,7 +239,8 @@ router.post("/login", async (req, res) => {
           role: user.role,
           isEmailVerified: user.isEmailVerified 
         },
-        sessionId: req.sessionID // Optional: for debugging
+        sessionId: req.sessionID, // Optional: for debugging
+        isIPhoneSafari // Help frontend identify iPhone Safari users
       });
     });
   } catch (error) {

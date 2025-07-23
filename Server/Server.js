@@ -151,9 +151,9 @@ const detectMobile = (req, res, next) => {
 
 app.use(detectMobile);
 
-// Mobile session compatibility fix - temporarily disabled for debugging
-// const mobileSessionFix = require('./mobile-session-fix');
-// app.use(mobileSessionFix);
+// iPhone Safari session fix - critical for iPhone Safari session persistence
+const iphoneSafariFix = require('./iphone-safari-fix');
+app.use(iphoneSafariFix);
 
 console.log('🔧 Session Configuration:', {
   NODE_ENV: process.env.NODE_ENV,
@@ -219,24 +219,79 @@ try {
 
 
 
-// Simple session debug route for iPhone/Safari testing
+// Enhanced session debug route for iPhone/Safari testing
 app.get('/debug/session', (req, res) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isIPhone = /iPhone/.test(userAgent);
+  const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  const isIPhoneSafari = isIPhone && isSafari;
+  
   const sessionInfo = {
+    // Session Status
     sessionExists: !!req.session,
+    sessionId: req.sessionID,
     isAuthenticated: req.session?.isAuthenticated || false,
     userId: req.session?.userId,
-    isIOS: /iPhone|iPad|iPod/.test(req.headers['user-agent']),
-    isSafari: /Safari/.test(req.headers['user-agent']) && !/Chrome/.test(req.headers['user-agent']),
+    userRole: req.session?.userRole,
+    
+    // Device Detection
+    isIPhone,
+    isSafari,
+    isIPhoneSafari,
+    userAgent,
+    
+    // Cookie Information
     cookies: req.headers.cookie,
-    timestamp: new Date().toISOString()
+    cookieCount: req.headers.cookie ? req.headers.cookie.split(';').length : 0,
+    hasSessionCookie: req.headers.cookie ? req.headers.cookie.includes('nextera.sid') : false,
+    
+    // Request Headers
+    origin: req.headers.origin,
+    referer: req.headers.referer,
+    
+    // Session Configuration
+    sessionConfig: {
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      httpOnly: true,
+      maxAge: 30 * 24 * 3600 * 1000,
+      path: '/'
+    },
+    
+    // Environment
+    isProduction,
+    nodeEnv: process.env.NODE_ENV,
+    timestamp: new Date().toISOString(),
+    
+    // iPhone Safari Specific
+    iphoneSafariFlags: req.session ? {
+      isIPhoneSafari: req.session.isIPhoneSafari,
+      lastAccess: req.session.lastAccess
+    } : null
   };
   
+  // Set iPhone Safari compatible headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   if (req.headers.origin) {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin);
   }
   
-  res.json(sessionInfo);
+  // Force session save for iPhone Safari
+  if (isIPhoneSafari && req.session) {
+    req.session.debugAccess = new Date().toISOString();
+    req.session.save((err) => {
+      if (err) {
+        console.error('Debug session save error:', err);
+        sessionInfo.sessionSaveError = err.message;
+      } else {
+        sessionInfo.sessionSaved = true;
+      }
+      res.json(sessionInfo);
+    });
+  } else {
+    res.json(sessionInfo);
+  }
 });
 
 // Mobile authentication test routes - temporarily disabled for debugging
