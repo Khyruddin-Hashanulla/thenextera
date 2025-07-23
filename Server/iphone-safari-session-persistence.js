@@ -15,8 +15,8 @@ const iphoneSafariSessionPersistence = (req, res, next) => {
       if (req.sessionID && req.session) {
         const cookieValue = `nextera.sid=s%3A${req.sessionID}.${req.session.cookie.signature || 'signature'}`;
         res.setHeader('Set-Cookie', [
-          `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=${process.env.NODE_ENV === 'production'}; SameSite=${process.env.NODE_ENV === 'production' ? 'None' : 'Lax'}; Max-Age=2592000`,
-          `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=${process.env.NODE_ENV === 'production'}; SameSite=${process.env.NODE_ENV === 'production' ? 'None' : 'Lax'}; Max-Age=2592000`
+          `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`,
+          `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`
         ]);
         
         console.log('🍎 iPhone Safari: Forcing session cookie in response');
@@ -29,8 +29,8 @@ const iphoneSafariSessionPersistence = (req, res, next) => {
       // Set session cookie explicitly for iPhone Safari
       if (req.sessionID && req.session) {
         res.setHeader('Set-Cookie', [
-          `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=${process.env.NODE_ENV === 'production'}; SameSite=${process.env.NODE_ENV === 'production' ? 'None' : 'Lax'}; Max-Age=2592000`,
-          `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=${process.env.NODE_ENV === 'production'}; SameSite=${process.env.NODE_ENV === 'production' ? 'None' : 'Lax'}; Max-Age=2592000`
+          `nextera.sid=s%3A${req.sessionID}.signature; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`,
+          `nextera-auth=${req.session.isAuthenticated || false}; Path=/; HttpOnly=false; Secure=false; SameSite=Lax; Max-Age=2592000`
         ]);
         
         console.log('🍎 iPhone Safari: Forcing session cookie in JSON response');
