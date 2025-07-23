@@ -161,6 +161,11 @@ app.use(iphoneSafariFix);
 
 // iPhone Safari session persistence fix - forces session cookies
 const iphoneSafariSessionPersistence = require('./iphone-safari-session-persistence');
+const iphoneSafariSessionRecovery = require('./iphone-safari-session-recovery');
+
+// Apply iPhone Safari session recovery middleware first
+app.use(iphoneSafariSessionRecovery);
+// Then apply session persistence middleware
 app.use(iphoneSafariSessionPersistence);
 
 // iPhone Safari session debugging middleware

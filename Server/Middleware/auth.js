@@ -9,13 +9,23 @@ const requireAuth = (req, res, next) => {
       sessionId: req.sessionID,
       isAuthenticated: req.session?.isAuthenticated,
       userId: req.session?.userId,
-      cookies: req.headers.cookie
+      cookies: req.headers.cookie,
+      allSessionKeys: req.session ? Object.keys(req.session) : []
     });
     
-    // Force session touch for iPhone Safari
+    // Force session touch and save for iPhone Safari
     if (req.session) {
       req.session.touch();
       req.session.lastAuthCheck = new Date().toISOString();
+      
+      // Force session save for iPhone Safari to ensure persistence
+      req.session.save((err) => {
+        if (err) {
+          console.error('🍎 iPhone Safari session save error in auth middleware:', err);
+        } else {
+          console.log('🍎 iPhone Safari session saved in auth middleware');
+        }
+      });
     }
   }
   
