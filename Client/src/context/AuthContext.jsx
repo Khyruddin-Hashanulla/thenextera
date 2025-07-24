@@ -261,7 +261,11 @@ const AuthProvider = ({ children }) => {
     resetPassword,
     updateProfile,
     isAuthenticated: !!user,
-    isIPhoneSafari: isIPhoneSafari()
+    isIPhoneSafari: isIPhoneSafari(),
+    // Role-based helper properties
+    isInstructor: user?.role === 'Instructor' || user?.role === 'Teacher' || user?.role === 'Admin',
+    isAdmin: user?.role === 'Admin',
+    isStudent: user?.role === 'Student'
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

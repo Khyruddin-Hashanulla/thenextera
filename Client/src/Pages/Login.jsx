@@ -74,15 +74,6 @@ const Login = () => {
           </p>
         </div>
 
-        {/* Debug info for iPhone Safari */}
-        {isIPhoneSafari && (
-          <div className="rounded-md bg-blue-50 p-4">
-            <div className="text-sm text-blue-700">
-              🍎 iPhone Safari detected - Using JWT authentication
-            </div>
-          </div>
-        )}
-
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4">

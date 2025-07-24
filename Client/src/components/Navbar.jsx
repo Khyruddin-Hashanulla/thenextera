@@ -5,7 +5,7 @@ import logo from '../assets/logo.png';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isInstructor } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -24,6 +24,13 @@ const Navbar = () => {
     } else {
       navigate('/login', { state: { redirectTo: '/courses' } });
     }
+    if (isMenuOpen) {
+      setIsMenuOpen(false);
+    }
+  };
+
+  const handleCreateCourseClick = () => {
+    navigate('/courses/create');
     if (isMenuOpen) {
       setIsMenuOpen(false);
     }
@@ -71,16 +78,68 @@ const Navbar = () => {
           </div>
 
           {/* User menu / auth buttons */}
-          <div className="hidden lg:flex items-center space-x-4">
+          <div className="hidden lg:flex items-center space-x-6">
             {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-white font-medium text-sm sm:text-base truncate max-w-32">{user.name}</span>
+              <div className="flex items-center space-x-5">
+                {/* Create Course button for instructors - positioned before logout */}
+                {isInstructor && (
+                  <button
+                    onClick={handleCreateCourseClick}
+                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-md transition-all duration-200 text-sm font-medium border border-green-500 flex items-center gap-2"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                    Create Course
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-md transition-all duration-200 text-sm font-medium border border-blue-500"
                 >
                   Logout
                 </button>
+                <div className="flex flex-col items-center space-y-1">
+                  {/* Profile Picture */}
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-400 shadow-lg hover:border-blue-400 transition-colors duration-200">
+                    {user.profilePic ? (
+                      <img 
+                        src={user.profilePic} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-inner ${user.profilePic ? 'hidden' : 'flex'}`}
+                    >
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  </div>
+                  {/* Role Badge */}
+                  {isInstructor ? (
+                    <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-xs font-semibold border border-green-500/30">
+                      Instructor
+                    </span>
+                  ) : (
+                    <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full text-xs font-semibold border border-blue-500/30">
+                      Student
+                    </span>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center space-x-4">
@@ -114,71 +173,115 @@ const Navbar = () => {
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="lg:hidden absolute top-full left-0 right-0 bg-gradient-to-b from-gray-900 to-black border-t border-gray-700 shadow-xl z-50">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            <button 
-              onClick={handleHomeClick}
+        <div className="px-2 pt-2 pb-3 space-y-1">
+          <button 
+            onClick={handleHomeClick}
+            className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 bg-transparent border-none font-medium rounded-md transition-colors duration-200"
+          >
+            Home
+          </button>
+          <button 
+            onClick={handleCoursesClick}
+            className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 bg-transparent border-none font-medium rounded-md transition-colors duration-200"
+          >
+            Courses
+          </button>
+          {user && (
+            <button
+              onClick={() => {
+                navigate('/dashboard');
+                setIsMenuOpen(false);
+              }}
               className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 bg-transparent border-none font-medium rounded-md transition-colors duration-200"
             >
-              Home
+              Dashboard
             </button>
-            <button 
-              onClick={handleCoursesClick}
-              className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 bg-transparent border-none font-medium rounded-md transition-colors duration-200"
+          )}
+          {/* Mobile instructor navigation */}
+          {isInstructor && (
+            <button
+              onClick={handleCreateCourseClick}
+              className="block w-full text-left px-4 py-3 text-green-400 hover:bg-white/10 bg-transparent border-none font-medium rounded-md transition-colors duration-200 flex items-center gap-2"
             >
-              Courses
-            </button>
-            {user && (
-              <button
-                onClick={() => {
-                  navigate('/dashboard');
-                  setIsMenuOpen(false);
-                }}
-                className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 bg-transparent border-none font-medium rounded-md transition-colors duration-200"
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                Dashboard
-              </button>
-            )}
-          </div>
-          {user ? (
-            <div className="border-t border-gray-700 pt-4 pb-3">
-              <div className="px-4 py-2">
-                <p className="text-white font-medium text-base">{user.name}</p>
-                {user.email && <p className="text-gray-400 text-sm mt-1">{user.email}</p>}
-              </div>
-              <div className="px-2">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Create Course
+            </button>
+          )}
+          
+          {/* Mobile user section */}
+          <div className="border-t border-gray-700 pt-4 mt-4">
+            {user ? (
+              <div className="space-y-1">
+                <div className="px-4 py-2 flex items-center">
+                  <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-300 mr-2">
+                    {user.profilePic ? (
+                      <img 
+                        src={user.profilePic} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm ${user.profilePic ? 'hidden' : 'flex'}`}
+                    >
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  </div>
+                  <div>
+                    {isInstructor ? (
+                      <p className="text-green-400 text-sm">Instructor</p>
+                    ) : (
+                      <p className="text-blue-400 text-sm">Student</p>
+                    )}
+                  </div>
+                </div>
                 <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMenuOpen(false);
-                  }}
-                  className="block w-full text-left px-4 py-3 text-white hover:bg-red-600/20 bg-transparent border-none font-medium rounded-md transition-colors duration-200"
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 bg-transparent border-none font-medium rounded-md transition-colors duration-200"
                 >
                   Logout
                 </button>
               </div>
-            </div>
-          ) : (
-            <div className="border-t border-gray-700 pt-4 pb-3 px-2 space-y-2">
-              <Link 
-                to="/login" 
-                onClick={() => setIsMenuOpen(false)}
-                className="block w-full text-left px-4 py-3 text-white hover:bg-white/10 font-medium rounded-md transition-colors duration-200"
-              >
-                Log in
-              </Link>
-              <Link 
-                to="/register" 
-                onClick={() => setIsMenuOpen(false)}
-                className="block w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-3 rounded-md text-center font-medium transition-all duration-200 border border-blue-500"
-              >
-                Sign up
-              </Link>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-1">
+                <Link 
+                  to="/login" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block px-4 py-3 text-white hover:bg-white/10 font-medium rounded-md transition-colors duration-200"
+                >
+                  Log in
+                </Link>
+                <Link 
+                  to="/register" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block px-4 py-3 text-white hover:bg-white/10 font-medium rounded-md transition-colors duration-200"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
+      </div>
       )}
     </nav>
   );
 };
 
-export default Navbar; 
+export default Navbar;
