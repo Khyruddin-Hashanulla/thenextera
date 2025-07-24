@@ -10,23 +10,31 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isIPhoneSafari } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       setError('');
       setLoading(true);
-      console.log('Attempting login with:', { email, rememberMe });
+      console.log('Attempting login with:', { email, rememberMe, isIPhoneSafari });
       
       const result = await login({ email, password, rememberMe });
       console.log('Login successful:', result);
       
-      // iPhone Safari fix: Use window.location.href for proper session persistence
-      // This is critical for iPhone Safari to save the session cookie properly
-      window.location.href = '/dashboard';
+      if (isIPhoneSafari) {
+        // For iPhone Safari with JWT, use navigate instead of window.location.href
+        // This preserves the JWT token stored in localStorage
+        console.log('🍎 iPhone Safari: Navigating to dashboard with JWT authentication');
+        navigate('/dashboard');
+      } else {
+        // For other browsers with session auth, use window.location.href for proper session persistence
+        // This is critical for iPhone Safari to save the session cookie properly
+        console.log('🖥️ Regular browser: Redirecting to dashboard with session authentication');
+        window.location.href = '/dashboard';
+      }
       
-      // Note: No need for setTimeout or navigate() when using window.location.href
+      // Note: No need for setTimeout when using window.location.href
       // The page will reload and the session will be properly established
     } catch (err) {
       console.error('Login error:', err);
@@ -66,6 +74,15 @@ const Login = () => {
           </p>
         </div>
 
+        {/* Debug info for iPhone Safari */}
+        {isIPhoneSafari && (
+          <div className="rounded-md bg-blue-50 p-4">
+            <div className="text-sm text-blue-700">
+              🍎 iPhone Safari detected - Using JWT authentication
+            </div>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
             <div className="rounded-md bg-red-50 p-4">
@@ -98,7 +115,7 @@ const Login = () => {
                 name="password"
                 type="password"
                 required
-                className="appearance-none rounded-none rounded-b-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -116,7 +133,7 @@ const Login = () => {
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-200">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-100">
                 Remember me
               </label>
             </div>
@@ -124,7 +141,7 @@ const Login = () => {
             <div className="text-sm">
               <Link
                 to="/forgot-password"
-                className="font-medium text-indigo-500 hover:text-indigo-400"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
               >
                 Forgot your password?
               </Link>
@@ -135,7 +152,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white hover:opacity-80 px-4 py-2 rounded-md transition-colors"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -147,19 +164,18 @@ const Login = () => {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 border-2 border-gray-400 rounded-md bg-gray-50 text-gray-500">Or continue with</span>
+                <span className="px-2 bg-gray-900 text-gray-400">Or continue with</span>
               </div>
             </div>
 
             <div className="mt-6">
-              {/* Single button for Google login, centered */}
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-white/90"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
-                <FaGoogle className="h-5 w-5 text-sky-500" />
-                <span className="ml-2 font-bold text-gray-500 hover:text-gray-400">Google</span>
+                <FaGoogle className="h-5 w-5 text-red-500" />
+                <span className="ml-2">Google</span>
               </button>
             </div>
           </div>
@@ -169,4 +185,4 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;

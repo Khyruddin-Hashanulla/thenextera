@@ -1,5 +1,11 @@
 import axios from 'axios';
 
+// iPhone Safari detection utility
+const isIPhoneSafari = () => {
+  const userAgent = navigator.userAgent;
+  return /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+};
+
 // Use environment variable for API URL, fallback to localhost for development
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8081',
@@ -8,11 +14,20 @@ const api = axios.create({
   // This allows FormData to be sent as multipart/form-data for file uploads
 });
 
-// Add a request interceptor for session-based authentication
+// Add a request interceptor for hybrid authentication
 api.interceptors.request.use(
   (config) => {
-    // For session-based auth, we don't need to add tokens
-    // The session cookie will be automatically sent with withCredentials: true
+    const isIPhoneSafariBrowser = isIPhoneSafari();
+    
+    if (isIPhoneSafariBrowser) {
+      // For iPhone Safari, use JWT authentication
+      const token = localStorage.getItem('jwt_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log('🍎 iPhone Safari: Adding JWT token to request');
+      }
+    }
+    // For other browsers, session cookies are automatically sent with withCredentials: true
     
     // Set Content-Type for non-FormData requests
     if (!(config.data instanceof FormData)) {
@@ -25,7 +40,9 @@ api.interceptors.request.use(
       method: config.method,
       url: config.url,
       withCredentials: config.withCredentials,
-      hasAuthHeader: !!config.headers.Authorization
+      hasAuthHeader: !!config.headers.Authorization,
+      isIPhoneSafari: isIPhoneSafariBrowser,
+      authType: isIPhoneSafariBrowser ? 'jwt' : 'session'
     });
     
     return config;
@@ -47,28 +64,41 @@ api.interceptors.response.use(
       status: response.status,
       url: response.config.url,
       method: response.config.method,
-      hasSessionData: !!response.data.sessionId
+      hasSessionData: !!response.data.sessionId,
+      hasJWTToken: !!response.data.token,
+      authType: response.data.authType
     });
+    
     return response;
   },
   (error) => {
     console.error('API Error:', {
       status: error.response?.status,
+      message: error.response?.data?.error || error.message,
       url: error.config?.url,
       method: error.config?.method,
-      message: error.message,
-      data: error.response?.data
+      authType: error.response?.data?.authType
     });
 
-    // Handle session expiration or authentication errors
+    // Handle authentication errors
     if (error.response?.status === 401) {
-      console.warn('Authentication failed - session may have expired');
-      // Clear local user data if session is invalid
-      localStorage.removeItem('user');
-      localStorage.removeItem('token'); // Remove legacy token
+      const isIPhoneSafariBrowser = isIPhoneSafari();
       
-      // Optionally redirect to login or dispatch logout action
-      // This depends on your app's routing setup
+      if (isIPhoneSafariBrowser) {
+        // For iPhone Safari, clear JWT token and redirect to login
+        console.log('🍎 iPhone Safari: JWT authentication failed, clearing token');
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user');
+      } else {
+        // For other browsers, clear session data
+        console.log('🖥️ Regular browser: Session authentication failed');
+        localStorage.removeItem('user');
+      }
+      
+      // Redirect to login page
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.href = '/login';
+      }
     }
 
     return Promise.reject(error);
@@ -76,98 +106,46 @@ api.interceptors.response.use(
 );
 
 // File upload helper function (for thumbnails)
-api.uploadFile = async (file, type = 'image') => {
-  try {
-    // Create form data
-    const formData = new FormData();
-    formData.append('thumbnail', file); // Backend expects 'thumbnail' field name
-
-    // Upload file to thumbnail endpoint
-    const response = await api.post('/api/courses/upload/thumbnail', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-
-    return response.data.url;
-  } catch (error) {
-    console.error('File upload error:', error);
-    throw error;
-  }
+const uploadFile = (file, type = 'image') => {
+  const formData = new FormData();
+  formData.append(type, file);
+  
+  return api.post(`/api/courses/upload/${type}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 };
 
 // Image upload helper function (for thumbnails)
-api.uploadImage = async (file) => {
-  try {
-    // Create form data
-    const formData = new FormData();
-    formData.append('thumbnail', file); // Backend expects 'thumbnail' field name
-
-    console.log('Uploading image file:', {
-      name: file.name,
-      type: file.type,
-      size: file.size
-    });
-
-    // Upload image to thumbnail endpoint
-    const response = await api.post('/api/courses/upload/thumbnail', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-
-    console.log('Image upload response:', response.data);
-    return response.data.url;
-  } catch (error) {
-    console.error('Image upload error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
-    throw error;
-  }
+const uploadImage = (file) => {
+  const formData = new FormData();
+  formData.append('thumbnail', file);
+  
+  return api.post('/api/courses/upload/thumbnail', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
 };
 
 // Video upload helper function
-api.uploadVideo = async (file) => {
-  try {
-    // Validate video file
-    if (!file.type.startsWith('video/')) {
-      throw new Error('Invalid file type. Please upload a video file.');
-    }
-
-    console.log('Uploading video file:', {
-      name: file.name,
-      type: file.type,
-      size: file.size
-    });
-
-    // Create form data
-    const formData = new FormData();
-    formData.append('video', file);
-
-    // Upload video with progress tracking
-    const response = await api.post('/api/courses/upload/video', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        console.log('Upload progress:', percentCompleted);
-        // You can use this to update a progress bar
-      }
-    });
-
-    console.log('Upload response:', response.data);
-    return response.data.url;
-  } catch (error) {
-    console.error('Video upload error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status
-    });
-    throw error;
-  }
+const uploadVideo = (file) => {
+  const formData = new FormData();
+  formData.append('video', file);
+  
+  return api.post('/api/courses/upload/video', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    onUploadProgress: (progressEvent) => {
+      const percentCompleted = Math.round(
+        (progressEvent.loaded * 100) / progressEvent.total
+      );
+      console.log(`Upload Progress: ${percentCompleted}%`);
+    },
+  });
 };
 
+export { isIPhoneSafari };
 export default api;

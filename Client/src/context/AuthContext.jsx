@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import api from '../utils/api';
+import api, { isIPhoneSafari } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
@@ -14,46 +14,73 @@ const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check for remember me token
-    const checkRememberMe = async () => {
+    const initializeAuth = async () => {
       try {
-        const response = await api.get('/api/auth/check-remember-me');
-        if (response.data.user) {
-          setUser(response.data.user);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+        const isIPhoneSafariBrowser = isIPhoneSafari();
+        
+        if (isIPhoneSafariBrowser) {
+          // For iPhone Safari, check for JWT token
+          console.log('🍎 iPhone Safari detected - checking JWT authentication');
+          const token = localStorage.getItem('jwt_token');
+          const storedUser = localStorage.getItem('user');
+          
+          if (token && storedUser) {
+            try {
+              const userData = JSON.parse(storedUser);
+              setUser(userData);
+              console.log('🍎 iPhone Safari: Restored user from JWT token');
+            } catch (err) {
+              console.error('🍎 iPhone Safari: Failed to parse stored user data:', err);
+              localStorage.removeItem('jwt_token');
+              localStorage.removeItem('user');
+            }
+          } else {
+            console.log('🍎 iPhone Safari: No JWT token found');
+          }
+        } else {
+          // For other browsers, check session-based authentication
+          console.log('🖥️ Regular browser detected - checking session authentication');
+          
+          // Check for remember me token
+          try {
+            const response = await api.get('/api/auth/check-remember-me');
+            if (response.data.user) {
+              setUser(response.data.user);
+              localStorage.setItem('user', JSON.stringify(response.data.user));
+              console.log('🖥️ Regular browser: Restored user from remember me');
+            }
+          } catch (err) {
+            console.error('🖥️ Regular browser: Remember me check failed:', err);
+            
+            // Check if there's stored user data from a previous session
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              try {
+                const userData = JSON.parse(storedUser);
+                setUser(userData);
+                console.log('🖥️ Regular browser: Restored user from localStorage');
+              } catch (parseErr) {
+                console.error('🖥️ Regular browser: Failed to parse stored user data:', parseErr);
+                localStorage.removeItem('user');
+              }
+            }
+          }
         }
       } catch (err) {
-        console.error('Remember me check failed:', err);
-        // Clear invalid data
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        setUser(null);
+        console.error('Auth initialization error:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    // Remove JWT token logic - using session-based authentication only
-    localStorage.removeItem('token'); // Clean up any old JWT tokens
-    
-    // Remove any Authorization headers that might interfere with session cookies
-    delete api.defaults.headers.common['Authorization'];
-    
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Failed to parse stored user data:', err);
-        localStorage.removeItem('user');
-        checkRememberMe();
-      }
-    } else {
-      checkRememberMe();
+    // Clean up any old JWT tokens if not on iPhone Safari
+    if (!isIPhoneSafari()) {
+      localStorage.removeItem('jwt_token');
+      // Remove any Authorization headers that might interfere with session cookies
+      delete api.defaults.headers.common['Authorization'];
     }
+    
+    initializeAuth();
   }, []);
 
   const register = async (userData) => {
@@ -96,128 +123,127 @@ const AuthProvider = ({ children }) => {
       
       console.log('Full login response:', response.data);
       
-      // Handle session-based response structure
-      const { user, success, sessionId } = response.data;
+      const isIPhoneSafariBrowser = isIPhoneSafari();
       
-      console.log('Login response:', {
-        user,
-        success,
-        hasSessionId: !!sessionId
-      });
-      
-      // Check if login was successful and user data exists
-      if (success && user) {
-        // Ensure consistent id field
-        const normalizedUser = {
-          ...user,
-          id: user.id || user._id, // Normalize the ID field
-          _id: user._id || user.id  // Keep both versions
-        };
+      if (isIPhoneSafariBrowser && response.data.authType === 'jwt') {
+        // Handle JWT authentication for iPhone Safari
+        console.log('🍎 iPhone Safari: Handling JWT login response');
         
-        console.log('Normalized user data:', normalizedUser);
+        const { token, user } = response.data;
         
-        setUser(normalizedUser);
-        // Store user data but no token (session-based auth)
-        localStorage.setItem('user', JSON.stringify(normalizedUser));
+        if (!token) {
+          throw new Error('No JWT token received from server');
+        }
         
-        // Remove JWT token from API headers (using session cookies now)
-        delete api.defaults.headers.common['Authorization'];
+        // Store JWT token and user data
+        localStorage.setItem('jwt_token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
         
-        // Ensure cookies are sent with requests for session-based auth
-        api.defaults.withCredentials = true;
+        console.log('🍎 iPhone Safari: JWT authentication successful:', {
+          userId: user.id,
+          role: user.role,
+          tokenStored: !!localStorage.getItem('jwt_token')
+        });
         
-        console.log('Login successful - session-based authentication active');
+        return response.data;
       } else {
-        console.error('Login failed - invalid response structure:', response.data);
-        throw new Error('Invalid response from server');
+        // Handle session-based authentication for other browsers
+        console.log('🖥️ Regular browser: Handling session login response');
+        
+        const { user, success, sessionId } = response.data;
+        
+        if (!success || !user) {
+          throw new Error('Login failed - invalid response structure');
+        }
+        
+        // Store user data for session-based auth
+        localStorage.setItem('user', JSON.stringify(user));
+        setUser(user);
+        
+        console.log('🖥️ Regular browser: Session authentication successful:', {
+          userId: user.id,
+          role: user.role,
+          sessionId: sessionId
+        });
+        
+        return response.data;
       }
-      
-      return response.data;
     } catch (err) {
-      console.error('Login error:', {
-        error: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
-      // Extract the error message properly from backend response
-      const errorMessage = err.response?.data?.error || 
-                          err.response?.data?.message || 
-                          err.response?.data || 
-                          'Login failed. Please try again.';
-      
-      setError(errorMessage);
+      console.error('Login error:', err);
+      setError(err.response?.data || 'Login failed');
       throw err;
     }
   };
 
   const logout = async () => {
     try {
-      // Try to call the logout endpoint to destroy session on server
-      try {
-        const response = await api.post('/api/auth/logout');
-        console.log('Server logout successful:', response.data);
-      } catch (err) {
-        console.warn('Logout request failed:', err);
-        // Continue with local cleanup even if server request fails
+      setError(null);
+      const isIPhoneSafariBrowser = isIPhoneSafari();
+      
+      if (isIPhoneSafariBrowser) {
+        // For iPhone Safari, just clear local storage (no server logout needed for JWT)
+        console.log('🍎 iPhone Safari: Logging out (clearing JWT token)');
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user');
+      } else {
+        // For other browsers, call server logout to destroy session
+        console.log('🖥️ Regular browser: Logging out (destroying session)');
+        try {
+          await api.post('/api/auth/logout');
+        } catch (err) {
+          console.error('Server logout error:', err);
+          // Continue with local cleanup even if server logout fails
+        }
+        localStorage.removeItem('user');
       }
-
-      // Clear local storage (remove token reference since we're using sessions)
-      localStorage.removeItem('token'); // Keep for backward compatibility
-      localStorage.removeItem('user');
       
-      // Clear auth header (not needed for sessions but good cleanup)
-      delete api.defaults.headers.common['Authorization'];
-      
-      // Ensure cookies are still sent for future requests
-      api.defaults.withCredentials = true;
-      
-      // Clear user state
       setUser(null);
+      console.log('Logout successful');
+    } catch (err) {
+      console.error('Logout error:', err);
+      setError(err.response?.data || 'Logout failed');
+      throw err;
+    }
+  };
+
+  const forgotPassword = async (emailData) => {
+    try {
       setError(null);
+      const response = await api.post('/api/auth/forgot-password', emailData);
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data || 'Failed to send reset email');
+      throw err;
+    }
+  };
+
+  const resetPassword = async (resetData) => {
+    try {
+      setError(null);
+      const response = await api.post(`/api/auth/reset-password/${resetData.token}`, {
+        password: resetData.password
+      });
+      return response.data;
+    } catch (err) {
+      setError(err.response?.data || 'Password reset failed');
+      throw err;
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      setError(null);
+      const response = await api.put('/api/auth/profile', profileData);
       
-      console.log('Client logout completed - session should be destroyed');
-      return true;
-    } catch (err) {
-      console.error('Logout failed:', err);
-      // Still return true as we've cleared local state
-      return true;
-    }
-  };
-
-  const forgotPassword = async (email) => {
-    try {
-      setError(null);
-      const response = await api.post('/api/auth/forgot-password', { email });
+      // Update user state with new profile data
+      const updatedUser = { ...user, ...response.data.user };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
       return response.data;
     } catch (err) {
-      setError(err.response?.data || 'Password reset request failed');
-      throw err;
-    }
-  };
-
-  const resetPassword = async (token, newPassword) => {
-    try {
-      setError(null);
-      console.log('AuthContext: Making reset password request');
-      const response = await api.post(`/api/auth/reset-password/${token}`, { password: newPassword });
-      console.log('AuthContext: Reset password response:', response.data);
-      return response.data;
-    } catch (err) {
-      console.error('AuthContext: Reset password error:', err);
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.response?.data || 'Password reset failed';
-      setError(errorMessage);
-      throw err;
-    }
-  };
-
-  const verifyEmail = async (token) => {
-    try {
-      setError(null);
-      const response = await api.get(`/api/auth/verify-email/${token}`);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data || 'Email verification failed');
+      setError(err.response?.data || 'Profile update failed');
       throw err;
     }
   };
@@ -233,9 +259,9 @@ const AuthProvider = ({ children }) => {
     logout,
     forgotPassword,
     resetPassword,
-    verifyEmail,
-    isInstructor: user?.role === 'Instructor' || user?.role === 'Admin',  // Changed to proper case
-    isAdmin: user?.role === 'Admin'  // Add missing isAdmin property
+    updateProfile,
+    isAuthenticated: !!user,
+    isIPhoneSafari: isIPhoneSafari()
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -248,11 +274,13 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   useEffect(() => {
     if (!loading && !user) {
+      console.log('ProtectedRoute: User not authenticated, redirecting to login');
       navigate('/login');
-    }
-    
-    if (!loading && user && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-      navigate('/');
+    } else if (!loading && user && allowedRoles.length > 0) {
+      if (!allowedRoles.includes(user.role)) {
+        console.log('ProtectedRoute: User role not authorized:', user.role, 'Required:', allowedRoles);
+        navigate('/unauthorized');
+      }
     }
   }, [user, loading, navigate, allowedRoles]);
 
@@ -260,8 +288,16 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     return <div>Loading...</div>;
   }
 
+  if (!user) {
+    return null; // Will redirect to login
+  }
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    return null; // Will redirect to unauthorized
+  }
+
   return children;
 };
 
 // Export all components and hooks at once - remove any previous exports
-export { AuthProvider, useAuth, ProtectedRoute }; 
+export { AuthProvider, useAuth, ProtectedRoute };
