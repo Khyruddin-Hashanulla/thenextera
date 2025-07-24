@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,7 +10,24 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
   const { token } = useParams();
   const navigate = useNavigate();
-  const { resetPassword } = useAuth();
+  const { resetPassword, user, logout } = useAuth();
+
+  // Add debugging and handle logged-in users
+  useEffect(() => {
+    console.log('ResetPassword component mounted');
+    console.log('Token from URL:', token);
+    console.log('Current user state:', user);
+    
+    // If user is already logged in, log them out for password reset
+    if (user) {
+      console.log('User is logged in during password reset, logging out...');
+      logout().then(() => {
+        console.log('User logged out for password reset');
+      }).catch(err => {
+        console.error('Error logging out user for password reset:', err);
+      });
+    }
+  }, [user, logout, token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
