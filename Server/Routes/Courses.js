@@ -18,24 +18,18 @@ const {
 const { requireHybridAuth, requireRole: hybridRequireRole, requireTeacher: hybridRequireTeacher } = require("../Middleware/jwt-auth");
 
 // Upload thumbnail from file
-router.post('/upload/thumbnail', requireAuth, requireTeacher, uploadThumbnail.single('thumbnail'), async (req, res) => {
+router.post('/upload/thumbnail', requireHybridAuth, hybridRequireTeacher, uploadThumbnail.single('thumbnail'), async (req, res) => {
   try {
     console.log('Thumbnail upload request:', {
       hasSession: !!req.session,
       isAuthenticated: req.session?.isAuthenticated,
-      userId: req.session?.userId,
-      userRole: req.session?.userRole,
+      userId: req.session?.userId || req.user?.id,
+      userRole: req.session?.userRole || req.user?.role,
       hasFile: !!req.file,
       sessionId: req.session?.id,
       contentType: req.headers['content-type'],
-      bodyKeys: Object.keys(req.body || {}),
-      filesKeys: Object.keys(req.files || {}),
-      fileDetails: req.file ? {
-        fieldname: req.file.fieldname,
-        originalname: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size
-      } : null
+      authType: req.authType,
+      userAgent: req.headers['user-agent']
     });
 
     if (!req.file) {
@@ -59,13 +53,13 @@ router.post('/upload/thumbnail', requireAuth, requireTeacher, uploadThumbnail.si
 });
 
 // Upload thumbnail from URL
-router.post('/upload/thumbnail-url', requireAuth, requireTeacher, async (req, res) => {
+router.post('/upload/thumbnail-url', requireHybridAuth, hybridRequireTeacher, async (req, res) => {
   try {
     console.log('Thumbnail URL upload request:', {
       hasSession: !!req.session,
       isAuthenticated: req.session?.isAuthenticated,
-      userId: req.session?.userId,
-      userRole: req.session?.userRole,
+      userId: req.session?.userId || req.user?.id,
+      userRole: req.session?.userRole || req.user?.role,
       url: req.body.url,
       sessionId: req.session?.id
     });
@@ -117,13 +111,13 @@ router.post('/upload/thumbnail-url', requireAuth, requireTeacher, async (req, re
 });
 
 // Upload video from file
-router.post('/upload/video', requireAuth, requireTeacher, uploadVideo.single('video'), async (req, res) => {
+router.post('/upload/video', requireHybridAuth, hybridRequireTeacher, uploadVideo.single('video'), async (req, res) => {
   try {
     console.log('Video upload request:', {
       hasSession: !!req.session,
       isAuthenticated: req.session?.isAuthenticated,
-      userId: req.session?.userId,
-      userRole: req.session?.userRole,
+      userId: req.session?.userId || req.user?.id,
+      userRole: req.session?.userRole || req.user?.role,
       hasFile: !!req.file,
       sessionId: req.session?.id
     });
@@ -150,13 +144,13 @@ router.post('/upload/video', requireAuth, requireTeacher, uploadVideo.single('vi
 });
 
 // Upload video from URL
-router.post('/upload/video-url', requireAuth, requireTeacher, async (req, res) => {
+router.post('/upload/video-url', requireHybridAuth, hybridRequireTeacher, async (req, res) => {
   try {
     console.log('Video URL upload request:', {
       hasSession: !!req.session,
       isAuthenticated: req.session?.isAuthenticated,
-      userId: req.session?.userId,
-      userRole: req.session?.userRole,
+      userId: req.session?.userId || req.user?.id,
+      userRole: req.session?.userRole || req.user?.role,
       url: req.body.url,
       sessionId: req.session?.id
     });
@@ -460,7 +454,7 @@ const formatCourseData = (course, user, req) => {
 };
 
 // Add course (Instructor/Admin only)
-router.post("/add", requireAuth, requireTeacher, async (req, res) => {
+router.post("/add", requireHybridAuth, hybridRequireTeacher, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -849,7 +843,7 @@ router.post("/enroll/:courseId", requireHybridAuth, async (req, res) => {
 });
 
 // Unenroll from course (for debugging)
-router.post("/unenroll/:courseId", requireAuth, async (req, res) => {
+router.post("/unenroll/:courseId", requireHybridAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
     const userId = req.user.userId;

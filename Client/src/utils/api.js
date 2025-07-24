@@ -110,11 +110,24 @@ const uploadFile = (file, type = 'image') => {
   const formData = new FormData();
   formData.append(type, file);
   
-  return api.post(`/api/courses/upload/${type}`, formData, {
+  // Create config object for upload
+  const config = {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-  });
+  };
+  
+  // For iPhone Safari, explicitly add JWT token to headers
+  const isIPhoneSafariBrowser = isIPhoneSafari();
+  if (isIPhoneSafariBrowser) {
+    const token = localStorage.getItem('jwt_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🍎 iPhone Safari: Adding JWT token to upload request');
+    }
+  }
+  
+  return api.post(`/api/courses/upload/${type}`, formData, config);
 };
 
 // Image upload helper function (for thumbnails)
@@ -122,11 +135,24 @@ const uploadImage = (file) => {
   const formData = new FormData();
   formData.append('thumbnail', file);
   
-  return api.post('/api/courses/upload/thumbnail', formData, {
+  // Create config object for upload
+  const config = {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-  });
+  };
+  
+  // For iPhone Safari, explicitly add JWT token to headers
+  const isIPhoneSafariBrowser = isIPhoneSafari();
+  if (isIPhoneSafariBrowser) {
+    const token = localStorage.getItem('jwt_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🍎 iPhone Safari: Adding JWT token to thumbnail upload');
+    }
+  }
+  
+  return api.post('/api/courses/upload/thumbnail', formData, config);
 };
 
 // Video upload helper function
@@ -134,7 +160,8 @@ const uploadVideo = (file) => {
   const formData = new FormData();
   formData.append('video', file);
   
-  return api.post('/api/courses/upload/video', formData, {
+  // Create config object for upload
+  const config = {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
@@ -144,7 +171,19 @@ const uploadVideo = (file) => {
       );
       console.log(`Upload Progress: ${percentCompleted}%`);
     },
-  });
+  };
+  
+  // For iPhone Safari, explicitly add JWT token to headers
+  const isIPhoneSafariBrowser = isIPhoneSafari();
+  if (isIPhoneSafariBrowser) {
+    const token = localStorage.getItem('jwt_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+      console.log('🍎 iPhone Safari: Adding JWT token to video upload');
+    }
+  }
+  
+  return api.post('/api/courses/upload/video', formData, config);
 };
 
 export { isIPhoneSafari };

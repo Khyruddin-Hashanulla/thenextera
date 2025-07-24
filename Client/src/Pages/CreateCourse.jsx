@@ -287,20 +287,20 @@ const CreateCourse = () => {
                           )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="grid grid-cols-1 gap-4 mb-4">
                           <input
                             type="text"
                             value={section.title}
                             onChange={(e) => handleSectionChange(sectionIndex, 'title', e.target.value)}
                             placeholder="Section title"
-                            className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className="px-3 py-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-base"
                           />
                           <input
                             type="text"
                             value={section.description}
                             onChange={(e) => handleSectionChange(sectionIndex, 'description', e.target.value)}
                             placeholder="Section description"
-                            className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                            className="px-3 py-3 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors text-base"
                           />
                         </div>
 
@@ -310,21 +310,21 @@ const CreateCourse = () => {
                             <button
                               type="button"
                               onClick={() => addVideoToSection(sectionIndex)}
-                              className="text-blue-400 hover:text-blue-300 transition-colors text-sm"
+                              className="text-blue-400 hover:text-blue-300 transition-colors text-sm px-2 py-1 rounded touch-manipulation"
                             >
                               + Add Video
                             </button>
                           </div>
 
                           {section.videos.map((video, videoIndex) => (
-                            <div key={videoIndex} className="bg-gray-600/50 rounded-lg p-3 space-y-2">
+                            <div key={videoIndex} className="bg-gray-600/50 rounded-lg p-3 space-y-3">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs text-gray-400">Video {videoIndex + 1}</span>
                                 {section.videos.length > 1 && (
                                   <button
                                     type="button"
                                     onClick={() => removeVideoFromSection(sectionIndex, videoIndex)}
-                                    className="text-red-400 hover:text-red-300 transition-colors text-sm"
+                                    className="text-red-400 hover:text-red-300 transition-colors text-sm px-2 py-1 rounded touch-manipulation"
                                   >
                                     ✕
                                   </button>
@@ -336,23 +336,25 @@ const CreateCourse = () => {
                                 value={video.title}
                                 onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'title', e.target.value)}
                                 placeholder="Video title"
-                                className="w-full px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm"
+                                className="w-full px-3 py-3 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-base"
                               />
 
-                              <div className="flex gap-2">
+                              <div className="flex flex-col sm:flex-row gap-2">
                                 <input
                                   type="url"
                                   value={video.url}
                                   onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'url', e.target.value)}
                                   placeholder="Video URL or upload file"
-                                  className="flex-1 px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm"
+                                  className="flex-1 px-3 py-3 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-base"
                                 />
-                                <MediaUpload 
-                                  type="video"
-                                  onSuccess={handleVideoUpload(sectionIndex, videoIndex)}
-                                  onError={(error) => setError(`Video upload failed: ${error}`)}
-                                  placeholder="Enter video URL or YouTube URL..."
-                                />
+                                <div className="flex-shrink-0">
+                                  <MediaUpload 
+                                    type="video"
+                                    onSuccess={handleVideoUpload(sectionIndex, videoIndex)}
+                                    onError={(error) => setError(`Video upload failed: ${error}`)}
+                                    placeholder="Enter video URL or YouTube URL..."
+                                  />
+                                </div>
                               </div>
 
                               {uploadProgress[`${sectionIndex}-${videoIndex}`] > 0 && uploadProgress[`${sectionIndex}-${videoIndex}`] < 100 && (
@@ -369,7 +371,7 @@ const CreateCourse = () => {
                                 onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'description', e.target.value)}
                                 placeholder="Video description (optional)"
                                 rows={2}
-                                className="w-full px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm resize-none"
+                                className="w-full px-3 py-3 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-base resize-none"
                               />
                             </div>
                           ))}
