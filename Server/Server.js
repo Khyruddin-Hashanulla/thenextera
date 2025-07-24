@@ -40,7 +40,7 @@ const allowedOrigins = [
   "http://localhost:5173", // Dev frontend (Vite default)
   "http://localhost:5174", // Dev frontend (alternative port)
   "http://localhost:3000", // Dev frontend (React default)
-  "https://nextera-vaaq.onrender.com", // Production fullstack
+  "https://nextera-frontend.onrender.com", // Production fullstack
   "https://khyruddin-hashanulla.github.io", // GitHub Pages
   
 ];
