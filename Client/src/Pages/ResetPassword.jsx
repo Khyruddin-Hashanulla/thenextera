@@ -8,15 +8,21 @@ const ResetPassword = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
   const { token } = useParams();
   const navigate = useNavigate();
   const { resetPassword, user, logout } = useAuth();
 
-  // Add debugging and handle logged-in users
+  // Add comprehensive debugging and handle logged-in users
   useEffect(() => {
-    console.log('ResetPassword component mounted');
+    console.log('=== ResetPassword Component Debug Info ===');
+    console.log('Component mounted at:', new Date().toISOString());
     console.log('Token from URL:', token);
     console.log('Current user state:', user);
+    console.log('Current URL:', window.location.href);
+    console.log('Current hash:', window.location.hash);
+    
+    setDebugInfo(`Token: ${token}, User: ${user ? 'Logged in' : 'Not logged in'}, URL: ${window.location.href}`);
     
     // If user is already logged in, log them out for password reset
     if (user) {
@@ -27,6 +33,17 @@ const ResetPassword = () => {
         console.error('Error logging out user for password reset:', err);
       });
     }
+    
+    // Prevent any automatic navigation
+    const handleBeforeUnload = (e) => {
+      console.log('Page is about to unload/navigate away');
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [user, logout, token]);
 
   const handleSubmit = async (e) => {
