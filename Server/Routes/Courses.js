@@ -15,6 +15,7 @@ const {
   deleteFromCloudinary,
   DEFAULT_THUMBNAIL_URL 
 } = require('../config/cloudinary');
+const { requireHybridAuth, requireRole: hybridRequireRole, requireTeacher: hybridRequireTeacher } = require("../Middleware/jwt-auth");
 
 // Upload thumbnail from file
 router.post('/upload/thumbnail', requireAuth, requireTeacher, uploadThumbnail.single('thumbnail'), async (req, res) => {
@@ -199,8 +200,6 @@ router.post('/upload/video-url', requireAuth, requireTeacher, async (req, res) =
   }
 });
 
-
-
 // Get all courses (Public)
 router.get("/", async (req, res) => {
   try {
@@ -219,7 +218,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get a specific course
-router.get('/:id', requireAuth, async (req, res) => {
+router.get('/:id', requireHybridAuth, async (req, res) => {
   try {
     // Log request details
     console.log('Course fetch request:', {
@@ -550,7 +549,7 @@ router.post("/add", requireAuth, requireTeacher, async (req, res) => {
 });
 
 // Update course (Instructor/Admin only)
-router.put("/:id", requireAuth, requireTeacher, async (req, res) => {
+router.put("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -652,18 +651,19 @@ router.put("/:id", requireAuth, requireTeacher, async (req, res) => {
 });
 
 // Delete course (Instructor/Admin only)
-router.delete("/:id", requireAuth, requireTeacher, async (req, res) => {
+router.delete("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) => {
   try {
     console.log('Delete request received:', {
       courseId: req.params.id,
       user: {
         id: req.user._id,
         role: req.user.role,
-        name: req.user.name
+        name: req.user.name,
+        email: req.user.email
       }
     });
 
-    const course = await Course.findById(req.params.id).populate('creatorId', 'name email _id');
+    const course = await Course.findById(req.params.id).populate('creatorId', 'name email');
     
     if (!course) {
       console.log('Course not found:', req.params.id);
@@ -731,7 +731,7 @@ router.delete("/:id", requireAuth, requireTeacher, async (req, res) => {
 });
 
 // Enroll in course (Authenticated users only)
-router.post("/enroll/:courseId", requireAuth, async (req, res) => {
+router.post("/enroll/:courseId", requireHybridAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
     const userId = req.user._id || req.user.id || req.user.userId;
@@ -879,7 +879,7 @@ router.post("/unenroll/:courseId", requireAuth, async (req, res) => {
 });
 
 // Update course progress
-router.post('/:id/progress', requireAuth, async (req, res) => {
+router.post('/:id/progress', requireHybridAuth, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) {
@@ -941,7 +941,7 @@ router.post('/:id/progress', requireAuth, async (req, res) => {
 });
 
 // Get course progress (Authenticated users only)
-router.get("/:courseId/progress", requireAuth, async (req, res) => {
+router.get("/:courseId/progress", requireHybridAuth, async (req, res) => {
   try {
     const { courseId } = req.params;
     const userId = req.user._id;
@@ -971,21 +971,24 @@ router.get("/:courseId/progress", requireAuth, async (req, res) => {
 });
 
 // Test authentication endpoint
-router.get('/test-auth', requireAuth, requireTeacher, (req, res) => {
+router.get('/test-auth', requireHybridAuth, hybridRequireTeacher, (req, res) => {
   res.json({
     success: true,
-    message: 'Authentication working',
+    message: 'Hybrid authentication working',
+    authType: req.authType,
     user: {
       id: req.user.id,
       role: req.user.role,
       name: req.user.name,
       email: req.user.email
     },
-    session: {
-      isAuthenticated: req.session.isAuthenticated,
-      userId: req.session.userId,
-      userRole: req.session.userRole
-    }
+    isIPhoneSafari: req.isIPhoneSafari,
+    sessionInfo: req.authType === 'session' ? {
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+      sessionId: req.sessionID
+    } : null
   });
 });
 

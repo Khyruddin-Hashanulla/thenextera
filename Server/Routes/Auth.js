@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { sendVerificationOTP, sendPasswordResetEmail } = require("../utils/emailService");
 const passport = require("passport");
 const { requireAuth } = require("../Middleware/auth");
+const { generateJWT, isIPhoneSafari } = require("../Middleware/jwt-auth");
 
 // Generate 6-digit OTP
 const generateOTP = () => {
@@ -165,12 +166,49 @@ router.post("/login", async (req, res) => {
     // Check if email is verified - this is now mandatory
     if (!user.isEmailVerified) {
       return res.status(400).json({ 
-        error: "Please verify your email first. Check your inbox for the verification link.",
-        requiresEmailVerification: true 
+        error: "Please verify your email address before logging in. Check your inbox for the verification code.",
+        requiresEmailVerification: true,
+        email: user.email
       });
     }
 
-    // Create session instead of JWT token
+    // iPhone Safari detection for hybrid authentication
+    const userAgent = req.headers['user-agent'] || '';
+    const isIPhoneSafariBrowser = isIPhoneSafari(userAgent);
+    
+    if (isIPhoneSafariBrowser) {
+      console.log('🍎 iPhone Safari login detected - using JWT authentication');
+      
+      // Generate JWT token for iPhone Safari
+      const jwtToken = generateJWT(user);
+      
+      console.log('🍎 iPhone Safari JWT login successful:', {
+        userId: user._id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        tokenGenerated: !!jwtToken
+      });
+
+      return res.json({ 
+        success: true,
+        authType: 'jwt',
+        token: jwtToken,
+        user: { 
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified 
+        },
+        isIPhoneSafari: true,
+        message: "Login successful. Use the provided JWT token for authentication."
+      });
+    }
+
+    // Regular session-based authentication for other browsers
+    console.log('🖥️ Regular browser login - using session authentication');
+    
     req.session.userId = user._id.toString();
     req.session.userRole = user.role;
     req.session.userName = user.name;
@@ -191,138 +229,37 @@ router.post("/login", async (req, res) => {
       req.session.rememberMe = false;
     }
 
-    // iPhone Safari detection for enhanced session handling
-    const userAgent = req.headers['user-agent'] || '';
-    const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-    
-    if (isIPhoneSafari) {
-      console.log('🍎 iPhone Safari login detected - applying enhanced session persistence');
-      req.session.isIPhoneSafari = true;
-      req.session.iphoneLoginTime = new Date().toISOString();
-      
-      // Set additional iPhone Safari session flags
-      req.session.touch();
-    }
+    // Regular session save for non-iPhone Safari browsers
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).json({ error: "Session creation failed" });
+      }
 
-    // iPhone Safari: Enhanced session persistence with multiple save attempts
-    if (isIPhoneSafari) {
-      console.log('🍎 iPhone Safari: Applying enhanced session persistence strategy');
-      
-      // DON'T reload session - it clears the data we just set!
-      // Instead, just touch the session to mark it as active
-      req.session.touch();
-      
-      // Set session data with explicit values (AFTER the session data was already set above)
-      // Verify the session data is still there
-      console.log('🍎 iPhone Safari session data verification before save:', {
+      // Log the user data being sent
+      console.log('🖥️ Regular browser login successful:', {
+        userId: user._id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
         sessionId: req.sessionID,
-        userId: req.session.userId,
-        isAuthenticated: req.session.isAuthenticated,
-        userRole: req.session.userRole,
-        allSessionKeys: Object.keys(req.session)
+        sessionData: req.session
       });
-      
-      // Add additional iPhone Safari specific flags
-      req.session.isIPhoneSafari = true;
-      req.session.iphoneLoginTime = new Date().toISOString();
-      req.session.iphoneSessionTest = 'test-value-' + Date.now();
-      
-      console.log('🍎 iPhone Safari session data before save:', {
-        sessionId: req.sessionID,
-        userId: req.session.userId,
-        isAuthenticated: req.session.isAuthenticated,
-        sessionKeys: Object.keys(req.session)
-      });
-      
-      // Multiple save attempts for iPhone Safari
-      let saveAttempts = 0;
-      const maxSaveAttempts = 3;
-      
-      const attemptSave = () => {
-        saveAttempts++;
-        console.log(`🍎 iPhone Safari save attempt ${saveAttempts}/${maxSaveAttempts}`);
-        
-        req.session.save((saveErr) => {
-          if (saveErr) {
-            console.error(`iPhone Safari session save error (attempt ${saveAttempts}):`, saveErr);
-            
-            if (saveAttempts < maxSaveAttempts) {
-              console.log('🍎 Retrying iPhone Safari session save...');
-              setTimeout(attemptSave, 100); // Retry after 100ms
-              return;
-            } else {
-              return res.status(500).json({ 
-                error: "Session save failed after multiple attempts",
-                attempts: saveAttempts
-              });
-            }
-          }
-          
-          console.log('🍎 iPhone Safari session saved successfully:', {
-            sessionId: req.sessionID,
-            attempt: saveAttempts,
-            isAuthenticated: req.session.isAuthenticated,
-            userId: req.session.userId,
-            sessionData: req.session
-          });
-          
-          // Set iPhone Safari specific headers
-          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, private');
-          res.setHeader('Pragma', 'no-cache');
-          res.setHeader('Expires', '0');
-          res.setHeader('Vary', 'User-Agent, Origin');
-          
-          res.json({ 
-            success: true,
-            user: { 
-              id: user._id,
-              name: user.name,
-              email: user.email,
-              role: user.role,
-              isEmailVerified: user.isEmailVerified 
-            },
-            sessionId: req.sessionID,
-            isIPhoneSafari: true,
-            saveAttempts: saveAttempts,
-            sessionPersisted: true
-          });
-        });
-      };
-      
-      attemptSave();
-    } else {
-      // Regular session save for non-iPhone Safari browsers
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session save error:', err);
-          return res.status(500).json({ error: "Session creation failed" });
-        }
 
-        // Log the user data being sent
-        console.log('Login successful:', {
-          userId: user._id,
-          role: user.role,
+      res.json({ 
+        success: true,
+        authType: 'session',
+        user: { 
+          id: user._id,
           name: user.name,
           email: user.email,
-          sessionId: req.sessionID,
-          isIPhoneSafari,
-          sessionData: req.session
-        });
-
-        res.json({ 
-          success: true,
-          user: { 
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            isEmailVerified: user.isEmailVerified 
-          },
-          sessionId: req.sessionID,
-          isIPhoneSafari
-        });
+          role: user.role,
+          isEmailVerified: user.isEmailVerified 
+        },
+        sessionId: req.sessionID,
+        isIPhoneSafari: false
       });
-    }
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: "Server error: " + error.message });

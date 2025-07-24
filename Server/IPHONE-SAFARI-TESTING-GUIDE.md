@@ -18,6 +18,7 @@ iPhone Safari was not properly saving session cookies, causing users to be redir
 - ✅ **Login Route Enhancement**: iPhone Safari specific headers and session handling
 - ✅ **Session Configuration**: Optimized for cross-origin iPhone Safari compatibility
 - ✅ **Debug Endpoint**: Enhanced `/debug/session` with comprehensive iPhone Safari diagnostics
+- ✅ **JWT-only Fallback Authentication**: Implemented for iPhone Safari
 
 ### Key Files Modified
 
@@ -30,6 +31,7 @@ iPhone Safari was not properly saving session cookies, causing users to be redir
 - `Server/Server.js` - Enhanced session config and debug endpoint
 - `Server/Routes/Auth.js` - iPhone Safari login enhancements
 - `Server/Middleware/auth.js` - iPhone Safari authentication fixes
+- `Server/auth/jwt.js` - NEW: JWT-only fallback authentication for iPhone Safari
 
 ### Testing Steps
 
@@ -67,6 +69,30 @@ git push origin main
    - Should open course content
 4. **Create/Edit/Delete**: Test all course operations
    - Should work without authentication errors
+
+#### Step 5: Test JWT-only Fallback Authentication
+1. **Login with JWT**: Use the test endpoint to verify JWT authentication
+```bash
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     -H "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1" \
+     https://your-domain.com/api/courses/test-auth
+```
+Expected response for iPhone Safari:
+```json
+{
+  "success": true,
+  "message": "Hybrid authentication working",
+  "authType": "jwt",
+  "user": {
+    "id": "user_id",
+    "role": "Student",
+    "name": "User Name",
+    "email": "user@example.com"
+  },
+  "isIPhoneSafari": true,
+  "sessionInfo": null
+}
+```
 
 ### Debug Information
 
