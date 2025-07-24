@@ -31,11 +31,16 @@ const Register = () => {
       const registerResponse = await register(formData);
       console.log('Registration successful:', registerResponse);
       
-      // Show success message and redirect to OTP verification
-      alert('Registration successful! Please check your email for the 6-digit OTP code to verify your account.');
-      
-      // Navigate to OTP verification page (you'll need to create this)
-      navigate('/verify-otp', { state: { email: formData.email } });
+      // Check if this was a role update for existing user
+      if (registerResponse.roleUpdated) {
+        // Role was updated for existing user - redirect to login
+        alert(registerResponse.message);
+        navigate('/login');
+      } else {
+        // New user registration - redirect to OTP verification
+        alert('Registration successful! Please check your email for the 6-digit OTP code to verify your account.');
+        navigate('/verify-otp', { state: { email: formData.email } });
+      }
       
     } catch (err) {
       console.error('Registration error:', err);

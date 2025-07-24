@@ -28,7 +28,7 @@ const ResetPassword = () => {
       setLoading(true);
       console.log('Attempting password reset with token:', token);
       
-      const response = await resetPassword(token, password);
+      const response = await resetPassword({ token, password });
       console.log('Password reset response:', response);
       
       setSuccess(true);

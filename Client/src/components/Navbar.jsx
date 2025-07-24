@@ -11,9 +11,21 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      
+      // For iPhone Safari, use window.location.href for reliable redirect
+      const userAgent = navigator.userAgent;
+      const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+      
+      if (isIPhoneSafari) {
+        console.log('🍎 iPhone Safari: Redirecting to home after logout');
+        window.location.href = '/';
+      } else {
+        navigate('/');
+      }
     } catch (error) {
       console.error('Logout error:', error);
+      // Fallback redirect even if logout fails
+      window.location.href = '/';
     }
   };
 

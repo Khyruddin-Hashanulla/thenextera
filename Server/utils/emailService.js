@@ -88,7 +88,7 @@ const sendVerificationOTP = async (email, otp) => {
 };
 
 const sendPasswordResetEmail = async (email, token) => {
-  const resetUrl = `${process.env.CLIENT_URL}/#/reset-password/${token}`;
+  const resetUrl = `${process.env.CLIENT_URL}/reset-password/${token}`;
   
   // Log the URL being generated for debugging
   console.log('Password reset URL generated:', resetUrl);

@@ -19,7 +19,36 @@ router.post("/register", async (req, res) => {
     const { name, email, password, role } = req.body;
 
     const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json("User already exists");
+    if (existing) {
+      // Check if user wants to change role
+      const properRole = role ? (role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()) : 'Student';
+      
+      if (existing.role !== properRole) {
+        // Allow role change for existing user and update password
+        const hash = await bcrypt.hash(password, 10);
+        existing.role = properRole;
+        existing.password = hash; // Update password to the new one provided
+        await existing.save();
+        
+        return res.status(200).json({
+          message: `Account already exists. Role updated to ${properRole} and password updated. Please log in with your new credentials.`,
+          user: {
+            id: existing._id,
+            name: existing.name,
+            email: existing.email,
+            role: existing.role,
+            isEmailVerified: existing.isEmailVerified
+          },
+          roleUpdated: true
+        });
+      } else {
+        // Same role, just inform user
+        return res.status(400).json({
+          error: `Account with this email already exists as ${existing.role}. Please log in instead.`,
+          existingRole: existing.role
+        });
+      }
+    }
 
     // Generate 6-digit OTP
     const emailVerificationOTP = generateOTP();
@@ -118,7 +147,11 @@ router.post("/resend-verification", async (req, res) => {
     }
 
     if (user.isEmailVerified) {
-      return res.status(400).json({ error: "Email is already verified" });
+      return res.status(400).json({ 
+        error: "Email is already verified. Please log in with your existing credentials.",
+        isAlreadyVerified: true,
+        userRole: user.role
+      });
     }
 
     // Generate new verification OTP

@@ -15,11 +15,13 @@ const ForgotPassword = () => {
       setError('');
       setMessage('');
       setLoading(true);
-      await forgotPassword(email);
+      await forgotPassword({ email }); 
       setMessage('Password reset instructions have been sent to your email');
       setEmail('');
     } catch (err) {
-      setError(err.response?.data || 'Failed to reset password');
+      console.error('Forgot password error:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to reset password';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
