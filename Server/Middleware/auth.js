@@ -6,17 +6,20 @@ const requireAuth = (req, res, next) => {
   if (isIPhoneSafari) {
     console.log('🍎 iPhone Safari auth check - Session details:', {
       sessionExists: !!req.session,
-      sessionId: req.sessionID,
+      sessionId: req.sessionID?.substring(0, 8) + '...',
       isAuthenticated: req.session?.isAuthenticated,
       userId: req.session?.userId,
-      cookies: req.headers.cookie,
-      allSessionKeys: req.session ? Object.keys(req.session) : []
+      cookies: req.headers.cookie ? 'present' : 'missing',
+      allSessionKeys: req.session ? Object.keys(req.session) : [],
+      url: req.url,
+      method: req.method
     });
     
     // Force session touch and save for iPhone Safari
     if (req.session) {
       req.session.touch();
       req.session.lastAuthCheck = new Date().toISOString();
+      req.session.iphoneSafariAuth = true;
       
       // Force session save for iPhone Safari to ensure persistence
       req.session.save((err) => {
@@ -29,13 +32,17 @@ const requireAuth = (req, res, next) => {
     }
   }
   
+  // Enhanced session validation
   if (!req.session || !req.session.isAuthenticated || !req.session.userId) {
     console.log('❌ Authentication failed:', {
       sessionExists: !!req.session,
       isAuthenticated: req.session?.isAuthenticated,
       userId: req.session?.userId,
       userAgent: isIPhoneSafari ? 'iPhone Safari' : 'Other',
-      sessionId: req.sessionID
+      sessionId: req.sessionID?.substring(0, 8) + '...',
+      url: req.url,
+      method: req.method,
+      cookies: req.headers.cookie ? 'present' : 'missing'
     });
     
     return res.status(401).json({ 
@@ -44,9 +51,11 @@ const requireAuth = (req, res, next) => {
       isIPhoneSafari,
       sessionDebug: {
         sessionExists: !!req.session,
-        sessionId: req.sessionID,
+        sessionId: req.sessionID?.substring(0, 8) + '...',
         hasAuthFlag: req.session?.isAuthenticated,
-        hasUserId: !!req.session?.userId
+        hasUserId: !!req.session?.userId,
+        url: req.url,
+        method: req.method
       }
     });
   }
@@ -64,16 +73,58 @@ const requireAuth = (req, res, next) => {
   
   // iPhone Safari: Force session save after successful auth
   if (isIPhoneSafari && req.session) {
+    req.session.lastSuccessfulAuth = new Date().toISOString();
     req.session.save((err) => {
       if (err) {
-        console.error('iPhone Safari session save error:', err);
+        console.error('🍎 iPhone Safari session save error after auth:', err);
       } else {
-        console.log('✅ iPhone Safari session saved successfully');
+        console.log('✅ iPhone Safari session saved successfully after auth');
       }
     });
   }
   
+  console.log('✅ Authentication successful:', {
+    userId: req.user.id,
+    role: req.user.role,
+    userAgent: isIPhoneSafari ? 'iPhone Safari' : 'Other',
+    url: req.url,
+    method: req.method
+  });
+  
   next();
+};
+
+// Enhanced hybrid authentication middleware for iPhone Safari compatibility
+const requireHybridAuth = (req, res, next) => {
+  const userAgent = req.headers['user-agent'] || '';
+  const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  
+  if (isIPhoneSafari) {
+    console.log('🍎 iPhone Safari hybrid auth check:', {
+      sessionExists: !!req.session,
+      sessionId: req.sessionID?.substring(0, 8) + '...',
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      url: req.url,
+      method: req.method
+    });
+    
+    // Enhanced session handling for iPhone Safari
+    if (req.session) {
+      req.session.touch();
+      req.session.lastHybridAuth = new Date().toISOString();
+      
+      // Force session save for iPhone Safari
+      req.session.save((err) => {
+        if (err) {
+          console.error('🍎 iPhone Safari hybrid auth session save error:', err);
+        }
+      });
+    }
+  }
+  
+  // Use session-based authentication
+  return requireAuth(req, res, next);
 };
 
 // Role-based authorization middleware
@@ -180,6 +231,7 @@ const requireStudent = (req, res, next) => {
 
 module.exports = {
   requireAuth,
+  requireHybridAuth,
   requireRole,
   requireAdmin,
   requireTeacher,

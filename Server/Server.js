@@ -100,55 +100,41 @@ const store = MongoStore.create({
   crypto: {
     secret: process.env.SESSION_SECRET || "your-secret-key",
   },
-  touchAfter: 24 * 3600, // 24 hours
-  // Enhanced production settings
-  collectionName: 'sessions',
-  ttl: 30 * 24 * 60 * 60, // 30 days in seconds
-  autoRemove: 'native', // Use MongoDB's native TTL
-  autoRemoveInterval: 10, // Check every 10 minutes
-  // Connection stability
-  stringify: false,
+  touchAfter: 24 * 3600, // lazy session update
+  ttl: 30 * 24 * 3600, // 30 days TTL
+  autoRemove: "native", // Let MongoDB handle TTL
+  
+  // Enhanced serialization for better session persistence
   serialize: (session) => {
-    // Custom serialization for better session data handling
+    console.log(' Serializing session for storage');
     return JSON.stringify(session);
   },
   unserialize: (session) => {
-    // Custom deserialization
+    console.log(' Deserializing session from storage');
     return JSON.parse(session);
-  }
+  },
 });
 
 // Enhanced session store error handling for production
 store.on("error", (error) => {
-  console.error("❌ MongoDB session store error:", error);
-  console.error("Session store connection status:", {
-    readyState: store.client?.readyState,
-    error: error.message
-  });
-  console.error("Session store connection status:", {
-    timestamp: new Date().toISOString(),
-    error: error.message,
-    stack: error.stack
-  });
+  console.error(" MongoDB session store error:", error);
 });
 
-store.on("connected", () => {
-  console.log("✅ MongoDB session store connected successfully");
+store.on("connect", () => {
+  console.log(" MongoDB session store connected");
 });
 
-store.on("disconnected", () => {
-  console.warn("⚠️ MongoDB session store disconnected");
+store.on("disconnect", () => {
+  console.warn(" MongoDB session store disconnected");
 });
-
-app.set('trust proxy', 1); // Trust first proxy (Render)
-
-// Better production detection - only true if actually deployed
-const isProduction = process.env.NODE_ENV === "production" && (process.env.RENDER || process.env.VERCEL || process.env.NETLIFY);
 
 // Mobile browser detection middleware for enhanced session handling
 const detectMobile = (req, res, next) => {
   const userAgent = req.headers['user-agent'] || '';
   req.isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  req.isIPhone = /iPhone/.test(userAgent);
+  req.isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  req.isIPhoneSafari = req.isIPhone && req.isSafari;
   next();
 };
 
@@ -158,82 +144,42 @@ app.use(detectMobile);
 const iphoneSafariFix = require('./iphone-safari-fix');
 app.use(iphoneSafariFix);
 
-// iPhone Safari session persistence fix - forces session cookies
-const iphoneSafariSessionPersistence = require('./iphone-safari-session-persistence');
-const iphoneSafariSessionRecovery = require('./iphone-safari-session-recovery');
+// Enhanced session configuration with iPhone Safari compatibility
+const isProduction = process.env.NODE_ENV === "production";
 
-// Apply iPhone Safari session recovery middleware first
-app.use(iphoneSafariSessionRecovery);
-// Then apply session persistence middleware
-app.use(iphoneSafariSessionPersistence);
-
-// iPhone Safari session debugging middleware
-app.use((req, res, next) => {
-  const userAgent = req.headers['user-agent'] || '';
-  const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-  
-  if (isIPhoneSafari) {
-    console.log('🍎 iPhone Safari Request Debug:', {
-      method: req.method,
-      url: req.url,
-      sessionId: req.sessionID,
-      sessionExists: !!req.session,
-      cookies: req.headers.cookie,
-      hasSessionCookie: req.headers.cookie ? req.headers.cookie.includes('nextera.sid') : false,
-      sessionData: req.session ? {
-        isAuthenticated: req.session.isAuthenticated,
-        userId: req.session.userId,
-        keys: Object.keys(req.session)
-      } : null
-    });
-  }
-  
-  next();
-});
-
-console.log('🔧 Session Configuration:', {
-  NODE_ENV: process.env.NODE_ENV,
-  PORT: process.env.PORT,
-  isProduction,
-  HTTPS_DETECTED: !!process.env.RENDER || !!process.env.VERCEL
-});
-
-// iPhone Safari session configuration with enhanced compatibility
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your-secret-key",
-    resave: true, // Force session save for iPhone Safari compatibility
+    resave: false,
     saveUninitialized: false,
+    rolling: true, // Extend session on each request - prevents timeout during use
     store,
     name: 'nextera.sid', // Custom session name
-    rolling: true, // Reset expiry on each request
-    cookie: {
-      secure: isProduction, // HTTPS required in production for iPhone Safari
-      sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production
-      httpOnly: true, // Secure cookie - no JavaScript access
-      maxAge: 30 * 24 * 3600 * 1000, // 30 days in milliseconds
-      domain: undefined, // Let browser handle domain
-      // iPhone/Safari specific compatibility settings
-      path: '/', // Explicit path for mobile browsers
-      priority: 'high', // High priority for mobile cookie handling
-      // Additional iPhone/Safari compatibility
-      partitioned: false, // Disable partitioned cookies for cross-site
-    },
-    // Enhanced production settings
     proxy: isProduction, // Trust proxy in production
-    unset: 'destroy', // Destroy session when unset
+    unset: 'destroy', // Clean session destruction
     
     // iPhone Safari specific session handling
-    genid: function(req) {
-      const userAgent = req.headers['user-agent'] || '';
-      const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    genid: (req) => {
+      // iPhone Safari specific session handling
+      const sessionId = require('crypto').randomBytes(32).toString('hex');
       
-      if (isIPhoneSafari) {
-        console.log('🍎 iPhone Safari: Generating new session ID');
+      if (req.isIPhoneSafari) {
+        console.log(' Generating session ID for iPhone Safari:', sessionId.substring(0, 8) + '...');
+        // Force session flags for iPhone Safari
+        req.iphoneSafariSession = true;
       }
       
-      return require('uid-safe').sync(24); // Generate session ID
-    }
+      return sessionId;
+    },
+    
+    cookie: {
+      secure: isProduction, // HTTPS in production only
+      sameSite: isProduction ? 'none' : 'lax', // Cross-origin support in production
+      httpOnly: true, // XSS protection
+      maxAge: 30 * 24 * 3600 * 1000, // 30 days
+      path: '/', // Explicit path for mobile browsers
+      priority: 'high', // High priority cookie handling
+    },
   })
 );
 
@@ -253,9 +199,9 @@ if (missingEnvVars.length > 0) {
 try {
   const authRoutes = require("./Routes/Auth");
   app.use("/api/auth", authRoutes);
-  console.log("✅ Auth routes loaded successfully");
+  console.log(" Auth routes loaded successfully");
 } catch (error) {
-  console.error("❌ Auth routes failed to load:", error.message);
+  console.error(" Auth routes failed to load:", error.message);
   console.error("Full error:", error);
   console.error("Stack trace:", error.stack);
   app.use("/api/auth", (req, res) =>
@@ -375,7 +321,7 @@ app.get('/debug/session', (req, res) => {
     req.session.debugAccess = new Date().toISOString();
     req.session.debugTest = 'debug-test-' + Date.now();
     
-    console.log('🍎 iPhone Safari debug - Session before save:', {
+    console.log(' iPhone Safari debug - Session before save:', {
       sessionId: req.sessionID,
       sessionKeys: Object.keys(req.session),
       isAuthenticated: req.session.isAuthenticated,
@@ -389,7 +335,7 @@ app.get('/debug/session', (req, res) => {
         sessionInfo.sessionSaveError = err.message;
       } else {
         sessionInfo.sessionSaved = true;
-        console.log('🍎 iPhone Safari debug - Session saved successfully');
+        console.log(' iPhone Safari debug - Session saved successfully');
       }
       
       // Try to reload session to verify persistence
@@ -398,7 +344,7 @@ app.get('/debug/session', (req, res) => {
           console.error('Debug session reload error:', reloadErr);
           sessionInfo.sessionReloadError = reloadErr.message;
         } else {
-          console.log('🍎 iPhone Safari debug - Session reloaded:', {
+          console.log(' iPhone Safari debug - Session reloaded:', {
             sessionId: req.sessionID,
             isAuthenticated: req.session.isAuthenticated,
             userId: req.session.userId,
@@ -420,17 +366,17 @@ app.get('/debug/session', (req, res) => {
 // try {
 //   const mobileAuthTest = require('./mobile-auth-test');
 //   app.use('/debug', mobileAuthTest);
-//   console.log('✅ Mobile auth test routes loaded successfully');
+//   console.log(' Mobile auth test routes loaded successfully');
 // } catch (error) {
-//   console.error('❌ Mobile auth test routes failed to load:', error.message);
+//   console.error(' Mobile auth test routes failed to load:', error.message);
 // }
 
 try {
   const courseRoutes = require("./Routes/Courses");
   app.use("/api/courses", courseRoutes);
-  console.log("✅ Course routes loaded successfully");
+  console.log(" Course routes loaded successfully");
 } catch (error) {
-  console.error("❌ Course routes failed to load:", error.message);
+  console.error(" Course routes failed to load:", error.message);
   console.error("Full error:", error);
   console.error("Stack trace:", error.stack);
   app.use("/api/courses", (req, res) =>
@@ -463,7 +409,7 @@ const localDbUrl = "mongodb://localhost:27017/thenextera";
 
 async function connectToDatabase() {
   try {
-    console.log("🔄 Attempting to connect to MongoDB Atlas...");
+    console.log(" Attempting to connect to MongoDB Atlas...");
     await mongoose.connect(dbUrl, {
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
@@ -474,10 +420,10 @@ async function connectToDatabase() {
         deprecationErrors: true,
       }
     });
-    console.log("✅ Connected to MongoDB Atlas");
+    console.log(" Connected to MongoDB Atlas");
   } catch (atlasError) {
-    console.warn("⚠️ MongoDB Atlas connection failed:", atlasError.message);
-    console.log("🔄 Falling back to local MongoDB...");
+    console.warn(" MongoDB Atlas connection failed:", atlasError.message);
+    console.log(" Falling back to local MongoDB...");
     
     try {
       await mongoose.connect(localDbUrl, {
@@ -485,12 +431,12 @@ async function connectToDatabase() {
         socketTimeoutMS: 45000,
         maxPoolSize: 10,
       });
-      console.log("✅ Connected to local MongoDB");
+      console.log(" Connected to local MongoDB");
     } catch (localError) {
-      console.error("❌ Both Atlas and local MongoDB connections failed:");
+      console.error(" Both Atlas and local MongoDB connections failed:");
       console.error("Atlas error:", atlasError.message);
       console.error("Local error:", localError.message);
-      console.log("\n📋 To fix this issue:");
+      console.log("\n To fix this issue:");
       console.log("1. Install MongoDB locally: brew install mongodb-community");
       console.log("2. Start MongoDB: brew services start mongodb-community");
       console.log("3. Or fix your Atlas connection string in .env file");
@@ -502,16 +448,16 @@ async function connectToDatabase() {
 // Connect to database
 connectToDatabase()
   .then(() => {
-    console.log("🚀 Database connection established");
+    console.log(" Database connection established");
   })
   .catch((err) => {
-    console.error("💥 Database connection failed:", err.message);
+    console.error(" Database connection failed:", err.message);
     process.exit(1); // Exit if no database connection
   });
 
 async function main() {
   // This function is now handled by connectToDatabase()
-  console.log("📡 Server initialization complete");
+  console.log(" Server initialization complete");
 }
 
 const PORT = process.env.PORT || 8081;

@@ -194,17 +194,27 @@ const validateVideoUrl = async (url) => {
 router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.single('thumbnail'), async (req, res) => {
   try {
     console.log('🔍 Thumbnail upload route hit');
+    
+    // iPhone Safari detection and enhanced logging
+    const userAgent = req.headers['user-agent'] || '';
+    const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    
     console.log('📋 Request details:', {
       hasFile: !!req.file,
-      headers: req.headers,
-      body: req.body
+      isIPhoneSafari,
+      contentLength: req.headers['content-length'],
+      contentType: req.headers['content-type'],
+      userAgent: isIPhoneSafari ? 'iPhone Safari' : 'Other',
+      sessionId: req.sessionID?.substring(0, 8) + '...',
+      userId: req.user?.id
     });
     
     if (!req.file) {
       console.warn('⚠️ No file provided in request');
       return res.status(400).json({ 
         error: 'No thumbnail file provided',
-        type: 'missing_file'
+        type: 'missing_file',
+        isIPhoneSafari
       });
     }
 
@@ -212,7 +222,8 @@ router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.si
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      bufferLength: req.file.buffer ? req.file.buffer.length : 'no buffer'
+      bufferLength: req.file.buffer ? req.file.buffer.length : 'no buffer',
+      isIPhoneSafari
     });
 
     // Validate file buffer
@@ -220,30 +231,68 @@ router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.si
       console.error('❌ File buffer is missing');
       return res.status(400).json({
         error: 'File buffer is missing',
-        type: 'buffer_error'
+        type: 'buffer_error',
+        isIPhoneSafari
       });
+    }
+
+    // iPhone Safari specific upload handling
+    if (isIPhoneSafari) {
+      console.log('🍎 iPhone Safari upload - Enhanced handling');
+      
+      // Set iPhone Safari specific response headers
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      
+      // Force session save for iPhone Safari before upload
+      if (req.session) {
+        req.session.uploadAttempt = new Date().toISOString();
+        req.session.touch();
+        
+        await new Promise((resolve) => {
+          req.session.save((err) => {
+            if (err) {
+              console.error('🍎 iPhone Safari session save error before upload:', err);
+            } else {
+              console.log('🍎 iPhone Safari session saved before upload');
+            }
+            resolve();
+          });
+        });
+      }
     }
 
     console.log('🚀 Starting Cloudinary upload...');
     
     let result;
     try {
-      // Try Cloudinary upload first
+      // Enhanced Cloudinary upload with iPhone Safari compatibility
       result = await uploadToCloudinary(req.file.buffer, {
         folder: 'course-thumbnails',
         resource_type: 'image',
         originalname: req.file.originalname,
         transformation: [
           { width: 800, height: 450, crop: 'fill', quality: 'auto' }
-        ]
+        ],
+        // iPhone Safari specific options
+        timeout: isIPhoneSafari ? 300000 : 120000, // 5 min for iPhone Safari, 2 min for others
+        chunk_size: isIPhoneSafari ? 3000000 : 6000000, // Smaller chunks for iPhone Safari
+        retry: isIPhoneSafari ? 5 : 3 // More retries for iPhone Safari
       });
       
       console.log('✅ Cloudinary upload successful');
     } catch (cloudinaryError) {
       console.warn('⚠️ Cloudinary upload failed, using local fallback:', {
         error: cloudinaryError.message,
-        code: cloudinaryError.code
+        code: cloudinaryError.code,
+        isIPhoneSafari
       });
+      
+      // Enhanced fallback for iPhone Safari
+      if (isIPhoneSafari) {
+        console.log('🍎 iPhone Safari - Using enhanced local fallback');
+      }
       
       // Fallback to local storage
       result = await saveFileLocally(req.file.buffer, req.file.originalname, 'thumbnail');
@@ -254,8 +303,27 @@ router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.si
       url: result.secure_url,
       public_id: result.public_id,
       size: result.bytes,
-      fallback: result.fallback || false
+      fallback: result.fallback || false,
+      isIPhoneSafari
     });
+    
+    // iPhone Safari: Force session save after successful upload
+    if (isIPhoneSafari && req.session) {
+      req.session.lastUpload = new Date().toISOString();
+      req.session.uploadSuccess = true;
+      req.session.touch();
+      
+      await new Promise((resolve) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('🍎 iPhone Safari session save error after upload:', err);
+          } else {
+            console.log('🍎 iPhone Safari session saved after upload');
+          }
+          resolve();
+        });
+      });
+    }
     
     res.json({
       success: true,
@@ -263,21 +331,41 @@ router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.si
       publicId: result.public_id,
       size: result.bytes,
       mimetype: req.file.mimetype,
-      fallback: result.fallback || false
+      fallback: result.fallback || false,
+      isIPhoneSafari,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('❌ Thumbnail upload failed completely:', {
       message: error.message,
       stack: error.stack,
       name: error.name,
-      code: error.code
+      code: error.code,
+      isIPhoneSafari: /iPhone/.test(req.headers['user-agent'] || '') && /Safari/.test(req.headers['user-agent'] || '') && !/Chrome/.test(req.headers['user-agent'] || '')
     });
+    
+    // iPhone Safari specific error handling
+    const isIPhoneSafari = /iPhone/.test(req.headers['user-agent'] || '') && /Safari/.test(req.headers['user-agent'] || '') && !/Chrome/.test(req.headers['user-agent'] || '');
+    
+    if (isIPhoneSafari && req.session) {
+      req.session.uploadError = error.message;
+      req.session.uploadErrorTime = new Date().toISOString();
+      req.session.touch();
+      
+      req.session.save((err) => {
+        if (err) {
+          console.error('🍎 iPhone Safari session save error after upload error:', err);
+        }
+      });
+    }
     
     res.status(500).json({ 
       error: 'Failed to upload thumbnail',
       details: error.message,
       type: 'upload_error',
-      timestamp: new Date().toISOString()
+      isIPhoneSafari,
+      timestamp: new Date().toISOString(),
+      suggestion: isIPhoneSafari ? 'Try refreshing the page and uploading again. iPhone Safari may require multiple attempts.' : 'Please try again or contact support.'
     });
   }
 });
