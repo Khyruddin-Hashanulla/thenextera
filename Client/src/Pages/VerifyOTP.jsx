@@ -141,7 +141,7 @@ const VerifyOTP = () => {
             <button
               type="submit"
               disabled={loading || otp.length !== 6}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 opacity-100 disabled:cursor-not-allowed"
             >
               {loading ? 'Verifying...' : 'Verify Email'}
             </button>
@@ -152,7 +152,7 @@ const VerifyOTP = () => {
               type="button"
               onClick={handleResend}
               disabled={resendLoading || timeLeft > 540} // Allow resend after 1 minute
-              className="text-blue-600 hover:text-blue-500 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-blue-600 hover:text-blue-500 text-sm opacity-100 disabled:cursor-not-allowed"
             >
               {resendLoading ? 'Sending...' : 'Resend Code'}
             </button>

@@ -1,17 +1,16 @@
-const dotenv = require("dotenv");
-dotenv.config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
+const session = require("express-session");
+const MongoStore = require("connect-mongo");
+const path = require("path");
+require("dotenv").config();
 
 // DNS configuration to help with SRV resolution
 const dns = require("dns");
 dns.setServers(["8.8.8.8", "8.8.4.4", "1.1.1.1"]); // Use Google and Cloudflare DNS
 
-const express = require("express");
-const MongoStore = require("connect-mongo");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const session = require("express-session");
-const cookieParser = require("cookie-parser");
-const path = require("path");
 const app = express();
 
 // Try to load passport configuration
@@ -29,7 +28,8 @@ try {
 }
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // CORS configuration
@@ -71,6 +71,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Serve static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // iPhone/Safari Cross-Site Cookie Compatibility Middleware
 app.use((req, res, next) => {
   // Ensure Access-Control-Allow-Credentials is always sent
@@ -90,10 +93,6 @@ app.use((req, res, next) => {
   
   next();
 });
-
-
-// Serve static files from uploads directory
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Enhanced session configuration for production stability
 const store = MongoStore.create({
@@ -457,29 +456,62 @@ if (process.env.NODE_ENV === "production") {
 }
 
 // Database connection
-// const MONGO_URL = process.env.MONGO_URL;
 const dbUrl = process.env.ATLASDB_URL;
 
+// Fallback to local MongoDB for development/testing
+const localDbUrl = "mongodb://localhost:27017/thenextera";
+
+async function connectToDatabase() {
+  try {
+    console.log("🔄 Attempting to connect to MongoDB Atlas...");
+    await mongoose.connect(dbUrl, {
+      serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+      socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+      maxPoolSize: 10, // Maintain up to 10 socket connections
+      serverApi: {
+        version: '1',
+        strict: true,
+        deprecationErrors: true,
+      }
+    });
+    console.log("✅ Connected to MongoDB Atlas");
+  } catch (atlasError) {
+    console.warn("⚠️ MongoDB Atlas connection failed:", atlasError.message);
+    console.log("🔄 Falling back to local MongoDB...");
+    
+    try {
+      await mongoose.connect(localDbUrl, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+        maxPoolSize: 10,
+      });
+      console.log("✅ Connected to local MongoDB");
+    } catch (localError) {
+      console.error("❌ Both Atlas and local MongoDB connections failed:");
+      console.error("Atlas error:", atlasError.message);
+      console.error("Local error:", localError.message);
+      console.log("\n📋 To fix this issue:");
+      console.log("1. Install MongoDB locally: brew install mongodb-community");
+      console.log("2. Start MongoDB: brew services start mongodb-community");
+      console.log("3. Or fix your Atlas connection string in .env file");
+      throw localError;
+    }
+  }
+}
+
 // Connect to database
-main()
+connectToDatabase()
   .then(() => {
-    console.log("Connected to MongoDB");
+    console.log("🚀 Database connection established");
   })
   .catch((err) => {
-    console.log(err);
+    console.error("💥 Database connection failed:", err.message);
+    process.exit(1); // Exit if no database connection
   });
 
 async function main() {
-  await mongoose.connect(dbUrl, {
-    serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
-    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-    maxPoolSize: 10, // Maintain up to 10 socket connections
-    serverApi: {
-      version: '1',
-      strict: true,
-      deprecationErrors: true,
-    }
-  });
+  // This function is now handled by connectToDatabase()
+  console.log("📡 Server initialization complete");
 }
 
 const PORT = process.env.PORT || 8081;

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import InstructorApplication from "../components/InstructorApplication";
 import api from "../utils/api";
 
 const Dashboard = () => {
@@ -235,150 +236,101 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title={isInstructor || isAdmin ? "My Courses" : "Available Courses"}
-            value={stats.totalCourses}
-            icon="📚"
-            color="bg-linear-to-r from-green-500 via-emerald-500 to-teal-500"
-            delay={100}
-          />
-          <StatCard
-            title={
-              isInstructor || isAdmin ? "Total Students" : "Enrolled Courses"
-            }
-            value={
-              isInstructor || isAdmin
-                ? stats.totalStudents
-                : stats.enrolledCourses
-            }
-            icon={isInstructor || isAdmin ? "👥" : "🎓"}
-            color="bg-linear-to-r from-red-200 via-rose-400 to-pink-600"
-            delay={200}
-          />
-          <StatCard
-            title="Completed"
-            value={stats.completedCourses}
-            icon="✅"
-            color="bg-linear-to-r from-blue-500 via-cyan-500 to-teal-500"
-            delay={300}
-          />
-          <StatCard
-            title="Progress"
-            value={`${Math.round(
-              (stats.completedCourses / Math.max(stats.totalCourses, 1)) * 100
-            )}%`}
-            icon="📈"
-            color="bg-linear-to-r from-gray-700 via-rose-500 to-orange-400"
-            delay={400}
-          />
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <div
-              className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 animate-fade-in-up"
-              style={{ animationDelay: "500ms" }}
-            >
-              <h2 className="text-2xl font-bold text-white mb-6">
-                Quick Actions
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <QuickActionCard
-                  title="Browse Courses"
-                  description="Explore available courses"
-                  icon="🔍"
-                  to="/courses"
-                  color="bg-blue-600"
-                  delay={600}
-                />
-                {(isInstructor || isAdmin) && (
-                  <QuickActionCard
-                    title="Create Course"
-                    description="Share your knowledge"
-                    icon="➕"
-                    to="/courses/create"
-                    color="bg-green-600"
-                    delay={700}
-                  />
-                )}
-                <QuickActionCard
-                  title="My Profile"
-                  description="Update your information"
-                  icon="👤"
-                  to="/profile"
-                  color="bg-purple-600"
-                  delay={800}
-                />
-                <QuickActionCard
-                  title="Settings"
-                  description="Customize your experience"
-                  icon="⚙️"
-                  to="/settings"
-                  color="bg-gray-600"
-                  delay={900}
-                />
-              </div>
-            </div>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          {/* Stats Cards */}
+          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <StatCard
+              title="Total Courses"
+              value={stats.totalCourses}
+              icon="📚"
+              color="from-blue-500 via-blue-600 to-cyan-500"
+              delay={0}
+            />
+            <StatCard
+              title={isInstructor || isAdmin ? "Total Students" : "Enrolled Courses"}
+              value={isInstructor || isAdmin ? stats.totalStudents : stats.enrolledCourses}
+              icon={isInstructor || isAdmin ? "👥" : "📖"}
+              color="from-green-500 via-emerald-500 to-teal-500"
+              delay={100}
+            />
+            <StatCard
+              title="Completed"
+              value={stats.completedCourses}
+              icon="✅"
+              color="from-purple-500 via-violet-500 to-pink-500"
+              delay={200}
+            />
+            <StatCard
+              title={isInstructor || isAdmin ? "Available Courses" : "Available Courses"}
+              value={isInstructor || isAdmin ? stats.enrolledCourses : stats.totalCourses}
+              icon="🌟"
+              color="from-orange-500 via-red-500 to-rose-500"
+              delay={300}
+            />
           </div>
 
-          {/* Recent Activity & Profile */}
+          {/* Quick Actions or Instructor Application */}
           <div className="space-y-6">
-            {/* Profile Card */}
-            <div
-              className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 animate-fade-in-up"
-              style={{ animationDelay: "600ms" }}
-            >
-              <h3 className="text-xl font-bold text-white mb-4">Profile</h3>
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-2xl font-bold text-white">
-                  {user?.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <div>
-                  <h4 className="text-white font-semibold">{user?.name}</h4>
-                  <p className="text-gray-400 text-sm">{user?.email}</p>
-                  <span
-                    className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                      user?.role === "Admin"
-                        ? "bg-red-500/20 text-red-300"
-                        : user?.role === "Instructor"
-                        ? "bg-green-500/20 text-green-300"
-                        : "bg-blue-500/20 text-blue-300"
-                    }`}
-                  >
-                    {user?.role}
-                  </span>
-                </div>
+            {/* Show instructor application for students */}
+            {!isInstructor && !isAdmin && (
+              <div className="animate-fade-in-up" style={{ animationDelay: "400ms" }}>
+                <InstructorApplication />
               </div>
-              <button
-                onClick={handleLogout}
-                className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-
-            {/* Recent Activity */}
-            <div
-              className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 animate-fade-in-up"
-              style={{ animationDelay: "700ms" }}
-            >
-              <h3 className="text-xl font-bold text-white mb-4">
-                Recent Activity
-              </h3>
-              <div className="space-y-3">
-                {stats.recentActivity.length > 0 ? (
-                  stats.recentActivity.map((activity, index) => (
-                    <ActivityItem
-                      key={activity.id}
-                      activity={activity}
-                      delay={800 + index * 100}
+            )}
+            
+            {/* Quick Actions */}
+            <div className="animate-fade-in-up" style={{ animationDelay: isInstructor || isAdmin ? "400ms" : "500ms" }}>
+              <h3 className="text-xl font-semibold text-white mb-4">Quick Actions</h3>
+              <div className="space-y-4">
+                {isInstructor || isAdmin ? (
+                  <>
+                    <QuickActionCard
+                      title="Create Course"
+                      description="Start building a new course"
+                      icon="➕"
+                      to="/courses/create"
+                      color="blue"
+                      delay={0}
                     />
-                  ))
+                    <QuickActionCard
+                      title="Manage Courses"
+                      description="Edit your existing courses"
+                      icon="⚙️"
+                      to="/courses"
+                      color="green"
+                      delay={100}
+                    />
+                    {isAdmin && (
+                      <QuickActionCard
+                        title="Admin Panel"
+                        description="Manage users and applications"
+                        icon="👑"
+                        to="/admin"
+                        color="purple"
+                        delay={200}
+                      />
+                    )}
+                  </>
                 ) : (
-                  <p className="text-gray-400 text-sm">No recent activity</p>
+                  <>
+                    <QuickActionCard
+                      title="Browse Courses"
+                      description="Discover new learning opportunities"
+                      icon="🔍"
+                      to="/courses"
+                      color="blue"
+                      delay={0}
+                    />
+                    <QuickActionCard
+                      title="My Learning"
+                      description="Continue your enrolled courses"
+                      icon="📖"
+                      to="/courses"
+                      color="green"
+                      delay={100}
+                    />
+                  </>
                 )}
               </div>
             </div>

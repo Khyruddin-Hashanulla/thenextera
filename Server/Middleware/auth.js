@@ -113,9 +113,76 @@ const requireAdmin = requireRole(['Admin']);
 // Teacher, Instructor, or Admin middleware
 const requireTeacher = requireRole(['Teacher', 'Instructor', 'Admin']);
 
+// Instructor only middleware (blocks pending_instructor)
+const requireInstructor = (req, res, next) => {
+  if (!req.session || !req.session.isAuthenticated) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  const userRole = req.session.userRole;
+  
+  // Block pending instructors from accessing instructor features
+  if (userRole === 'pending_instructor') {
+    return res.status(403).json({ 
+      error: "Your instructor application is pending approval. Please wait for admin approval to access instructor features.",
+      isPending: true
+    });
+  }
+  
+  // Allow only approved instructors and admins
+  if (!['Instructor', 'Admin'].includes(userRole)) {
+    return res.status(403).json({ 
+      error: "Access denied. Instructor privileges required." 
+    });
+  }
+  
+  // Add user info to request object for easy access
+  req.user = {
+    id: req.session.userId,
+    _id: req.session.userId,
+    userId: req.session.userId,
+    role: req.session.userRole,
+    name: req.session.userName,
+    email: req.session.userEmail
+  };
+  
+  next();
+};
+
+// Student or higher middleware (excludes pending_instructor)
+const requireStudent = (req, res, next) => {
+  if (!req.session || !req.session.isAuthenticated) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  const userRole = req.session.userRole;
+  
+  // Allow all roles except pending_instructor
+  if (userRole === 'pending_instructor') {
+    return res.status(403).json({ 
+      error: "Your instructor application is pending. Some features may be restricted.",
+      isPending: true
+    });
+  }
+  
+  // Add user info to request object for easy access
+  req.user = {
+    id: req.session.userId,
+    _id: req.session.userId,
+    userId: req.session.userId,
+    role: req.session.userRole,
+    name: req.session.userName,
+    email: req.session.userEmail
+  };
+  
+  next();
+};
+
 module.exports = {
   requireAuth,
   requireRole,
   requireAdmin,
-  requireTeacher
+  requireTeacher,
+  requireInstructor,
+  requireStudent
 };

@@ -7,7 +7,7 @@ const Register = () => {
     name: '',
     email: '',
     password: '',
-    role: 'Student' // Changed to proper case
+    intent: 'learn'
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,19 +27,29 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Register the user
-      const registerResponse = await register(formData);
+      const registrationData = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: 'Student',
+        wantsToBeInstructor: formData.intent === 'teach'
+      };
+
+      console.log('Registration data:', registrationData);
+      
+      const registerResponse = await register(registrationData);
       console.log('Registration successful:', registerResponse);
       
-      // Check if this was a role update for existing user
       if (registerResponse.roleUpdated) {
-        // Role was updated for existing user - redirect to login
         alert(registerResponse.message);
         navigate('/login');
       } else {
-        // New user registration - redirect to OTP verification
-        alert('Registration successful! Please check your email for the 6-digit OTP code to verify your account.');
-        navigate('/verify-otp', { state: { email: formData.email } });
+        const message = formData.intent === 'teach' 
+          ? 'Registration successful! Please check your email for the 6-digit OTP code to verify your account. After verification, your instructor application will be processed.'
+          : 'Registration successful! Please check your email for the 6-digit OTP code to verify your account.';
+        
+        alert(message);
+        navigate('/verify-otp', { state: { email: formData.email, intent: formData.intent } });
       }
       
     } catch (err) {
@@ -122,18 +132,18 @@ const Register = () => {
             </div>
 
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-300">
+              <label htmlFor="intent" className="block text-sm font-medium text-gray-300">
                 I want to
               </label>
               <select
-                id="role"
-                name="role"
-                value={formData.role}
+                id="intent"
+                name="intent"
+                value={formData.intent}
                 onChange={handleChange}
                 className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               >
-                <option value="Student">Learn on NextEra</option>
-                <option value="Instructor">Teach on NextEra</option>
+                <option value="learn">Learn on NextEra</option>
+                <option value="teach">Teach on NextEra</option>
               </select>
             </div>
           </div>
@@ -155,4 +165,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;

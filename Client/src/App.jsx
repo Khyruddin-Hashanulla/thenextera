@@ -9,6 +9,7 @@ import Courses from './Pages/Courses';
 import CreateCourse from './Pages/CreateCourse';
 import EditCourse from './Pages/EditCourse';
 import CourseView from './Pages/CourseView';
+import AdminPanel from './Pages/AdminPanel';
 import EmailVerification from './Pages/EmailVerification';
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
@@ -27,6 +28,13 @@ function App() {
     const { user, isInstructor } = useAuth();
     if (!user) return <Navigate to="/login" />;
     if (!isInstructor) return <Navigate to="/dashboard" />;
+    return children;
+  };
+
+  const AdminRoute = ({ children }) => {
+    const { user, isAdmin } = useAuth();
+    if (!user) return <Navigate to="/login" />;
+    if (!isAdmin) return <Navigate to="/dashboard" />;
     return children;
   };
 
@@ -66,6 +74,15 @@ function App() {
               <InstructorRoute>
                 <EditCourse />
               </InstructorRoute>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
             }
           />
 

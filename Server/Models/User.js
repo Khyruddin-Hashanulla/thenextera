@@ -7,7 +7,11 @@ const userSchema = new Schema({
   },
   email: { type: String, required: true, unique: true },
   password: { type: String },
-  role: { type: String, enum: ['Student', 'Admin', 'Instructor'], default: 'Student' },
+  role: { 
+    type: String, 
+    enum: ['Student', 'Admin', 'Instructor', 'pending_instructor'], 
+    default: 'Student' 
+  },
   profilePic: { type: String, default: '' },
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationOTP: String,
@@ -18,6 +22,23 @@ const userSchema = new Schema({
   rememberMeOTP: String,
   googleId: String,
   githubId: String,
+  // Track user intent during registration
+  wantsToBeInstructor: { type: Boolean, default: false },
+  // Instructor application tracking
+  instructorApplication: {
+    requestDate: { type: Date },
+    status: { 
+      type: String, 
+      enum: ['pending', 'approved', 'rejected']
+      // Removed default: 'pending' to prevent automatic pending status
+    },
+    adminDecision: {
+      decidedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+      decisionDate: { type: Date },
+      reason: { type: String } // Optional reason for rejection
+    },
+    resubmissionAllowed: { type: Boolean, default: true }
+  }
 }, {
   timestamps: true
 });

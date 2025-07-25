@@ -2,17 +2,38 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Validate environment variables
+const validateCloudinaryConfig = () => {
+  const required = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+  const missing = required.filter(key => !process.env[key] || process.env[key].trim() === '');
+  
+  if (missing.length > 0) {
+    console.error('❌ Missing Cloudinary environment variables:', missing);
+    return false;
+  }
+  
+  console.log('✅ Cloudinary environment variables validated');
+  return true;
+};
+
+// Configure Cloudinary with validation
+const isConfigValid = validateCloudinaryConfig();
+
+if (isConfigValid) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME.trim(),
+    api_key: process.env.CLOUDINARY_API_KEY.trim(),
+    api_secret: process.env.CLOUDINARY_API_SECRET.trim(),
+  });
+  console.log('✅ Cloudinary configured successfully');
+} else {
+  console.warn('⚠️ Cloudinary not configured - uploads will fail');
+}
 
 // Default thumbnail URL (you can replace with your own default image)
 const DEFAULT_THUMBNAIL_URL = 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg';
 
-// Storage configuration for thumbnails
+// Storage configuration for thumbnails with error handling
 const thumbnailStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -21,10 +42,13 @@ const thumbnailStorage = new CloudinaryStorage({
     transformation: [
       { width: 800, height: 450, crop: 'fill', quality: 'auto' }
     ],
+    // Add timeout and retry configurations
+    timeout: 120000, // 2 minutes timeout
+    chunk_size: 6000000, // 6MB chunks for large files
   },
 });
 
-// Storage configuration for videos
+// Storage configuration for videos with error handling
 const videoStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -34,18 +58,69 @@ const videoStorage = new CloudinaryStorage({
     transformation: [
       { quality: 'auto', fetch_format: 'auto' }
     ],
+    // Add timeout and retry configurations
+    timeout: 300000, // 5 minutes timeout for videos
+    chunk_size: 6000000, // 6MB chunks for large files
   },
 });
 
-// Multer configurations
+// File filter with better error handling
+const fileFilter = (req, file, cb) => {
+  console.log('📁 File upload attempt:', {
+    originalname: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size
+  });
+  
+  // Check file size before processing
+  if (file.size && file.size > 50 * 1024 * 1024) { // 50MB limit
+    console.error('❌ File too large:', file.size);
+    return cb(new Error('File size exceeds 50MB limit'), false);
+  }
+  
+  cb(null, true);
+};
+
 const uploadThumbnail = multer({ 
   storage: thumbnailStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit for images
+  limits: { 
+    fileSize: 10 * 1024 * 1024, // 10MB limit for images
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    console.log('📁 Image upload attempt:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+    
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed for thumbnails'), false);
+    }
+  }
 });
 
 const uploadVideo = multer({ 
   storage: videoStorage,
-  limits: { fileSize: 500 * 1024 * 1024 }, // 500MB limit for videos
+  limits: { 
+    fileSize: 500 * 1024 * 1024, // 500MB limit for videos
+    files: 1
+  },
+  fileFilter: (req, file, cb) => {
+    console.log('📁 Video upload attempt:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size
+    });
+    
+    if (file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only video files are allowed'), false);
+    }
+  }
 });
 
 // Utility function to upload from URL

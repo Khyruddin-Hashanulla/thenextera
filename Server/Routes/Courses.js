@@ -3,57 +3,287 @@ const router = express.Router();
 const Course = require("../Models/Course");
 const User = require("../Models/User");
 const mongoose = require("mongoose");
-const { requireAuth, requireTeacher } = require("../Middleware/auth");
-const { 
-  uploadThumbnail, 
-  uploadVideo, 
-  uploadFromUrl, 
-  extractYouTubeId, 
-  getYouTubeThumbnail,
-  validateImageUrl,
-  validateVideoUrl,
-  deleteFromCloudinary,
-  DEFAULT_THUMBNAIL_URL 
-} = require('../config/cloudinary');
+const multer = require('multer');
+const { requireAuth, requireTeacher, requireInstructor } = require("../Middleware/auth");
 const { requireHybridAuth, requireRole: hybridRequireRole, requireTeacher: hybridRequireTeacher } = require("../Middleware/jwt-auth");
 
-// Upload thumbnail from file
-router.post('/upload/thumbnail', requireHybridAuth, hybridRequireTeacher, uploadThumbnail.single('thumbnail'), async (req, res) => {
-  try {
-    console.log('Thumbnail upload request:', {
-      hasSession: !!req.session,
-      isAuthenticated: req.session?.isAuthenticated,
-      userId: req.session?.userId || req.user?.id,
-      userRole: req.session?.userRole || req.user?.role,
-      hasFile: !!req.file,
-      sessionId: req.session?.id,
-      contentType: req.headers['content-type'],
-      authType: req.authType,
-      userAgent: req.headers['user-agent']
-    });
+// Import Cloudinary directly
+const { cloudinary } = require('../config/cloudinary');
 
+// Use memory storage instead of CloudinaryStorage to avoid connection issues
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    console.log('📁 File upload attempt:', {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      fieldname: file.fieldname
+    });
+    
+    // Allow images and videos
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image and video files are allowed'), false);
+    }
+  }
+});
+
+// Helper function to upload buffer to Cloudinary with retry and better error handling
+const uploadToCloudinary = async (buffer, options, maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔄 Cloudinary upload attempt ${attempt}/${maxRetries}`);
+      
+      // Add more robust options for large files
+      const uploadOptions = {
+        ...options,
+        timeout: 300000, // 5 minute timeout for large files
+        chunk_size: 6000000, // 6MB chunks
+        eager_async: true, // Process transformations asynchronously
+        use_filename: false, // Let Cloudinary generate filename
+        unique_filename: true,
+        overwrite: false,
+        ...options // Allow override of defaults
+      };
+      
+      console.log('📤 Upload options:', {
+        folder: uploadOptions.folder,
+        resource_type: uploadOptions.resource_type,
+        timeout: uploadOptions.timeout,
+        chunk_size: uploadOptions.chunk_size,
+        bufferSize: buffer ? buffer.length : 'no buffer'
+      });
+      
+      const result = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          uploadOptions,
+          (error, result) => {
+            if (error) {
+              console.error(`❌ Cloudinary upload attempt ${attempt} failed:`, {
+                message: error.message,
+                http_code: error.http_code,
+                error_code: error.error?.code
+              });
+              reject(error);
+            } else {
+              console.log(`✅ Cloudinary upload attempt ${attempt} successful:`, {
+                public_id: result.public_id,
+                secure_url: result.secure_url,
+                bytes: result.bytes,
+                format: result.format
+              });
+              resolve(result);
+            }
+          }
+        );
+        
+        // Set up error handling for the stream
+        uploadStream.on('error', (error) => {
+          console.error(`❌ Upload stream error on attempt ${attempt}:`, error);
+          reject(error);
+        });
+        
+        // Write buffer to stream
+        if (buffer) {
+          uploadStream.end(buffer);
+        } else {
+          uploadStream.end();
+        }
+      });
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ Upload attempt ${attempt} failed:`, {
+        message: error.message,
+        code: error.code,
+        http_code: error.http_code,
+        error_code: error.error?.code
+      });
+      
+      if (attempt === maxRetries) {
+        // If all retries failed, throw a more descriptive error
+        const enhancedError = new Error(`Cloudinary upload failed after ${maxRetries} attempts: ${error.message}`);
+        enhancedError.originalError = error;
+        enhancedError.code = error.code;
+        throw enhancedError;
+      }
+      
+      // Progressive delay with jitter to avoid thundering herd
+      const delay = (1000 * attempt) + Math.random() * 1000;
+      console.log(`⏳ Waiting ${Math.round(delay)}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
+
+// Helper function to upload from URL to Cloudinary
+const uploadFromUrl = async (url, options, maxRetries = 3) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔄 URL upload attempt ${attempt}/${maxRetries} for: ${url}`);
+      
+      const result = await cloudinary.uploader.upload(url, {
+        ...options,
+        timeout: 120000,
+      });
+      
+      console.log(`✅ URL upload attempt ${attempt} successful:`, {
+        public_id: result.public_id,
+        secure_url: result.secure_url,
+        bytes: result.bytes
+      });
+      
+      return result;
+    } catch (error) {
+      console.error(`❌ URL upload attempt ${attempt} failed:`, {
+        message: error.message,
+        code: error.code
+      });
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+};
+
+// Utility function to extract YouTube video ID
+const extractYouTubeId = (url) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+// Utility function to get YouTube thumbnail
+const getYouTubeThumbnail = (videoId) => {
+  return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+};
+
+// Utility function to validate image URL
+const validateImageUrl = async (url) => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    const contentType = response.headers.get('content-type');
+    return response.ok && contentType && contentType.startsWith('image/');
+  } catch {
+    return false;
+  }
+};
+
+// Utility function to validate video URL
+const validateVideoUrl = async (url) => {
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    const contentType = response.headers.get('content-type');
+    return response.ok && contentType && contentType.startsWith('video/');
+  } catch {
+    return false;
+  }
+};
+
+// Upload thumbnail from file - Instructor only
+router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.single('thumbnail'), async (req, res) => {
+  try {
+    console.log('🔍 Thumbnail upload route hit');
+    console.log('📋 Request details:', {
+      hasFile: !!req.file,
+      headers: req.headers,
+      body: req.body
+    });
+    
     if (!req.file) {
-      return res.status(400).json({ error: 'No thumbnail file provided' });
+      console.warn('⚠️ No file provided in request');
+      return res.status(400).json({ 
+        error: 'No thumbnail file provided',
+        type: 'missing_file'
+      });
     }
 
-    console.log('Thumbnail uploaded successfully:', req.file.path);
+    console.log('📁 File received:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      bufferLength: req.file.buffer ? req.file.buffer.length : 'no buffer'
+    });
+
+    // Validate file buffer
+    if (!req.file.buffer) {
+      console.error('❌ File buffer is missing');
+      return res.status(400).json({
+        error: 'File buffer is missing',
+        type: 'buffer_error'
+      });
+    }
+
+    console.log('🚀 Starting Cloudinary upload...');
+    
+    let result;
+    try {
+      // Try Cloudinary upload first
+      result = await uploadToCloudinary(req.file.buffer, {
+        folder: 'course-thumbnails',
+        resource_type: 'image',
+        originalname: req.file.originalname,
+        transformation: [
+          { width: 800, height: 450, crop: 'fill', quality: 'auto' }
+        ]
+      });
+      
+      console.log('✅ Cloudinary upload successful');
+    } catch (cloudinaryError) {
+      console.warn('⚠️ Cloudinary upload failed, using local fallback:', {
+        error: cloudinaryError.message,
+        code: cloudinaryError.code
+      });
+      
+      // Fallback to local storage
+      result = await saveFileLocally(req.file.buffer, req.file.originalname, 'thumbnail');
+      console.log('💾 Local fallback successful');
+    }
+
+    console.log('✅ Thumbnail upload completed:', {
+      url: result.secure_url,
+      public_id: result.public_id,
+      size: result.bytes,
+      fallback: result.fallback || false
+    });
     
     res.json({
       success: true,
-      url: req.file.path,
-      publicId: req.file.filename
+      url: result.secure_url,
+      publicId: result.public_id,
+      size: result.bytes,
+      mimetype: req.file.mimetype,
+      fallback: result.fallback || false
     });
   } catch (error) {
-    console.error('Thumbnail upload error:', error);
+    console.error('❌ Thumbnail upload failed completely:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
+    
     res.status(500).json({ 
       error: 'Failed to upload thumbnail',
-      details: error.message 
+      details: error.message,
+      type: 'upload_error',
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-// Upload thumbnail from URL
-router.post('/upload/thumbnail-url', requireHybridAuth, hybridRequireTeacher, async (req, res) => {
+// Upload thumbnail from URL - Instructor only
+router.post('/upload/thumbnail-url', requireHybridAuth, requireInstructor, async (req, res) => {
   try {
     console.log('Thumbnail URL upload request:', {
       hasSession: !!req.session,
@@ -80,8 +310,14 @@ router.post('/upload/thumbnail-url', requireHybridAuth, hybridRequireTeacher, as
       
       // Upload YouTube thumbnail to Cloudinary for consistency
       try {
-        const cloudinaryUrl = await uploadFromUrl(thumbnailUrl, 'image', 'course-thumbnails');
-        thumbnailUrl = cloudinaryUrl;
+        const cloudinaryUrl = await uploadFromUrl(thumbnailUrl, {
+          public_id: `youtube-thumbnails/${youtubeId}`,
+          resource_type: 'image',
+          type: 'upload',
+          source: 'url',
+          url: thumbnailUrl
+        });
+        thumbnailUrl = cloudinaryUrl.secure_url;
       } catch (error) {
         console.warn('Failed to upload YouTube thumbnail to Cloudinary, using direct URL:', error);
       }
@@ -93,7 +329,14 @@ router.post('/upload/thumbnail-url', requireHybridAuth, hybridRequireTeacher, as
       }
       
       // Upload to Cloudinary
-      thumbnailUrl = await uploadFromUrl(url, 'image', 'course-thumbnails');
+      const result = await uploadFromUrl(url, {
+        public_id: `course-thumbnails/${Date.now()}`,
+        resource_type: 'image',
+        type: 'upload',
+        source: 'url',
+        url: url
+      });
+      thumbnailUrl = result.secure_url;
     }
 
     res.json({
@@ -102,49 +345,92 @@ router.post('/upload/thumbnail-url', requireHybridAuth, hybridRequireTeacher, as
       isYouTube: !!youtubeId
     });
   } catch (error) {
-    console.error('Thumbnail URL upload error:', error);
+    console.error('Thumbnail URL upload error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({ 
       error: 'Failed to upload thumbnail from URL',
-      details: error.message 
+      details: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-// Upload video from file
-router.post('/upload/video', requireHybridAuth, hybridRequireTeacher, uploadVideo.single('video'), async (req, res) => {
+// Upload video from file - Instructor only
+router.post('/upload/video', requireHybridAuth, requireInstructor, upload.single('video'), async (req, res) => {
   try {
-    console.log('Video upload request:', {
-      hasSession: !!req.session,
-      isAuthenticated: req.session?.isAuthenticated,
-      userId: req.session?.userId || req.user?.id,
-      userRole: req.session?.userRole || req.user?.role,
-      hasFile: !!req.file,
-      sessionId: req.session?.id
-    });
-
+    console.log('🔍 Video upload route hit');
+    
     if (!req.file) {
-      return res.status(400).json({ error: 'No video file provided' });
+      return res.status(400).json({ 
+        error: 'No video file provided',
+        type: 'missing_file'
+      });
     }
 
-    console.log('Video uploaded successfully:', req.file.path);
+    console.log('📁 File received:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      bufferLength: req.file.buffer ? req.file.buffer.length : 'no buffer'
+    });
+
+    // Validate file buffer
+    if (!req.file.buffer) {
+      console.error('❌ File buffer is missing');
+      return res.status(400).json({
+        error: 'File buffer is missing',
+        type: 'buffer_error'
+      });
+    }
+
+    console.log('🚀 Starting Cloudinary upload...');
+    
+    // Upload to Cloudinary with retry
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: 'course-videos',
+      resource_type: 'video',
+      eager: [
+        { width: 640, height: 480, crop: 'pad' },
+        { width: 1280, height: 720, crop: 'pad' }
+      ],
+      eager_async: true
+    });
+
+    console.log('✅ Video uploaded successfully:', {
+      url: result.secure_url,
+      public_id: result.public_id,
+      size: result.bytes
+    });
     
     res.json({
       success: true,
-      url: req.file.path,
-      publicId: req.file.filename,
-      duration: req.file.duration || 0
+      url: result.secure_url,
+      publicId: result.public_id,
+      size: result.bytes,
+      mimetype: req.file.mimetype
     });
   } catch (error) {
-    console.error('Video upload error:', error);
+    console.error('❌ Video upload failed:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({ 
       error: 'Failed to upload video',
-      details: error.message 
+      details: error.message,
+      type: 'upload_error',
+      timestamp: new Date().toISOString()
     });
   }
 });
 
-// Upload video from URL
-router.post('/upload/video-url', requireHybridAuth, hybridRequireTeacher, async (req, res) => {
+// Upload video from URL - Instructor only
+router.post('/upload/video-url', requireHybridAuth, requireInstructor, async (req, res) => {
   try {
     console.log('Video URL upload request:', {
       hasSession: !!req.session,
@@ -176,7 +462,14 @@ router.post('/upload/video-url', requireHybridAuth, hybridRequireTeacher, async 
       }
       
       // Upload to Cloudinary
-      videoUrl = await uploadFromUrl(url, 'video', 'course-videos');
+      const result = await uploadFromUrl(url, {
+        public_id: `course-videos/${Date.now()}`,
+        resource_type: 'video',
+        type: 'upload',
+        source: 'url',
+        url: url
+      });
+      videoUrl = result.secure_url;
     }
 
     res.json({
@@ -186,10 +479,16 @@ router.post('/upload/video-url', requireHybridAuth, hybridRequireTeacher, async 
       youtubeId: youtubeId
     });
   } catch (error) {
-    console.error('Video URL upload error:', error);
+    console.error('Video URL upload error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({ 
       error: 'Failed to upload video from URL',
-      details: error.message 
+      details: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -206,7 +505,12 @@ router.get("/", async (req, res) => {
     
     res.json(formattedCourses);
   } catch (error) {
-    console.error("Error fetching courses:", error);
+    console.error("Error fetching courses:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({ error: "Error fetching courses" });
   }
 });
@@ -434,7 +738,12 @@ const formatCourseData = (course, user, req) => {
 
     return formattedData;
   } catch (error) {
-    console.error('Error formatting course data:', error);
+    console.error('Error formatting course data:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     // Return a safe default structure
     return {
       _id: course._id,
@@ -453,8 +762,8 @@ const formatCourseData = (course, user, req) => {
   }
 };
 
-// Add course (Instructor/Admin only)
-router.post("/add", requireHybridAuth, hybridRequireTeacher, async (req, res) => {
+// Add course (Instructor/Admin only) - Block pending instructors
+router.post("/add", requireHybridAuth, requireInstructor, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -535,15 +844,17 @@ router.post("/add", requireHybridAuth, hybridRequireTeacher, async (req, res) =>
     });
   } catch (error) {
     console.error("Error creating course:", {
-      error: error.message,
-      stack: error.stack
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
     });
     res.status(500).json({ error: error.message || "Error creating course" });
   }
 });
 
 // Update course (Instructor/Admin only)
-router.put("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) => {
+router.put("/:id", requireHybridAuth, requireInstructor, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -576,7 +887,7 @@ router.put("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) => 
     const processedSections = sections.map((section, index) => {
       // Validate section
       if (!section.title?.trim()) {
-        throw new Error(`Section ${index + 1} title is required`);
+        throw new Error(`Invalid section data at index ${index}`);
       }
 
       // Process videos
@@ -635,7 +946,7 @@ router.put("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) => 
     });
   } catch (error) {
     console.error("Error updating course:", {
-      error: error.message,
+      message: error.message,
       stack: error.stack,
       courseId: req.params.id,
       userId: req.user?.userId
@@ -645,7 +956,7 @@ router.put("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) => 
 });
 
 // Delete course (Instructor/Admin only)
-router.delete("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) => {
+router.delete("/:id", requireHybridAuth, requireInstructor, async (req, res) => {
   try {
     console.log('Delete request received:', {
       courseId: req.params.id,
@@ -712,7 +1023,7 @@ router.delete("/:id", requireHybridAuth, hybridRequireTeacher, async (req, res) 
     });
   } catch (error) {
     console.error("Error deleting course:", {
-      error: error.message,
+      message: error.message,
       stack: error.stack,
       courseId: req.params.id,
       userId: req.user._id
@@ -760,12 +1071,17 @@ router.post("/enroll/:courseId", requireHybridAuth, async (req, res) => {
     // Check if already enrolled
     const isAlreadyEnrolled = course.studentsEnrolled?.some(studentId => {
       try {
-        const enrolledId = typeof studentId === 'string' ? studentId : studentId.toString();
-        return enrolledId === userId.toString();
+        const isMatch = studentId.toString() === userId.toString();
+        console.log('Enrollment check for student:', {
+          studentId: studentId.toString(),
+          userId: userId,
+          isMatch
+        });
+        return isMatch;
       } catch (err) {
-        console.error('Error comparing enrollment IDs:', {
-          studentId,
-          userId,
+        console.error('Error comparing IDs:', {
+          studentId: studentId,
+          userId: userId,
           error: err.message
         });
         return false;
@@ -832,7 +1148,7 @@ router.post("/enroll/:courseId", requireHybridAuth, async (req, res) => {
     });
   } catch (error) {
     console.error("Error enrolling in course:", {
-      error: error.message,
+      message: error.message,
       stack: error.stack,
       courseId: req.params.courseId,
       userId: req.user?.userId,
@@ -867,7 +1183,12 @@ router.post("/unenroll/:courseId", requireHybridAuth, async (req, res) => {
 
     res.json({ message: "Unenrolled successfully" });
   } catch (error) {
-    console.error("Error unenrolling from course:", error);
+    console.error("Error unenrolling from course:", {
+      message: error.message,
+      stack: error.stack,
+      courseId: req.params.courseId,
+      userId: req.user.userId
+    });
     res.status(500).json({ error: error.message || "Error unenrolling from course" });
   }
 });
@@ -926,7 +1247,12 @@ router.post('/:id/progress', requireHybridAuth, async (req, res) => {
       progress: progressData
     });
   } catch (err) {
-    console.error('Error updating progress:', err);
+    console.error('Error updating progress:', {
+      message: err.message,
+      stack: err.stack,
+      name: err.name,
+      code: err.code
+    });
     res.status(500).json({ 
       error: 'Failed to update progress',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -959,7 +1285,12 @@ router.get("/:courseId/progress", requireHybridAuth, async (req, res) => {
 
     res.json(progress);
   } catch (error) {
-    console.error("Error fetching progress:", error);
+    console.error("Error fetching progress:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({ error: "Error fetching progress" });
   }
 });
@@ -983,6 +1314,145 @@ router.get('/test-auth', requireHybridAuth, hybridRequireTeacher, (req, res) => 
       userRole: req.session?.userRole,
       sessionId: req.sessionID
     } : null
+  });
+});
+
+// Test upload route for debugging
+router.post('/test-upload', requireHybridAuth, requireInstructor, (req, res) => {
+  console.log('🧪 Test upload route hit:', {
+    hasSession: !!req.session,
+    isAuthenticated: req.session?.isAuthenticated,
+    userId: req.session?.userId || req.user?.id,
+    userRole: req.session?.userRole || req.user?.role,
+    headers: req.headers,
+    body: req.body
+  });
+  
+  res.json({ 
+    success: true, 
+    message: 'Test route working',
+    auth: {
+      hasSession: !!req.session,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId || req.user?.id,
+      userRole: req.session?.userRole || req.user?.role
+    }
+  });
+});
+
+// Simple test endpoint for upload functionality
+router.post('/test-upload-basic', requireHybridAuth, requireInstructor, upload.single('thumbnail'), (req, res) => {
+  try {
+    console.log('🧪 Basic upload test hit');
+    console.log('📋 Test request details:', {
+      hasFile: !!req.file,
+      contentType: req.headers['content-type'],
+      userAgent: req.headers['user-agent']
+    });
+    
+    if (!req.file) {
+      return res.json({
+        success: false,
+        message: 'No file received',
+        details: 'Multer did not process any file'
+      });
+    }
+    
+    console.log('📁 Test file details:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      hasBuffer: !!req.file.buffer,
+      bufferLength: req.file.buffer ? req.file.buffer.length : 0
+    });
+    
+    res.json({
+      success: true,
+      message: 'File received successfully',
+      file: {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+        bufferLength: req.file.buffer ? req.file.buffer.length : 0
+      }
+    });
+  } catch (error) {
+    console.error('❌ Basic upload test failed:', {
+      message: error.message,
+      stack: error.stack
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: 'Basic upload test failed',
+      details: error.message
+    });
+  }
+});
+
+// Test endpoint to verify Cloudinary configuration
+router.get('/test-cloudinary', (req, res) => {
+  try {
+    console.log('🧪 Testing Cloudinary configuration...');
+    
+    // Check environment variables
+    const envVars = {
+      CLOUDINARY_CLOUD_NAME: !!process.env.CLOUDINARY_CLOUD_NAME,
+      CLOUDINARY_API_KEY: !!process.env.CLOUDINARY_API_KEY,
+      CLOUDINARY_API_SECRET: !!process.env.CLOUDINARY_API_SECRET
+    };
+    
+    console.log('Environment variables check:', envVars);
+    
+    // Try to load Cloudinary config
+    const { cloudinary } = require('../config/cloudinary');
+    
+    // Get Cloudinary config (without exposing secrets)
+    const config = cloudinary.config();
+    const configStatus = {
+      cloud_name: !!config.cloud_name,
+      api_key: !!config.api_key,
+      api_secret: !!config.api_secret,
+      cloud_name_value: config.cloud_name // Safe to show
+    };
+    
+    console.log('Cloudinary config status:', configStatus);
+    
+    res.json({
+      success: true,
+      message: 'Cloudinary configuration test',
+      environmentVariables: envVars,
+      cloudinaryConfig: configStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Cloudinary test failed:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
+    res.status(500).json({
+      success: false,
+      error: 'Cloudinary configuration failed',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Simple test endpoint to verify routes are working
+router.get('/test-upload-routes', (req, res) => {
+  res.json({
+    message: 'Upload routes are working!',
+    availableRoutes: [
+      'POST /api/courses/upload/thumbnail',
+      'POST /api/courses/upload/thumbnail-url', 
+      'POST /api/courses/upload/video',
+      'POST /api/courses/upload/video-url',
+      'POST /api/courses/test-upload'
+    ],
+    timestamp: new Date().toISOString()
   });
 });
 
