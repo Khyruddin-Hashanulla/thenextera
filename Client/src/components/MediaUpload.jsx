@@ -57,11 +57,12 @@ const MediaUpload = ({
         },
       });
 
-      if (response.data.success) {
+      // Check if response has the expected data structure
+      if (response.data && response.data.url) {
         setPreview(response.data.url);
         onSuccess?.(response.data.url, response.data);
       } else {
-        throw new Error(response.data.error || 'Upload failed');
+        throw new Error(response.data?.error || response.data?.message || 'Upload failed - no URL returned');
       }
     } catch (error) {
       console.error('File upload error:', error);

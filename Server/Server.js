@@ -173,12 +173,13 @@ app.use(
     },
     
     cookie: {
-      secure: isProduction, // HTTPS in production only
-      sameSite: isProduction ? 'none' : 'lax', // Cross-origin support in production
+      secure: false, // Disable secure requirement for iPhone Safari compatibility
+      sameSite: 'lax', // More permissive than 'none' for iPhone Safari
       httpOnly: true, // XSS protection
       maxAge: 30 * 24 * 3600 * 1000, // 30 days
+      domain: undefined, // Let browser handle domain
       path: '/', // Explicit path for mobile browsers
-      priority: 'high', // High priority cookie handling
+      priority: 'high' // High priority cookie handling for mobile
     },
   })
 );
@@ -290,8 +291,8 @@ app.get('/debug/session', (req, res) => {
     
     // Session Configuration
     sessionConfig: {
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      secure: false,
+      sameSite: 'lax',
       httpOnly: true,
       maxAge: 30 * 24 * 3600 * 1000,
       path: '/'

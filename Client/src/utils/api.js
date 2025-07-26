@@ -105,85 +105,89 @@ api.interceptors.response.use(
   }
 );
 
-// File upload helper function (for thumbnails)
-const uploadFile = (file, type = 'image') => {
-  const formData = new FormData();
-  formData.append(type, file);
-  
-  // Create config object for upload
-  const config = {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  };
-  
-  // For iPhone Safari, explicitly add JWT token to headers
+// File upload helper function (for thumbnails) with iPhone Safari optimizations
+export const uploadFile = async (file, type = 'image') => {
   const isIPhoneSafariBrowser = isIPhoneSafari();
-  if (isIPhoneSafariBrowser) {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('🍎 iPhone Safari: Adding JWT token to upload request');
-    }
+  
+  // iPhone Safari specific file size limits
+  const maxSize = isIPhoneSafariBrowser ? 
+    (type === 'video' ? 25 * 1024 * 1024 : 5 * 1024 * 1024) : // 25MB video, 5MB image for iPhone Safari
+    (type === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024); // 50MB video, 10MB image for others
+  
+  // Validate file size before upload
+  if (file.size > maxSize) {
+    const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+    throw new Error(isIPhoneSafariBrowser ? 
+      `File too large for mobile upload. Please compress to under ${maxSizeMB}MB.` :
+      `File size exceeds ${maxSizeMB}MB limit.`
+    );
   }
   
-  return api.post(`/api/courses/upload/${type}`, formData, config);
+  const formData = new FormData();
+  formData.append(type === 'video' ? 'video' : 'thumbnail', file);
+  
+  console.log('📤 Starting file upload:', {
+    fileName: file.name,
+    fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
+    fileType: file.type,
+    isIPhoneSafari: isIPhoneSafariBrowser,
+    maxAllowed: `${Math.round(maxSize / (1024 * 1024))}MB`
+  });
+  
+  try {
+    const endpoint = type === 'video' ? '/api/courses/upload/video' : '/api/courses/upload/thumbnail';
+    
+    const response = await api.post(endpoint, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      // iPhone Safari specific timeout and retry settings
+      timeout: isIPhoneSafariBrowser ? 600000 : 300000, // 10 minutes for iPhone Safari, 5 for others
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        console.log(`📊 Upload progress: ${percentCompleted}%${isIPhoneSafariBrowser ? ' (iPhone Safari)' : ''}`);
+      }
+    });
+    
+    console.log('✅ File upload successful:', {
+      url: response.data.url,
+      optimizedForMobile: response.data.optimizedForMobile,
+      isIPhoneSafari: isIPhoneSafariBrowser
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('❌ File upload failed:', {
+      message: error.message,
+      response: error.response?.data,
+      isIPhoneSafari: isIPhoneSafariBrowser
+    });
+    
+    // Enhanced error handling for iPhone Safari
+    if (isIPhoneSafariBrowser) {
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        throw new Error('Upload timeout on mobile. Please try with a smaller file or check your connection.');
+      } else if (error.response?.status === 413 || error.message.includes('large')) {
+        throw new Error('File too large for mobile upload. Please compress the file and try again.');
+      } else if (error.response?.status === 0 || error.message.includes('Network Error')) {
+        throw new Error('Network error on mobile. Please check your connection and try again.');
+      }
+    }
+    
+    // Use server error message if available, otherwise generic message
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
+    throw new Error(errorMessage);
+  }
 };
 
 // Image upload helper function (for thumbnails)
-const uploadImage = (file) => {
-  const formData = new FormData();
-  formData.append('thumbnail', file);
-  
-  // Create config object for upload
-  const config = {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  };
-  
-  // For iPhone Safari, explicitly add JWT token to headers
-  const isIPhoneSafariBrowser = isIPhoneSafari();
-  if (isIPhoneSafariBrowser) {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('🍎 iPhone Safari: Adding JWT token to thumbnail upload');
-    }
-  }
-  
-  return api.post('/api/courses/upload/thumbnail', formData, config);
+export const uploadImage = async (file) => {
+  return await uploadFile(file, 'image');
 };
 
 // Video upload helper function
-const uploadVideo = (file) => {
-  const formData = new FormData();
-  formData.append('video', file);
-  
-  // Create config object for upload
-  const config = {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    onUploadProgress: (progressEvent) => {
-      const percentCompleted = Math.round(
-        (progressEvent.loaded * 100) / progressEvent.total
-      );
-      console.log(`Upload Progress: ${percentCompleted}%`);
-    },
-  };
-  
-  // For iPhone Safari, explicitly add JWT token to headers
-  const isIPhoneSafariBrowser = isIPhoneSafari();
-  if (isIPhoneSafariBrowser) {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log('🍎 iPhone Safari: Adding JWT token to video upload');
-    }
-  }
-  
-  return api.post('/api/courses/upload/video', formData, config);
+export const uploadVideo = async (file) => {
+  return await uploadFile(file, 'video');
 };
 
 export { isIPhoneSafari };

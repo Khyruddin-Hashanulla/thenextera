@@ -19,7 +19,7 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
-    console.log('📁 File upload attempt:', {
+    console.log(' File upload attempt:', {
       originalname: file.originalname,
       mimetype: file.mimetype,
       fieldname: file.fieldname
@@ -34,106 +34,214 @@ const upload = multer({
   }
 });
 
+// Alternative upload method using direct buffer upload (fallback for EPIPE errors)
+const uploadToCloudinaryDirect = async (buffer, options) => {
+  try {
+    console.log(' Trying direct Cloudinary upload (fallback method)...');
+    
+    // Convert buffer to base64 data URI
+    const base64Buffer = `data:${options.resource_type === 'video' ? 'video/mp4' : 'image/png'};base64,${buffer.toString('base64')}`;
+    
+    const result = await cloudinary.uploader.upload(base64Buffer, {
+      ...options,
+      // Simpler options for direct upload
+      timeout: 300000, // 5 minutes
+      resource_type: options.resource_type || 'image'
+    });
+    
+    console.log(' Direct Cloudinary upload successful:', {
+      public_id: result.public_id,
+      secure_url: result.secure_url
+    });
+    
+    return result;
+  } catch (error) {
+    console.error(' Direct Cloudinary upload failed:', error.message);
+    throw error;
+  }
+};
+
 // Helper function to upload buffer to Cloudinary with retry and better error handling
 const uploadToCloudinary = async (buffer, options, maxRetries = 3) => {
+  // Detect iPhone Safari for mobile-optimized settings
+  const isIPhoneSafari = options.userAgent && 
+    /iPhone/.test(options.userAgent) && 
+    /Safari/.test(options.userAgent) && 
+    !/Chrome/.test(options.userAgent);
+  
+  let lastError;
+  
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔄 Cloudinary upload attempt ${attempt}/${maxRetries}`);
+      console.log(` Cloudinary upload attempt ${attempt}/${maxRetries}${isIPhoneSafari ? ' (iPhone Safari)' : ''}`);
       
-      // Add more robust options for large files
+      // Mobile-optimized options for iPhone Safari
       const uploadOptions = {
         ...options,
-        timeout: 300000, // 5 minute timeout for large files
-        chunk_size: 6000000, // 6MB chunks
+        timeout: isIPhoneSafari ? 600000 : 300000, // 10 minutes for iPhone Safari, 5 for others
+        chunk_size: isIPhoneSafari ? 2000000 : 6000000, // 2MB chunks for iPhone Safari, 6MB for others
         eager_async: true, // Process transformations asynchronously
         use_filename: false, // Let Cloudinary generate filename
         unique_filename: true,
-        overwrite: false,
-        ...options // Allow override of defaults
+        // Enhanced connection options to prevent EPIPE errors
+        connection_timeout: 120000, // 2 minutes connection timeout
+        read_timeout: 300000, // 5 minutes read timeout
+        write_timeout: 300000, // 5 minutes write timeout
+        // iPhone Safari specific optimizations
+        ...(isIPhoneSafari && {
+          quality: 'auto:low', // Lower quality for faster upload on mobile
+          fetch_format: 'auto', // Let Cloudinary choose optimal format
+          flags: 'progressive', // Progressive loading for images
+        })
       };
       
-      console.log('📤 Upload options:', {
-        folder: uploadOptions.folder,
-        resource_type: uploadOptions.resource_type,
-        timeout: uploadOptions.timeout,
-        chunk_size: uploadOptions.chunk_size,
-        bufferSize: buffer ? buffer.length : 'no buffer'
-      });
-      
       const result = await new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          uploadOptions,
-          (error, result) => {
-            if (error) {
-              console.error(`❌ Cloudinary upload attempt ${attempt} failed:`, {
-                message: error.message,
-                http_code: error.http_code,
-                error_code: error.error?.code
-              });
-              reject(error);
-            } else {
-              console.log(`✅ Cloudinary upload attempt ${attempt} successful:`, {
-                public_id: result.public_id,
-                secure_url: result.secure_url,
-                bytes: result.bytes,
-                format: result.format
-              });
-              resolve(result);
+        let uploadStream;
+        let uploadTimeout;
+        let streamClosed = false;
+        
+        try {
+          uploadStream = cloudinary.uploader.upload_stream(
+            uploadOptions,
+            (error, result) => {
+              if (streamClosed) return; // Prevent multiple callbacks
+              streamClosed = true;
+              
+              if (uploadTimeout) {
+                clearTimeout(uploadTimeout);
+              }
+              
+              if (error) {
+                console.error(` Cloudinary upload error (attempt ${attempt}):`, {
+                  message: error.message,
+                  http_code: error.http_code,
+                  error_code: error.error?.code,
+                  isIPhoneSafari,
+                  isNetworkError: error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT'
+                });
+                reject(error);
+              } else {
+                console.log(` Cloudinary upload successful (attempt ${attempt}):`, {
+                  public_id: result.public_id,
+                  secure_url: result.secure_url,
+                  isIPhoneSafari
+                });
+                resolve(result);
+              }
             }
+          );
+          
+          // Enhanced error handling for the upload stream
+          uploadStream.on('error', (streamError) => {
+            if (streamClosed) return;
+            streamClosed = true;
+            
+            if (uploadTimeout) {
+              clearTimeout(uploadTimeout);
+            }
+            
+            console.error(` Upload stream error on attempt ${attempt}:`, {
+              message: streamError.message,
+              code: streamError.code,
+              isNetworkError: streamError.code === 'EPIPE' || streamError.code === 'ECONNRESET'
+            });
+            reject(streamError);
+          });
+          
+          // Set up timeout for the upload stream to prevent hanging
+          uploadTimeout = setTimeout(() => {
+            if (streamClosed) return;
+            streamClosed = true;
+            
+            console.error(` Upload timeout on attempt ${attempt} after ${uploadOptions.timeout}ms`);
+            if (uploadStream && typeof uploadStream.destroy === 'function') {
+              uploadStream.destroy();
+            }
+            reject(new Error('Upload timeout - connection took too long'));
+          }, uploadOptions.timeout);
+          
+          // Clear timeout on completion
+          uploadStream.on('finish', () => {
+            if (uploadTimeout) {
+              clearTimeout(uploadTimeout);
+            }
+          });
+          
+          uploadStream.on('close', () => {
+            if (uploadTimeout) {
+              clearTimeout(uploadTimeout);
+            }
+          });
+          
+          // Write buffer to stream with error handling
+          if (buffer && buffer.length > 0) {
+            uploadStream.end(buffer);
+          } else {
+            if (uploadTimeout) {
+              clearTimeout(uploadTimeout);
+            }
+            reject(new Error('Invalid buffer provided for upload'));
           }
-        );
-        
-        // Set up error handling for the stream
-        uploadStream.on('error', (error) => {
-          console.error(`❌ Upload stream error on attempt ${attempt}:`, error);
-          reject(error);
-        });
-        
-        // Write buffer to stream
-        if (buffer) {
-          uploadStream.end(buffer);
-        } else {
-          uploadStream.end();
+          
+        } catch (streamCreationError) {
+          if (uploadTimeout) {
+            clearTimeout(uploadTimeout);
+          }
+          console.error(` Stream creation error on attempt ${attempt}:`, streamCreationError);
+          reject(streamCreationError);
         }
       });
       
+      // If we get here, the upload was successful
       return result;
+      
     } catch (error) {
-      console.error(`❌ Upload attempt ${attempt} failed:`, {
+      lastError = error;
+      
+      console.error(` Upload attempt ${attempt} failed:`, {
         message: error.message,
         code: error.code,
-        http_code: error.http_code,
-        error_code: error.error?.code
+        isIPhoneSafari,
+        isNetworkError: error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT'
       });
       
+      // If this was the last attempt, throw the error
       if (attempt === maxRetries) {
-        // If all retries failed, throw a more descriptive error
-        const enhancedError = new Error(`Cloudinary upload failed after ${maxRetries} attempts: ${error.message}`);
-        enhancedError.originalError = error;
-        enhancedError.code = error.code;
-        throw enhancedError;
+        // Try direct upload as fallback
+        if (error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+          console.log(' Trying direct upload as fallback...');
+          return uploadToCloudinaryDirect(buffer, options);
+        }
+        throw new Error(`Upload failed after ${maxRetries} attempts: ${error.message}`);
       }
       
-      // Progressive delay with jitter to avoid thundering herd
-      const delay = (1000 * attempt) + Math.random() * 1000;
-      console.log(`⏳ Waiting ${Math.round(delay)}ms before retry...`);
+      // Progressive backoff with longer delays for network errors
+      const isNetworkError = error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT';
+      const baseDelay = isIPhoneSafari ? 3000 : 1000;
+      const networkErrorMultiplier = isNetworkError ? 2 : 1;
+      const delay = baseDelay * attempt * networkErrorMultiplier;
+      
+      console.log(` Waiting ${delay}ms before retry (network error: ${isNetworkError})...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+  
+  // This should never be reached, but just in case
+  throw lastError || new Error('Upload failed for unknown reason');
 };
 
 // Helper function to upload from URL to Cloudinary
 const uploadFromUrl = async (url, options, maxRetries = 3) => {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔄 URL upload attempt ${attempt}/${maxRetries} for: ${url}`);
+      console.log(` URL upload attempt ${attempt}/${maxRetries} for: ${url}`);
       
       const result = await cloudinary.uploader.upload(url, {
         ...options,
         timeout: 120000,
       });
       
-      console.log(`✅ URL upload attempt ${attempt} successful:`, {
+      console.log(` URL upload attempt ${attempt} successful:`, {
         public_id: result.public_id,
         secure_url: result.secure_url,
         bytes: result.bytes
@@ -141,7 +249,7 @@ const uploadFromUrl = async (url, options, maxRetries = 3) => {
       
       return result;
     } catch (error) {
-      console.error(`❌ URL upload attempt ${attempt} failed:`, {
+      console.error(` URL upload attempt ${attempt} failed:`, {
         message: error.message,
         code: error.code
       });
@@ -193,179 +301,118 @@ const validateVideoUrl = async (url) => {
 // Upload thumbnail from file - Instructor only
 router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.single('thumbnail'), async (req, res) => {
   try {
-    console.log('🔍 Thumbnail upload route hit');
+    console.log(' Thumbnail upload route hit');
     
     // iPhone Safari detection and enhanced logging
     const userAgent = req.headers['user-agent'] || '';
     const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
     
-    console.log('📋 Request details:', {
+    console.log(' Upload request details:', {
       hasFile: !!req.file,
+      userAgent: userAgent.substring(0, 100) + '...',
       isIPhoneSafari,
-      contentLength: req.headers['content-length'],
-      contentType: req.headers['content-type'],
-      userAgent: isIPhoneSafari ? 'iPhone Safari' : 'Other',
-      sessionId: req.sessionID?.substring(0, 8) + '...',
-      userId: req.user?.id
+      fileSize: req.file?.size,
+      fileName: req.file?.originalname,
+      mimeType: req.file?.mimetype
     });
-    
+
     if (!req.file) {
-      console.warn('⚠️ No file provided in request');
+      console.error(' No file provided in thumbnail upload');
       return res.status(400).json({ 
-        error: 'No thumbnail file provided',
-        type: 'missing_file',
-        isIPhoneSafari
+        error: 'No file provided',
+        message: isIPhoneSafari ? 'Please select an image file to upload' : 'No thumbnail file received'
       });
     }
 
-    console.log('📁 File received:', {
+    console.log(' File details:', {
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      bufferLength: req.file.buffer ? req.file.buffer.length : 'no buffer',
+      bufferLength: req.file.buffer?.length
+    });
+
+    // Validate file type
+    if (!req.file.mimetype.startsWith('image/')) {
+      return res.status(400).json({ 
+        error: 'Invalid file type. Please upload an image.',
+        message: 'Only image files (JPG, PNG, GIF, WebP) are allowed for thumbnails'
+      });
+    }
+
+    // Check file size (10MB limit, but smaller for iPhone Safari)
+    const maxSize = isIPhoneSafari ? 5 * 1024 * 1024 : 10 * 1024 * 1024; // 5MB for iPhone Safari, 10MB for others
+    if (req.file.size > maxSize) {
+      const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+      return res.status(400).json({ 
+        error: `File too large. Maximum size is ${maxSizeMB}MB`,
+        message: isIPhoneSafari ? 
+          `Please choose a smaller image (max ${maxSizeMB}MB for mobile)` : 
+          `File size exceeds ${maxSizeMB}MB limit`
+      });
+    }
+
+    console.log(' Starting Cloudinary upload...');
+    
+    // Debug Cloudinary configuration
+    console.log(' Cloudinary config check:', {
+      hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
+      bufferSize: req.file.buffer?.length,
+      bufferValid: Buffer.isBuffer(req.file.buffer)
+    });
+    
+    // Upload to Cloudinary with iPhone Safari optimizations
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: 'course-thumbnails',
+      resource_type: 'image',
+      transformation: [
+        { width: 800, height: 450, crop: 'fill', quality: isIPhoneSafari ? 'auto:low' : 'auto' }
+      ],
+      userAgent // Pass user agent for iPhone Safari detection
+    });
+
+    console.log(' Thumbnail upload successful:', {
+      public_id: result.public_id,
+      secure_url: result.secure_url,
       isIPhoneSafari
     });
 
-    // Validate file buffer
-    if (!req.file.buffer) {
-      console.error('❌ File buffer is missing');
-      return res.status(400).json({
-        error: 'File buffer is missing',
-        type: 'buffer_error',
-        isIPhoneSafari
-      });
-    }
-
-    // iPhone Safari specific upload handling
-    if (isIPhoneSafari) {
-      console.log('🍎 iPhone Safari upload - Enhanced handling');
-      
-      // Set iPhone Safari specific response headers
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      
-      // Force session save for iPhone Safari before upload
-      if (req.session) {
-        req.session.uploadAttempt = new Date().toISOString();
-        req.session.touch();
-        
-        await new Promise((resolve) => {
-          req.session.save((err) => {
-            if (err) {
-              console.error('🍎 iPhone Safari session save error before upload:', err);
-            } else {
-              console.log('🍎 iPhone Safari session saved before upload');
-            }
-            resolve();
-          });
-        });
-      }
-    }
-
-    console.log('🚀 Starting Cloudinary upload...');
-    
-    let result;
-    try {
-      // Enhanced Cloudinary upload with iPhone Safari compatibility
-      result = await uploadToCloudinary(req.file.buffer, {
-        folder: 'course-thumbnails',
-        resource_type: 'image',
-        originalname: req.file.originalname,
-        transformation: [
-          { width: 800, height: 450, crop: 'fill', quality: 'auto' }
-        ],
-        // iPhone Safari specific options
-        timeout: isIPhoneSafari ? 300000 : 120000, // 5 min for iPhone Safari, 2 min for others
-        chunk_size: isIPhoneSafari ? 3000000 : 6000000, // Smaller chunks for iPhone Safari
-        retry: isIPhoneSafari ? 5 : 3 // More retries for iPhone Safari
-      });
-      
-      console.log('✅ Cloudinary upload successful');
-    } catch (cloudinaryError) {
-      console.warn('⚠️ Cloudinary upload failed, using local fallback:', {
-        error: cloudinaryError.message,
-        code: cloudinaryError.code,
-        isIPhoneSafari
-      });
-      
-      // Enhanced fallback for iPhone Safari
-      if (isIPhoneSafari) {
-        console.log('🍎 iPhone Safari - Using enhanced local fallback');
-      }
-      
-      // Fallback to local storage
-      result = await saveFileLocally(req.file.buffer, req.file.originalname, 'thumbnail');
-      console.log('💾 Local fallback successful');
-    }
-
-    console.log('✅ Thumbnail upload completed:', {
+    res.json({
+      message: 'Thumbnail uploaded successfully',
       url: result.secure_url,
       public_id: result.public_id,
-      size: result.bytes,
-      fallback: result.fallback || false,
-      isIPhoneSafari
+      optimizedForMobile: isIPhoneSafari
     });
-    
-    // iPhone Safari: Force session save after successful upload
-    if (isIPhoneSafari && req.session) {
-      req.session.lastUpload = new Date().toISOString();
-      req.session.uploadSuccess = true;
-      req.session.touch();
-      
-      await new Promise((resolve) => {
-        req.session.save((err) => {
-          if (err) {
-            console.error('🍎 iPhone Safari session save error after upload:', err);
-          } else {
-            console.log('🍎 iPhone Safari session saved after upload');
-          }
-          resolve();
-        });
-      });
-    }
-    
-    res.json({
-      success: true,
-      url: result.secure_url,
-      publicId: result.public_id,
-      size: result.bytes,
-      mimetype: req.file.mimetype,
-      fallback: result.fallback || false,
-      isIPhoneSafari,
-      timestamp: new Date().toISOString()
-    });
+
   } catch (error) {
-    console.error('❌ Thumbnail upload failed completely:', {
+    console.error(' Thumbnail upload failed completely:', {
       message: error.message,
       stack: error.stack,
       name: error.name,
       code: error.code,
-      isIPhoneSafari: /iPhone/.test(req.headers['user-agent'] || '') && /Safari/.test(req.headers['user-agent'] || '') && !/Chrome/.test(req.headers['user-agent'] || '')
+      userAgent: req.headers['user-agent']?.substring(0, 100)
     });
+
+    // iPhone Safari specific error messages
+    const userAgent = req.headers['user-agent'] || '';
+    const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
     
-    // iPhone Safari specific error handling
-    const isIPhoneSafari = /iPhone/.test(req.headers['user-agent'] || '') && /Safari/.test(req.headers['user-agent'] || '') && !/Chrome/.test(req.headers['user-agent'] || '');
-    
-    if (isIPhoneSafari && req.session) {
-      req.session.uploadError = error.message;
-      req.session.uploadErrorTime = new Date().toISOString();
-      req.session.touch();
-      
-      req.session.save((err) => {
-        if (err) {
-          console.error('🍎 iPhone Safari session save error after upload error:', err);
-        }
-      });
+    let errorMessage = 'Failed to upload thumbnail';
+    if (isIPhoneSafari) {
+      if (error.message.includes('timeout') || error.message.includes('network')) {
+        errorMessage = 'Upload timeout on mobile. Please try with a smaller image or check your connection.';
+      } else if (error.message.includes('size') || error.message.includes('large')) {
+        errorMessage = 'Image too large for mobile upload. Please compress the image and try again.';
+      } else {
+        errorMessage = 'Mobile upload failed. Please try again or use a different image.';
+      }
     }
-    
-    res.status(500).json({ 
-      error: 'Failed to upload thumbnail',
-      details: error.message,
-      type: 'upload_error',
-      isIPhoneSafari,
-      timestamp: new Date().toISOString(),
-      suggestion: isIPhoneSafari ? 'Try refreshing the page and uploading again. iPhone Safari may require multiple attempts.' : 'Please try again or contact support.'
+
+    res.status(500).json({
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      isMobile: isIPhoneSafari
     });
   }
 });
@@ -450,69 +497,113 @@ router.post('/upload/thumbnail-url', requireHybridAuth, requireInstructor, async
 // Upload video from file - Instructor only
 router.post('/upload/video', requireHybridAuth, requireInstructor, upload.single('video'), async (req, res) => {
   try {
-    console.log('🔍 Video upload route hit');
+    console.log(' Video upload route hit');
     
-    if (!req.file) {
-      return res.status(400).json({ 
-        error: 'No video file provided',
-        type: 'missing_file'
-      });
-    }
-
-    console.log('📁 File received:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      bufferLength: req.file.buffer ? req.file.buffer.length : 'no buffer'
+    // iPhone Safari detection and enhanced logging
+    const userAgent = req.headers['user-agent'] || '';
+    const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    
+    console.log(' Video upload request details:', {
+      hasFile: !!req.file,
+      userAgent: userAgent.substring(0, 100) + '...',
+      isIPhoneSafari,
+      fileSize: req.file?.size,
+      fileName: req.file?.originalname,
+      mimeType: req.file?.mimetype
     });
 
-    // Validate file buffer
-    if (!req.file.buffer) {
-      console.error('❌ File buffer is missing');
-      return res.status(400).json({
-        error: 'File buffer is missing',
-        type: 'buffer_error'
+    if (!req.file) {
+      console.error(' No video file provided');
+      return res.status(400).json({ 
+        error: 'No video file provided',
+        message: isIPhoneSafari ? 'Please select a video file to upload' : 'No video file received'
       });
     }
 
-    console.log('🚀 Starting Cloudinary upload...');
+    // Validate file type
+    if (!req.file.mimetype.startsWith('video/')) {
+      return res.status(400).json({ 
+        error: 'Invalid file type. Please upload a video.',
+        message: 'Only video files (MP4, MOV, AVI, WebM) are allowed'
+      });
+    }
+
+    // Check file size (more restrictive for iPhone Safari)
+    const maxSize = isIPhoneSafari ? 25 * 1024 * 1024 : 50 * 1024 * 1024; // 25MB for iPhone Safari, 50MB for others
+    if (req.file.size > maxSize) {
+      const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+      return res.status(400).json({ 
+        error: `Video file too large. Maximum size is ${maxSizeMB}MB`,
+        message: isIPhoneSafari ? 
+          `Please compress your video to under ${maxSizeMB}MB for mobile upload` : 
+          `Video file exceeds ${maxSizeMB}MB limit`
+      });
+    }
+
+    console.log(' Starting video upload to Cloudinary...');
     
-    // Upload to Cloudinary with retry
+    // Debug Cloudinary configuration
+    console.log(' Cloudinary config check:', {
+      hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
+      hasApiKey: !!process.env.CLOUDINARY_API_KEY,
+      hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
+      bufferSize: req.file.buffer?.length,
+      bufferValid: Buffer.isBuffer(req.file.buffer)
+    });
+    
+    // Upload to Cloudinary with iPhone Safari optimizations
     const result = await uploadToCloudinary(req.file.buffer, {
       folder: 'course-videos',
       resource_type: 'video',
-      eager: [
-        { width: 640, height: 480, crop: 'pad' },
-        { width: 1280, height: 720, crop: 'pad' }
+      transformation: isIPhoneSafari ? [
+        { quality: 'auto:low', format: 'mp4' } // Lower quality for iPhone Safari
+      ] : [
+        { quality: 'auto', format: 'mp4' }
       ],
-      eager_async: true
+      userAgent // Pass user agent for iPhone Safari detection
     });
 
-    console.log('✅ Video uploaded successfully:', {
+    console.log(' Video upload successful:', {
+      public_id: result.public_id,
+      secure_url: result.secure_url,
+      duration: result.duration,
+      isIPhoneSafari
+    });
+
+    res.json({
+      message: 'Video uploaded successfully',
       url: result.secure_url,
       public_id: result.public_id,
-      size: result.bytes
+      duration: result.duration,
+      optimizedForMobile: isIPhoneSafari
     });
-    
-    res.json({
-      success: true,
-      url: result.secure_url,
-      publicId: result.public_id,
-      size: result.bytes,
-      mimetype: req.file.mimetype
-    });
+
   } catch (error) {
-    console.error('❌ Video upload failed:', {
+    console.error(' Video upload failed:', {
       message: error.message,
       stack: error.stack,
-      name: error.name,
-      code: error.code
+      userAgent: req.headers['user-agent']?.substring(0, 100)
     });
-    res.status(500).json({ 
-      error: 'Failed to upload video',
-      details: error.message,
-      type: 'upload_error',
-      timestamp: new Date().toISOString()
+
+    // iPhone Safari specific error messages
+    const userAgent = req.headers['user-agent'] || '';
+    const isIPhoneSafari = /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    
+    let errorMessage = 'Failed to upload video';
+    if (isIPhoneSafari) {
+      if (error.message.includes('timeout') || error.message.includes('network')) {
+        errorMessage = 'Video upload timeout on mobile. Please try with a smaller video or check your connection.';
+      } else if (error.message.includes('size') || error.message.includes('large')) {
+        errorMessage = 'Video too large for mobile upload. Please compress the video and try again.';
+      } else {
+        errorMessage = 'Mobile video upload failed. Please try again with a smaller file.';
+      }
+    }
+
+    res.status(500).json({
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      isMobile: isIPhoneSafari
     });
   }
 });
@@ -1407,7 +1498,7 @@ router.get('/test-auth', requireHybridAuth, hybridRequireTeacher, (req, res) => 
 
 // Test upload route for debugging
 router.post('/test-upload', requireHybridAuth, requireInstructor, (req, res) => {
-  console.log('🧪 Test upload route hit:', {
+  console.log(' Test upload route hit:', {
     hasSession: !!req.session,
     isAuthenticated: req.session?.isAuthenticated,
     userId: req.session?.userId || req.user?.id,
@@ -1431,8 +1522,8 @@ router.post('/test-upload', requireHybridAuth, requireInstructor, (req, res) => 
 // Simple test endpoint for upload functionality
 router.post('/test-upload-basic', requireHybridAuth, requireInstructor, upload.single('thumbnail'), (req, res) => {
   try {
-    console.log('🧪 Basic upload test hit');
-    console.log('📋 Test request details:', {
+    console.log(' Basic upload test hit');
+    console.log(' Test request details:', {
       hasFile: !!req.file,
       contentType: req.headers['content-type'],
       userAgent: req.headers['user-agent']
@@ -1446,7 +1537,7 @@ router.post('/test-upload-basic', requireHybridAuth, requireInstructor, upload.s
       });
     }
     
-    console.log('📁 Test file details:', {
+    console.log(' Test file details:', {
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
@@ -1465,7 +1556,7 @@ router.post('/test-upload-basic', requireHybridAuth, requireInstructor, upload.s
       }
     });
   } catch (error) {
-    console.error('❌ Basic upload test failed:', {
+    console.error(' Basic upload test failed:', {
       message: error.message,
       stack: error.stack
     });
@@ -1481,7 +1572,7 @@ router.post('/test-upload-basic', requireHybridAuth, requireInstructor, upload.s
 // Test endpoint to verify Cloudinary configuration
 router.get('/test-cloudinary', (req, res) => {
   try {
-    console.log('🧪 Testing Cloudinary configuration...');
+    console.log(' Testing Cloudinary configuration...');
     
     // Check environment variables
     const envVars = {
@@ -1514,7 +1605,7 @@ router.get('/test-cloudinary', (req, res) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('❌ Cloudinary test failed:', {
+    console.error(' Cloudinary test failed:', {
       message: error.message,
       stack: error.stack,
       name: error.name,
