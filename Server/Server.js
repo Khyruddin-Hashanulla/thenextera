@@ -145,18 +145,18 @@ const iphoneSafariFix = require('./iphone-safari-fix');
 app.use(iphoneSafariFix);
 
 // Enhanced session configuration with proper environment detection
-// Force development mode for localhost to prevent secure cookie issues
-const isProduction = process.env.NODE_ENV === "production" && !process.env.FORCE_DEV;
-const isDevelopment = !isProduction;
+// Detect if we're running on localhost for development
+const isLocalhost = process.env.PORT === "8081" || 
+                   process.env.NODE_ENV !== "production" ||
+                   !process.env.NODE_ENV;
 
-// Override production detection for localhost development
-if (process.env.NODE_ENV === "production" && (process.env.PORT === "8081" || !process.env.PORT)) {
-  console.log('🔧 Overriding production mode for localhost development');
-}
+const isProduction = process.env.NODE_ENV === "production" && !isLocalhost;
+const isDevelopment = !isProduction;
 
 console.log('🌍 Environment configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
+  isLocalhost: isLocalhost,
   isProduction: isProduction,
   isDevelopment: isDevelopment,
   cookieSecure: isProduction,
@@ -189,8 +189,8 @@ app.use(
     },
     
     cookie: {
-      secure: false, // Force non-secure for localhost development
-      sameSite: 'lax', // Use lax for localhost development
+      secure: isProduction, // Secure cookies in production (HTTPS), non-secure for localhost
+      sameSite: isProduction ? 'none' : 'lax', // Cross-origin in production, lax for localhost
       httpOnly: true, // XSS protection
       maxAge: 30 * 24 * 3600 * 1000, // 30 days
       domain: undefined, // Let browser handle domain
