@@ -293,6 +293,15 @@ router.post("/login", async (req, res) => {
     req.session.isAuthenticated = true;
     req.session.rememberMe = rememberMe || false;
 
+    // Verify session data was set correctly
+    console.log('🔍 Session data before save:', {
+      userId: req.session.userId,
+      userRole: req.session.userRole,
+      userName: req.session.userName,
+      isAuthenticated: req.session.isAuthenticated,
+      sessionId: req.sessionID
+    });
+
     // Force session save for production reliability
     await new Promise((resolve, reject) => {
       req.session.save((err) => {
@@ -301,6 +310,12 @@ router.post("/login", async (req, res) => {
           reject(err);
         } else {
           console.log('✅ Session saved successfully in production');
+          // Verify session data after save
+          console.log('🔍 Session data after save:', {
+            userId: req.session.userId,
+            userRole: req.session.userRole,
+            isAuthenticated: req.session.isAuthenticated
+          });
           resolve();
         }
       });

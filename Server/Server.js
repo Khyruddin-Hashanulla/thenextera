@@ -105,6 +105,7 @@ const store = MongoStore.create({
   stringify: false, // Don't stringify session data
   autoRemove: 'native', // Let MongoDB handle TTL
   autoRemoveInterval: 10, // Minutes between cleanup
+  ttl: 30 * 24 * 3600, // 30 days TTL - CRITICAL for production
   
   // Add error handling for production debugging
   errorHandler: (error) => {
@@ -142,21 +143,23 @@ const iphoneSafariFix = require('./iphone-safari-fix');
 app.use(iphoneSafariFix);
 
 // Enhanced session configuration with proper environment detection
-// Fix localhost detection for development
+// Fix production detection for Render deployment
 const isProduction = process.env.NODE_ENV === "production";
-const isLocalhost = process.env.PORT === "8081" || 
-                   !process.env.NODE_ENV || 
-                   process.env.NODE_ENV === "development";
+const isRenderProduction = process.env.RENDER === "true" || process.env.RENDER_SERVICE_ID;
+const isLocalhost = !isProduction && !isRenderProduction;
 
-// Use localhost-friendly settings for development
-const useSecureCookies = isProduction && !isLocalhost;
-const cookieSameSite = isProduction && !isLocalhost ? 'none' : 'lax';
+// Use production-appropriate settings for Render
+const useSecureCookies = (isProduction || isRenderProduction) && !isLocalhost;
+const cookieSameSite = (isProduction || isRenderProduction) && !isLocalhost ? 'none' : 'lax';
 
 console.log('🌍 Environment configuration:', {
   NODE_ENV: process.env.NODE_ENV,
+  RENDER: process.env.RENDER,
+  RENDER_SERVICE_ID: process.env.RENDER_SERVICE_ID,
   PORT: process.env.PORT,
   isLocalhost: isLocalhost,
   isProduction: isProduction,
+  isRenderProduction: isRenderProduction,
   useSecureCookies: useSecureCookies,
   cookieSameSite: cookieSameSite
 });
