@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const VerifyOTP = () => {
   const [otp, setOtp] = useState('');
@@ -15,6 +16,7 @@ const VerifyOTP = () => {
   const { verifyOTP, resendOTP } = useAuth();
   
   const email = location.state?.email;
+  const intent = location.state?.intent; // Get the intent from registration
 
   // Redirect if no email provided
   useEffect(() => {
@@ -49,8 +51,17 @@ const VerifyOTP = () => {
     }
 
     try {
+      console.log('🔍 Verifying OTP for user with intent:', intent);
       await verifyOTP({ email, otp });
-      alert('Email verified successfully! You can now log in.');
+      
+      // If user chose "Teach on NextEra" during registration, show appropriate message
+      if (intent === 'teach') {
+        console.log('🔍 User chose to teach - will need to apply after login');
+        alert('Email verified successfully! You can now log in. After logging in, you can apply to become an instructor from your dashboard.');
+      } else {
+        alert('Email verified successfully! You can now log in.');
+      }
+      
       navigate('/login');
     } catch (err) {
       console.error('OTP verification error:', err);

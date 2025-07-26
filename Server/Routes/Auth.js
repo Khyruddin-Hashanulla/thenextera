@@ -23,22 +23,67 @@ router.post("/register", async (req, res) => {
       // Check if user wants to change role
       const properRole = role ? (role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()) : 'Student';
       
-      if (existing.role !== properRole) {
-        // Allow role change for existing user and update password
+      // Check if there's any meaningful change (role OR instructor intent)
+      const roleChanged = existing.role !== properRole;
+      const intentChanged = existing.wantsToBeInstructor !== (wantsToBeInstructor || false);
+      
+      if (roleChanged || intentChanged) {
+        // Generate new OTP for role/intent changes
+        const emailVerificationOTP = generateOTP();
+        const emailVerificationExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+        
+        // Allow update for existing user
         const hash = await bcrypt.hash(password, 10);
         existing.role = properRole;
         existing.password = hash; // Update password to the new one provided
+        existing.isEmailVerified = false; // Require re-verification for role changes
+        existing.emailVerificationOTP = emailVerificationOTP;
+        existing.emailVerificationExpires = emailVerificationExpires;
         
         // Handle instructor intent for existing user
         if (wantsToBeInstructor && properRole === 'Student') {
           existing.wantsToBeInstructor = true;
+        } else if (!wantsToBeInstructor) {
+          existing.wantsToBeInstructor = false;
+          // If user is changing back to Student and doesn't want to be instructor,
+          // reset their instructor application to allow future reapplication
+          if (properRole === 'Student' && existing.instructorApplication) {
+            existing.instructorApplication = undefined;
+          }
+        }
+        
+        // If user is changing from instructor/pending_instructor back to Student,
+        // reset instructor application to allow reapplication
+        if (properRole === 'Student' && 
+            (existing.role === 'Instructor' || existing.role === 'pending_instructor')) {
+          existing.instructorApplication = undefined;
+          existing.wantsToBeInstructor = false;
         }
         
         await existing.save();
         
+        // Send verification OTP for role change
+        try {
+          await sendVerificationOTP(email, emailVerificationOTP);
+        } catch (emailError) {
+          console.error("Failed to send verification OTP for role change:", emailError);
+          return res.status(500).json({ 
+            error: "Failed to send verification OTP. Please try again." 
+          });
+        }
+        
+        let updateMessage = '';
+        if (roleChanged && intentChanged) {
+          updateMessage = `Role updated to ${properRole} and instructor intent updated. Please check your email for verification OTP before logging in.`;
+        } else if (roleChanged) {
+          updateMessage = `Role updated to ${properRole}. Please check your email for verification OTP before logging in.`;
+        } else if (intentChanged) {
+          updateMessage = `Instructor intent updated. Please check your email for verification OTP before logging in.`;
+        }
+        
         return res.status(200).json({
           success: true,
-          message: `Account already exists. Role updated to ${properRole} and password updated. Please log in with your new credentials.`,
+          message: updateMessage,
           user: {
             id: existing._id,
             name: existing.name,
@@ -47,12 +92,13 @@ router.post("/register", async (req, res) => {
             isEmailVerified: existing.isEmailVerified,
             wantsToBeInstructor: existing.wantsToBeInstructor
           },
-          roleUpdated: true
+          roleUpdated: true,
+          requiresEmailVerification: true
         });
       } else {
-        // Same role, just inform user
+        // No meaningful changes
         return res.status(400).json({
-          error: `Account with this email already exists as ${existing.role}. Please log in instead.`,
+          error: `Account with this email already exists with the same settings. Please log in instead.`,
           existingRole: existing.role
         });
       }
@@ -62,8 +108,11 @@ router.post("/register", async (req, res) => {
     const emailVerificationOTP = generateOTP();
     const emailVerificationExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    // Ensure proper case for role - always create as Student
-    const properRole = 'Student'; // Force all new registrations to be students
+    // Determine proper role based on instructor intent
+    let properRole = 'Student'; // Default for "Learn on NextEra"
+    if (wantsToBeInstructor) {
+      properRole = 'pending_instructor'; // For "Teach on NextEra"
+    }
 
     const hash = await bcrypt.hash(password, 10);
     const newUser = new User({
@@ -71,10 +120,20 @@ router.post("/register", async (req, res) => {
       email,
       password: hash,
       role: properRole,
-      wantsToBeInstructor: wantsToBeInstructor || false, // Track instructor intent
+      wantsToBeInstructor: wantsToBeInstructor || false,
       emailVerificationOTP,
       emailVerificationExpires
     });
+
+    // If user wants to be instructor, create pending application immediately
+    if (wantsToBeInstructor) {
+      newUser.instructorApplication = {
+        requestDate: new Date(),
+        status: 'pending',
+        resubmissionAllowed: true
+      };
+    }
+
     await newUser.save();
 
     console.log(' New user registered:', {
@@ -100,9 +159,13 @@ router.post("/register", async (req, res) => {
     }
 
     // Return success message without auto-login token
+    const successMessage = wantsToBeInstructor 
+      ? "Registration successful! You've been registered as a pending instructor. Please check your email for the 6-digit OTP code to verify your account, then log in to see your application status."
+      : "Registration successful! Please check your email for the 6-digit OTP code to verify your account.";
+
     res.status(201).json({
       success: true,
-      message: "Registration successful! Please check your email for the 6-digit OTP code to verify your account.",
+      message: successMessage,
       user: {
         id: newUser._id,
         name: newUser.name,
@@ -143,37 +206,17 @@ router.post("/verify-otp", async (req, res) => {
     user.emailVerificationOTP = undefined;
     user.emailVerificationExpires = undefined;
 
-    // Handle instructor application for users who want to be instructors
-    let instructorApplicationCreated = false;
-    if (user.wantsToBeInstructor && user.role === 'Student') {
-      // Check if they don't already have an instructor application
-      if (!user.instructorApplication || !user.instructorApplication.status) {
-        user.instructorApplication = {
-          requestDate: new Date(),
-          status: 'pending'
-        };
-        user.role = 'pending_instructor'; // Update role to pending_instructor
-        instructorApplicationCreated = true;
-        
-        console.log(' Instructor application created for user:', {
-          email: user.email,
-          status: 'pending',
-          requestDate: new Date()
-        });
-      }
-    }
-
     await user.save();
 
     let message = "Email verified successfully! You can now log in.";
-    if (instructorApplicationCreated) {
-      message = "Email verified successfully! Your instructor application has been submitted and is pending admin approval. You can log in to check your status.";
+    if (user.wantsToBeInstructor && user.role === 'pending_instructor') {
+      message = "Email verified successfully! Your instructor application is pending admin approval. You can now log in to check your status.";
     }
 
     res.json({ 
       success: true,
       message,
-      instructorApplicationCreated
+      instructorApplicationCreated: false
     });
   } catch (error) {
     res.status(500).json({ error: "Server error: " + error.message });
@@ -678,15 +721,16 @@ router.post("/apply-instructor", authenticateJWT, async (req, res) => {
       });
     }
 
-    // Create or update instructor application (keep user role as Student)
+    // Create or update instructor application and update role to pending_instructor
     user.instructorApplication = {
       requestDate: new Date(),
       status: 'pending', // Explicitly set to pending when user applies
       resubmissionAllowed: true
     };
 
-    // Set wantsToBeInstructor to true so admin can find this application
+    // Set wantsToBeInstructor to true and update role to pending_instructor
     user.wantsToBeInstructor = true;
+    user.role = 'pending_instructor'; // Update role for consistency
 
     await user.save();
 
@@ -721,10 +765,20 @@ router.get("/pending-instructors", authenticateJWT, async (req, res) => {
     console.log(' Admin fetching pending instructor applications...');
     
     const pendingApplications = await User.find({
-      wantsToBeInstructor: true,
-      role: 'Student',
-      'instructorApplication.status': 'pending'
-    }).select('name email instructorApplication createdAt');
+      $or: [
+        // Users who registered with "Teach on NextEra" (automatic applications)
+        {
+          wantsToBeInstructor: true,
+          role: 'pending_instructor',
+          'instructorApplication.status': 'pending'
+        },
+        // Students who applied manually after registration
+        {
+          role: 'Student',
+          'instructorApplication.status': 'pending'
+        }
+      ]
+    }).select('name email instructorApplication createdAt role wantsToBeInstructor');
 
     console.log(` Found ${pendingApplications.length} pending instructor applications`);
     console.log('Pending applications:', pendingApplications);
@@ -929,7 +983,7 @@ router.get("/instructor-application-status", authenticateJWT, async (req, res) =
       userId: user._id,
       role: user.role,
       wantsToBeInstructor: user.wantsToBeInstructor,
-      hasInstructorApplication: !!user.instructorApplication,
+      hasApplication: !!user.instructorApplication,
       applicationStatus: user.instructorApplication?.status
     });
 
@@ -946,20 +1000,7 @@ router.get("/instructor-application-status", authenticateJWT, async (req, res) =
         message = "Your instructor application is pending admin approval. Please wait for a decision.";
         console.log(' User has pending instructor application');
       }
-      // Check if user wants to be instructor but hasn't applied yet
-      else if (user.wantsToBeInstructor && (!user.instructorApplication || !user.instructorApplication.status)) {
-        canApply = true;
-        showApplicationForm = true;
-        message = "You registered with intent to teach. Click below to submit your instructor application.";
-        console.log(' User wants to be instructor - showing application form');
-      } 
-      // New student who has never applied and didn't register with instructor intent
-      else if (!user.instructorApplication || !user.instructorApplication.status) {
-        canApply = true;
-        showApplicationForm = true;
-        console.log(' New student - can apply');
-      } 
-      // Student who was previously rejected and resubmission is not allowed
+      // Student who was previously rejected - check if resubmission is allowed
       else if (user.instructorApplication?.status === 'rejected') {
         canApply = user.instructorApplication.resubmissionAllowed !== false;
         showApplicationForm = canApply;
@@ -972,12 +1013,26 @@ router.get("/instructor-application-status", authenticateJWT, async (req, res) =
           canApply
         });
       }
-      // Student who was approved (shouldn't happen, but handle it)
+      // Student who was approved but role wasn't updated properly
       else if (user.instructorApplication?.status === 'approved') {
         canApply = false;
         showApplicationForm = false;
         message = "Your instructor application was approved! Your role should be updated soon.";
         console.log(' Application approved but role not updated');
+      }
+      // Check if user wants to be instructor but hasn't applied yet OR can reapply
+      else if (user.wantsToBeInstructor && (!user.instructorApplication || !user.instructorApplication.status)) {
+        canApply = true;
+        showApplicationForm = true;
+        message = "You registered with intent to teach. Click below to submit your instructor application.";
+        console.log(' User wants to be instructor - showing application form');
+      } 
+      // Default case: New student or student who can apply/reapply
+      else {
+        canApply = true;
+        showApplicationForm = true;
+        message = "Apply to become an instructor and start creating courses.";
+        console.log(' Student can apply for instructor role');
       }
     }
     // User is already an instructor or admin

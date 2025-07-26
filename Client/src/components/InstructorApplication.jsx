@@ -36,80 +36,46 @@ const InstructorApplication = () => {
       setApplying(true);
       setMessage('');
       
+      console.log('🔍 InstructorApplication: Submitting instructor application...');
+      console.log('🔍 User data:', { userId: user?._id || user?.id, email: user?.email, name: user?.name });
+      
       const response = await api.post('/api/auth/apply-instructor');
+      console.log('✅ Application submitted successfully:', response.data);
       setMessage(response.data.message);
       
       // Refresh application status
+      console.log('🔄 Refreshing application status...');
       await fetchApplicationStatus();
       
       // Refresh user context to update role
       window.location.reload(); // Simple way to refresh user context
       
     } catch (error) {
-      console.error('Error applying for instructor:', error);
+      console.error('❌ Error applying for instructor:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
       setMessage(error.response?.data?.error || 'Error submitting application');
     } finally {
       setApplying(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
-          <div className="h-8 bg-gray-700 rounded w-1/2"></div>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't show for admins or already approved instructors
-  if (user?.role === 'Admin' || user?.role === 'Instructor') {
-    return null;
-  }
-
-  // Don't show application form if backend says not to show it
-  if (!applicationStatus?.showApplicationForm) {
-    // Show status message for pending instructors or other states
-    if (applicationStatus?.message) {
-      return (
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-white">Instructor Status</h3>
-            {user?.role === 'pending_instructor' && (
-              <span className="bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-sm font-medium">
-                Pending Approval
-              </span>
-            )}
-          </div>
-          
-          <div className="space-y-3">
-            <p className="text-gray-300">{applicationStatus.message}</p>
-            
-            {applicationStatus?.requestDate && (
-              <p className="text-sm text-gray-400">
-                Applied on: {new Date(applicationStatus.requestDate).toLocaleDateString()}
-              </p>
-            )}
-            
-            {user?.role === 'pending_instructor' && (
-              <div className="flex items-center space-x-2 text-yellow-500">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500"></div>
-                <span className="text-sm">Awaiting admin approval...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-    return null;
-  }
-
-  const canApply = applicationStatus?.canApply;
-  const isPending = applicationStatus?.applicationStatus === 'pending';
+  // Determine what to show based on user role and application status
+  const userRole = user?.role;
+  const isPendingInstructor = userRole === 'pending_instructor';
+  const isInstructor = userRole === 'Instructor';
+  const isStudent = userRole === 'Student';
+  
+  const isPending = applicationStatus?.applicationStatus === 'pending' || isPendingInstructor;
   const wasRejected = applicationStatus?.applicationStatus === 'rejected';
+  const canReapply = wasRejected && applicationStatus?.resubmissionAllowed !== false;
+  const canApply = applicationStatus?.canApply && isStudent && !isPending && !wasRejected;
   const wantsToBeInstructor = applicationStatus?.wantsToBeInstructor;
+
+  // Don't show component for instructors
+  if (isInstructor) {
+    return null;
+  }
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -127,111 +93,119 @@ const InstructorApplication = () => {
         )}
       </div>
 
-      {/* Show custom message from backend if available */}
-      {applicationStatus?.message && (
-        <div className="mb-4 p-3 bg-blue-900/20 border border-blue-800 rounded-lg">
-          <p className="text-blue-200">{applicationStatus.message}</p>
-        </div>
-      )}
-
-      {isPending ? (
-        <div className="space-y-3">
-          <p className="text-gray-300">
-            Your instructor application is pending approval. Please wait for admin review.
-          </p>
-          {applicationStatus?.requestDate && (
-            <p className="text-sm text-gray-400">
-              Applied on: {new Date(applicationStatus.requestDate).toLocaleDateString()}
-            </p>
-          )}
-          <div className="flex items-center space-x-2 text-yellow-500">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-500"></div>
-            <span className="text-sm">Awaiting admin approval...</span>
-          </div>
-        </div>
-      ) : wasRejected ? (
-        <div className="space-y-3">
-          <p className="text-gray-300">
-            Your previous instructor application was rejected.
-          </p>
-          {applicationStatus?.rejectionReason && (
-            <p className="text-sm text-red-300 bg-red-900/20 p-3 rounded border border-red-800">
-              <strong>Reason:</strong> {applicationStatus.rejectionReason}
-            </p>
-          )}
-          {applicationStatus?.decisionDate && (
-            <p className="text-sm text-gray-400">
-              Decision made on: {new Date(applicationStatus.decisionDate).toLocaleDateString()}
-            </p>
-          )}
-          {canApply && (
-            <button
-              onClick={handleApplyInstructor}
-              disabled={applying}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-            >
-              {applying ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Reapplying...</span>
-                </>
-              ) : (
-                <span>Reapply as Instructor</span>
-              )}
-            </button>
-          )}
+      {loading ? (
+        <div className="text-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+          <p className="text-gray-400 mt-2">Loading application status...</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {/* Show different message based on whether user wants to be instructor */}
-          <p className="text-gray-300">
-            {wantsToBeInstructor 
-              ? "Complete your instructor application to start creating courses and sharing your knowledge."
-              : "Apply to become an instructor and start creating courses to share your knowledge with students."
-            }
-          </p>
-          
-          <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4">
-            <h4 className="text-blue-300 font-medium mb-2">As an instructor, you'll be able to:</h4>
-            <ul className="text-blue-200 text-sm space-y-1">
-              <li>• Create and publish courses</li>
-              <li>• Upload course materials and videos</li>
-              <li>• Manage enrolled students</li>
-              <li>• Track student progress</li>
-              <li>• Access instructor dashboard</li>
-            </ul>
-          </div>
-          
-          {canApply ? (
-            <button
-              onClick={handleApplyInstructor}
-              disabled={applying}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-            >
-              {applying ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Submitting Application...</span>
-                </>
-              ) : (
-                <span>{wantsToBeInstructor ? "Submit Instructor Application" : "Apply as Instructor"}</span>
-              )}
-            </button>
-          ) : (
-            <p className="text-red-300 text-sm">
-              You are not eligible to apply at this time.
-            </p>
+        <div>
+          {/* Pending Instructor Status */}
+          {isPendingInstructor && (
+            <div className="text-center py-4">
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-4">
+                <p className="text-yellow-400 font-medium">
+                  🎓 Your instructor application is pending admin approval
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  You'll receive notification once an admin reviews your application.
+                </p>
+              </div>
+            </div>
           )}
-        </div>
-      )}
 
-      {message && (
-        <div className={`mt-4 p-3 rounded-lg text-sm ${
-          message.includes('Error') || message.includes('error')
-            ? 'bg-red-900/20 border border-red-800 text-red-300'
-            : 'bg-green-900/20 border border-green-800 text-green-300'
-        }`}>
-          {message}
+          {/* Student - Can Apply */}
+          {isStudent && canApply && (
+            <div>
+              <p className="text-gray-300 mb-4">
+                Ready to share your knowledge? Apply to become an instructor and start creating courses.
+              </p>
+              
+              <div className="bg-gray-700/50 rounded-lg p-4 mb-4">
+                <h4 className="text-white font-medium mb-2">As an instructor, you can:</h4>
+                <ul className="text-gray-300 text-sm space-y-1">
+                  <li>• Create and publish courses</li>
+                  <li>• Upload videos and course materials</li>
+                  <li>• Manage student enrollments</li>
+                  <li>• Earn from course sales</li>
+                </ul>
+              </div>
+
+              <button
+                onClick={handleApplyInstructor}
+                disabled={applying}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {applying ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Submitting Application...
+                  </div>
+                ) : (
+                  'Apply as Instructor'
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Rejected Application */}
+          {wasRejected && canReapply && (
+            <div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                <p className="text-red-400 font-medium">Application Rejected</p>
+                {applicationStatus?.rejectionReason && (
+                  <p className="text-gray-400 text-sm mt-2">
+                    Reason: {applicationStatus.rejectionReason}
+                  </p>
+                )}
+              </div>
+              
+              <button
+                onClick={handleApplyInstructor}
+                disabled={applying}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {applying ? 'Resubmitting...' : 'Reapply as Instructor'}
+              </button>
+            </div>
+          )}
+
+          {/* No Application Allowed */}
+          {!canApply && !isPending && !wasRejected && isStudent && (
+            <div className="text-center py-4">
+              <p className="text-gray-400">
+                Instructor applications are currently not available for your account.
+              </p>
+            </div>
+          )}
+
+          {/* Rejected but cannot reapply */}
+          {wasRejected && !canReapply && (
+            <div className="text-center py-4">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-400 font-medium">Application Rejected</p>
+                {applicationStatus?.rejectionReason && (
+                  <p className="text-gray-400 text-sm mt-2">
+                    Reason: {applicationStatus.rejectionReason}
+                  </p>
+                )}
+                <p className="text-gray-400 text-sm mt-2">
+                  Resubmission is not allowed for this application.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Error/Success Messages */}
+          {message && (
+            <div className={`mt-4 p-3 rounded-lg ${
+              message.includes('Error') || message.includes('error')
+                ? 'bg-red-500/10 border border-red-500/20 text-red-400'
+                : 'bg-green-500/10 border border-green-500/20 text-green-400'
+            }`}>
+              {message}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -31,7 +31,7 @@ const Register = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: 'Student',
+        role: 'Student', // Always register as Student - instructors must apply through proper channels
         wantsToBeInstructor: formData.intent === 'teach'
       };
 
@@ -44,17 +44,18 @@ const Register = () => {
         alert(registerResponse.message);
         navigate('/login');
       } else {
-        const message = formData.intent === 'teach' 
-          ? 'Registration successful! Please check your email for the 6-digit OTP code to verify your account. After verification, your instructor application will be processed.'
-          : 'Registration successful! Please check your email for the 6-digit OTP code to verify your account.';
-        
-        alert(message);
+        // Show appropriate success message based on registration response
+        alert(registerResponse.message);
         navigate('/verify-otp', { state: { email: formData.email, intent: formData.intent } });
       }
       
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.error || 'Registration failed');
+      if (err.response?.data?.error === 'Email already exists') {
+        setError('Email already exists. Please login to your account and use the instructor application system if you wish to become an instructor.');
+      } else {
+        setError(err.response?.data?.error || 'Registration failed');
+      }
     } finally {
       setLoading(false);
     }

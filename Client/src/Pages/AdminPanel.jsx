@@ -30,11 +30,23 @@ const AdminPanel = () => {
   const fetchPendingApplications = async () => {
     try {
       setLoading(true);
+      console.log('🔍 AdminPanel: Fetching pending applications...');
       const response = await api.get('/api/auth/pending-instructors');
-      console.log('📊 Admin panel response:', response.data);
+      console.log('📊 AdminPanel response:', response.data);
+      console.log('📊 Applications array:', response.data.applications);
+      console.log('📊 Applications count:', response.data.applications?.length || 0);
+      
+      if (response.data.applications && response.data.applications.length > 0) {
+        console.log('✅ Found pending applications:', response.data.applications);
+      } else {
+        console.log('⚠️ No pending applications found');
+      }
+      
       setPendingApplications(response.data.applications || []);
     } catch (error) {
-      console.error('Error fetching pending applications:', error);
+      console.error('❌ Error fetching pending applications:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
       setMessage('Error loading pending applications');
     } finally {
       setLoading(false);
