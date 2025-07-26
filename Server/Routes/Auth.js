@@ -284,56 +284,57 @@ router.post("/login", async (req, res) => {
     // Unified session-based authentication for ALL other platforms
     console.log('🔐 Session-based login for other platforms');
     
+    // Store session data for unified authentication
     req.session.userId = user._id.toString();
     req.session.userRole = user.role;
     req.session.userName = user.name;
     req.session.userEmail = user.email;
     req.session.loginTime = new Date();
     req.session.isAuthenticated = true;
+    req.session.rememberMe = rememberMe || false;
+
+    // Force session save for production reliability
+    await new Promise((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error('❌ Session save error:', err);
+          reject(err);
+        } else {
+          console.log('✅ Session saved successfully in production');
+          resolve();
+        }
+      });
+    });
 
     // Handle remember me with session maxAge
     if (rememberMe) {
       req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-      req.session.rememberMe = true;
-      
-      const rememberMeToken = crypto.randomBytes(32).toString("hex");
-      user.rememberMeToken = rememberMeToken;
-      await user.save();
     } else {
       req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-      req.session.rememberMe = false;
     }
 
-    // Session save for all browsers (including iPhone Safari)
-    req.session.save((err) => {
-      if (err) {
-        console.error('Session save error:', err);
-        return res.status(500).json({ error: "Session creation failed" });
-      }
+    // Log the user data being sent
+    console.log(' Unified session login successful:', {
+      userId: user._id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+      sessionId: req.sessionID,
+      sessionData: req.session
+    });
 
-      // Log the user data being sent
-      console.log(' Unified session login successful:', {
-        userId: user._id,
-        role: user.role,
+    res.json({ 
+      success: true,
+      authType: 'session',
+      user: { 
+        id: user._id,
         name: user.name,
         email: user.email,
-        sessionId: req.sessionID,
-        sessionData: req.session
-      });
-
-      res.json({ 
-        success: true,
-        authType: 'session',
-        user: { 
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          isEmailVerified: user.isEmailVerified 
-        },
-        sessionId: req.sessionID,
-        isIPhoneSafari: false
-      });
+        role: user.role,
+        isEmailVerified: user.isEmailVerified 
+      },
+      sessionId: req.sessionID,
+      isIPhoneSafari: false
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -1070,7 +1071,8 @@ router.get("/me", (req, res) => {
       isAuthenticated: req.session?.isAuthenticated,
       userId: req.session?.userId,
       userRole: req.session?.userRole,
-      hasAuthHeader: !!req.headers.authorization
+      hasAuthHeader: !!req.headers.authorization,
+      fullSession: req.session // Add full session debug
     });
 
     // Check for iPhone Safari JWT authentication first

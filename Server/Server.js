@@ -98,34 +98,31 @@ app.use((req, res, next) => {
 const store = MongoStore.create({
   mongoUrl: process.env.ATLASDB_URL,
   crypto: {
-    secret: process.env.SESSION_SECRET || "your-secret-key",
+    secret: process.env.SESSION_SECRET
   },
   touchAfter: 24 * 3600, // lazy session update
-  ttl: 30 * 24 * 3600, // 30 days TTL
-  autoRemove: "native", // Let MongoDB handle TTL
+  collectionName: 'sessions',
+  stringify: false, // Don't stringify session data
+  autoRemove: 'native', // Let MongoDB handle TTL
+  autoRemoveInterval: 10, // Minutes between cleanup
   
-  // Enhanced serialization for better session persistence
-  serialize: (session) => {
-    console.log(' Serializing session for storage');
-    return JSON.stringify(session);
-  },
-  unserialize: (session) => {
-    console.log(' Deserializing session from storage');
-    return JSON.parse(session);
-  },
+  // Add error handling for production debugging
+  errorHandler: (error) => {
+    console.error('🚨 MongoDB session store error:', error);
+  }
 });
 
-// Enhanced session store error handling for production
-store.on("error", (error) => {
-  console.error(" MongoDB session store error:", error);
+// Add session store event listeners for debugging
+store.on('connect', () => {
+  console.log('✅ MongoDB session store connected successfully');
 });
 
-store.on("connect", () => {
-  console.log(" MongoDB session store connected");
+store.on('error', (error) => {
+  console.error('❌ MongoDB session store error:', error);
 });
 
-store.on("disconnect", () => {
-  console.warn(" MongoDB session store disconnected");
+store.on('disconnect', () => {
+  console.log('⚠️ MongoDB session store disconnected');
 });
 
 // Mobile browser detection middleware for enhanced session handling
