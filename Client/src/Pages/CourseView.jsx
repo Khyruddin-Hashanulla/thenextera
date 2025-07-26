@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
-import Navbar from '../components/Navbar';
 
 const CourseView = () => {
   const { courseId } = useParams();
@@ -359,7 +358,7 @@ const CourseView = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)]">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black">
       {/* Back Button Only in Top Area */}
       <div className="fixed top-0 left-0 z-50 p-4">
         <Link
@@ -410,7 +409,7 @@ const CourseView = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed lg:sticky top-0 left-0 h-screen w-80 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] text-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 
+        className={`fixed lg:sticky top-0 left-0 h-screen w-80 bg-gradient-to-b from-gray-800 via-blue-900 to-gray-900 text-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
           lg:translate-x-0 lg:transform-none`}
       >

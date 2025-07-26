@@ -219,8 +219,6 @@ try {
   );
 }
 
-
-
 // iPhone Safari Cookie Debug Endpoint
 app.get('/debug/cookies', (req, res) => {
   const userAgent = req.headers['user-agent'] || '';
@@ -393,6 +391,42 @@ try {
     })
   );
 }
+
+// Newsletter Subscription Endpoint
+app.post("/api/subscribe", async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address"
+      });
+    }
+
+    // Check if email already exists (optional - you can create a Subscription model)
+    // For now, we'll just simulate success
+    console.log(`📧 New newsletter subscription: ${email}`);
+    
+    // Here you could save to database:
+    // const subscription = new Subscription({ email, subscribedAt: new Date() });
+    // await subscription.save();
+    
+    res.json({
+      success: true,
+      message: "Successfully subscribed to newsletter!"
+    });
+    
+  } catch (error) {
+    console.error("Newsletter subscription error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to subscribe. Please try again later."
+    });
+  }
+});
 
 // Serve static files (production only)
 

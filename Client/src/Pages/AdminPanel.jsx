@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
+import { useNavigate, Link } from 'react-router-dom';
+import Navbar from '../Components/Navbar';
 import api from '../utils/api';
 
 const AdminPanel = () => {
@@ -194,13 +193,13 @@ const AdminPanel = () => {
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowRejectModal(false)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleReject}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
                 >
                   Reject
                 </button>
@@ -270,7 +269,7 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex flex-col">
       <Navbar />
       
       <div className="flex-grow container mx-auto px-4 py-8">
@@ -474,7 +473,80 @@ const AdminPanel = () => {
         </div>
       </div>
 
-      <Footer />
+      {/* Footer */}
+      <footer className="relative bg-gray-900/80 backdrop-blur-sm text-white py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+                NextEra
+              </h3>
+              <p className="text-gray-400 mb-6">
+                Empowering developers worldwide with cutting-edge education and hands-on experience.
+              </p>
+              <div className="flex space-x-4">
+                <Link to="#" className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+                  <span className="text-white font-bold">f</span>
+                </Link>
+                <Link to="#" className="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center hover:bg-sky-600 transition-colors">
+                  <span className="text-white font-bold">t</span>
+                </Link>
+                <Link to="#" className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
+                  <span className="text-white font-bold">in</span>
+                </Link>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Courses</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">Full Stack Development</Link></li>
+                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">AI & Machine Learning</Link></li>
+                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">DevOps & Cloud</Link></li>
+                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">Mobile Development</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link to="/about" className="hover:text-cyan-400 transition-colors">About Us</Link></li>
+                <li><Link to="/contact" className="hover:text-cyan-400 transition-colors">Contact</Link></li>
+                <li><Link to="/careers" className="hover:text-cyan-400 transition-colors">Careers</Link></li>
+                <li><Link to="/blog" className="hover:text-cyan-400 transition-colors">Blog</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Support</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link to="/help" className="hover:text-cyan-400 transition-colors">Help Center</Link></li>
+                <li><Link to="/community" className="hover:text-cyan-400 transition-colors">Community</Link></li>
+                <li><Link to="/privacy" className="hover:text-cyan-400 transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-cyan-400 transition-colors">Terms of Service</Link></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="text-gray-400 mb-4 md:mb-0">
+                <p>
+                  &copy; {new Date().getFullYear()} NextEra. Developed &
+                  Designed by &nbsp;
+                  <Link
+                    to="https://khyruddin-hashanulla.github.io/MY-PORTFOLIO/"
+                    target="_blank"
+                    className="text-blue-400 hover:text-blue-600 transition-colors duration-200"
+                  >
+                    Khyruddin Hashanulla
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
