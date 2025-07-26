@@ -1,11 +1,5 @@
 import axios from 'axios';
 
-// iPhone Safari detection utility
-const isIPhoneSafari = () => {
-  const userAgent = navigator.userAgent;
-  return /iPhone/.test(userAgent) && /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-};
-
 // Use environment variable for API URL, fallback to localhost for development
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8081',
@@ -14,110 +8,50 @@ const api = axios.create({
   // This allows FormData to be sent as multipart/form-data for file uploads
 });
 
-// Add a request interceptor for hybrid authentication
+// Add a request interceptor for logging and debugging
 api.interceptors.request.use(
   (config) => {
-    const isIPhoneSafariBrowser = isIPhoneSafari();
-    
-    if (isIPhoneSafariBrowser) {
-      // For iPhone Safari, use JWT authentication
-      const token = localStorage.getItem('jwt_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-        console.log('🍎 iPhone Safari: Adding JWT token to request');
-      }
-    }
-    // For other browsers, session cookies are automatically sent with withCredentials: true
-    
-    // Set Content-Type for non-FormData requests
-    if (!(config.data instanceof FormData)) {
-      config.headers['Content-Type'] = 'application/json';
-    }
-    // For FormData, let axios set multipart/form-data automatically
-    
-    // Log request details for debugging
-    console.log('API Request:', {
-      method: config.method,
-      url: config.url,
-      withCredentials: config.withCredentials,
-      hasAuthHeader: !!config.headers.Authorization,
-      isIPhoneSafari: isIPhoneSafariBrowser,
-      authType: isIPhoneSafariBrowser ? 'jwt' : 'session'
-    });
-    
+    console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', {
-      message: error.message,
-      config: error.config
-    });
+    console.error('🚨 API Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Add a response interceptor to handle errors
+// Add a response interceptor for debugging and error handling
 api.interceptors.response.use(
   (response) => {
-    // Log successful responses for debugging
-    console.log('API Response:', {
-      status: response.status,
-      url: response.config.url,
-      method: response.config.method,
-      hasSessionData: !!response.data.sessionId,
-      hasJWTToken: !!response.data.token,
-      authType: response.data.authType
-    });
-    
+    console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
     return response;
   },
   (error) => {
-    console.error('API Error:', {
-      status: error.response?.status,
-      message: error.response?.data?.error || error.message,
-      url: error.config?.url,
-      method: error.config?.method,
-      authType: error.response?.data?.authType
-    });
-
+    console.error(`❌ API Response Error: ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response?.status || 'Network Error'}`);
+    
     // Handle authentication errors
     if (error.response?.status === 401) {
-      const isIPhoneSafariBrowser = isIPhoneSafari();
-      
-      if (isIPhoneSafariBrowser) {
-        // For iPhone Safari, clear JWT token and redirect to login
-        console.log('🍎 iPhone Safari: JWT authentication failed, clearing token');
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('user');
-      } else {
-        // For other browsers, clear session data
-        console.log('🖥️ Regular browser: Session authentication failed');
-        localStorage.removeItem('user');
-      }
-      
-      // Redirect to login page
-      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
-        window.location.href = '/login';
-      }
+      console.log('🔒 Authentication required - redirecting to login');
+      // Don't automatically redirect here, let components handle it
     }
-
+    
     return Promise.reject(error);
   }
 );
 
-// File upload helper function (for thumbnails) with iPhone Safari optimizations
+// File upload helper function (for thumbnails) with mobile optimizations
 export const uploadFile = async (file, type = 'image') => {
-  const isIPhoneSafariBrowser = isIPhoneSafari();
+  const isMobile = /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
-  // iPhone Safari specific file size limits
-  const maxSize = isIPhoneSafariBrowser ? 
-    (type === 'video' ? 25 * 1024 * 1024 : 5 * 1024 * 1024) : // 25MB video, 5MB image for iPhone Safari
-    (type === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024); // 50MB video, 10MB image for others
+  // Mobile specific file size limits
+  const maxSize = isMobile ?
+    (type === 'video' ? 30 * 1024 * 1024 : 8 * 1024 * 1024) : // 30MB video, 8MB image for mobile
+    (type === 'video' ? 50 * 1024 * 1024 : 10 * 1024 * 1024); // 50MB video, 10MB image for desktop
   
   // Validate file size before upload
   if (file.size > maxSize) {
     const maxSizeMB = Math.round(maxSize / (1024 * 1024));
-    throw new Error(isIPhoneSafariBrowser ? 
+    throw new Error(isMobile ?
       `File too large for mobile upload. Please compress to under ${maxSizeMB}MB.` :
       `File size exceeds ${maxSizeMB}MB limit.`
     );
@@ -130,54 +64,93 @@ export const uploadFile = async (file, type = 'image') => {
     fileName: file.name,
     fileSize: `${(file.size / 1024 / 1024).toFixed(2)}MB`,
     fileType: file.type,
-    isIPhoneSafari: isIPhoneSafariBrowser,
+    isMobile: isMobile,
     maxAllowed: `${Math.round(maxSize / (1024 * 1024))}MB`
   });
   
-  try {
-    const endpoint = type === 'video' ? '/api/courses/upload/video' : '/api/courses/upload/thumbnail';
-    
-    const response = await api.post(endpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      // iPhone Safari specific timeout and retry settings
-      timeout: isIPhoneSafariBrowser ? 600000 : 300000, // 10 minutes for iPhone Safari, 5 for others
-      onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        console.log(`📊 Upload progress: ${percentCompleted}%${isIPhoneSafariBrowser ? ' (iPhone Safari)' : ''}`);
+  const maxRetries = isMobile ? 3 : 2;
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📤 Upload attempt ${attempt}/${maxRetries}${isMobile ? ' (Mobile)' : ''}`);
+      
+      const endpoint = type === 'video' ? '/api/courses/upload/video' : '/api/courses/upload/thumbnail';
+      
+      const response = await api.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        // Aggressive timeout settings for mobile
+        timeout: isMobile ? 900000 : 300000, // 15min/5min
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`📊 Upload progress: ${percentCompleted}%${isMobile ? ' (Mobile)' : ''}`);
+        },
+        // Enhanced axios configuration for mobile networks
+        ...(isMobile && {
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+          // Retry configuration for mobile
+          'axios-retry': {
+            retries: 3,
+            retryDelay: (retryCount) => {
+              return Math.min(1000 * Math.pow(2, retryCount), 5000);
+            },
+            retryCondition: (error) => {
+              return error.code === 'ECONNABORTED' || 
+                     error.code === 'NETWORK_ERROR' ||
+                     error.response?.status >= 500;
+            }
+          }
+        })
+      });
+      
+      console.log('✅ Upload successful:', {
+        attempt: attempt,
+        fileName: file.name,
+        url: response.data.url,
+        isMobile: isMobile
+      });
+      
+      return response.data;
+      
+    } catch (error) {
+      lastError = error;
+      
+      console.error(`❌ Upload attempt ${attempt} failed:`, {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        isNetworkError: error.code === 'ECONNABORTED' || error.code === 'NETWORK_ERROR',
+        isMobile: isMobile
+      });
+      
+      // Don't retry on certain errors
+      if (error.response?.status === 413 || // Payload too large
+          error.response?.status === 400 || // Bad request
+          error.response?.status === 401) { // Unauthorized
+        throw error;
       }
-    });
-    
-    console.log('✅ File upload successful:', {
-      url: response.data.url,
-      optimizedForMobile: response.data.optimizedForMobile,
-      isIPhoneSafari: isIPhoneSafariBrowser
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error('❌ File upload failed:', {
-      message: error.message,
-      response: error.response?.data,
-      isIPhoneSafari: isIPhoneSafariBrowser
-    });
-    
-    // Enhanced error handling for iPhone Safari
-    if (isIPhoneSafariBrowser) {
-      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        throw new Error('Upload timeout on mobile. Please try with a smaller file or check your connection.');
-      } else if (error.response?.status === 413 || error.message.includes('large')) {
-        throw new Error('File too large for mobile upload. Please compress the file and try again.');
-      } else if (error.response?.status === 0 || error.message.includes('Network Error')) {
-        throw new Error('Network error on mobile. Please check your connection and try again.');
+      
+      // Wait before retry with exponential backoff (longer for mobile)
+      if (attempt < maxRetries) {
+        const waitTime = Math.min(
+          1000 * Math.pow(2, attempt - 1), 
+          isMobile ? 10000 : 5000
+        );
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }
-    
-    // Use server error message if available, otherwise generic message
-    const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
-    throw new Error(errorMessage);
   }
+  
+  // Provide user-friendly error message for mobile users
+  const errorMessage = isMobile ?
+    `Mobile upload failed after ${maxRetries} attempts. Please check your connection and try again. Error: ${lastError.message}` :
+    `Upload failed after ${maxRetries} attempts. Error: ${lastError.message}`;
+    
+  throw new Error(errorMessage);
 };
 
 // Image upload helper function (for thumbnails)
@@ -190,5 +163,4 @@ export const uploadVideo = async (file) => {
   return await uploadFile(file, 'video');
 };
 
-export { isIPhoneSafari };
 export default api;

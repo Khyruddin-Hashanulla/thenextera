@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
-import api, { isIPhoneSafari } from '../utils/api';
+import api from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
@@ -16,70 +16,35 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const isIPhoneSafariBrowser = isIPhoneSafari();
+        console.log('🔄 Initializing authentication...');
         
-        if (isIPhoneSafariBrowser) {
-          // For iPhone Safari, check for JWT token
-          console.log('🍎 iPhone Safari detected - checking JWT authentication');
-          const token = localStorage.getItem('jwt_token');
-          const storedUser = localStorage.getItem('user');
-          
-          if (token && storedUser) {
-            try {
-              const userData = JSON.parse(storedUser);
-              setUser(userData);
-              console.log('🍎 iPhone Safari: Restored user from JWT token');
-            } catch (err) {
-              console.error('🍎 iPhone Safari: Failed to parse stored user data:', err);
-              localStorage.removeItem('jwt_token');
-              localStorage.removeItem('user');
-            }
+        // Use session-based authentication for all browsers to prevent conflicts
+        // This ensures consistent behavior across all platforms
+        try {
+          const response = await api.get('/api/auth/me');
+          if (response.data.user) {
+            setUser(response.data.user);
+            console.log('✅ Session authentication successful:', response.data.user.name);
           } else {
-            console.log('🍎 iPhone Safari: No JWT token found');
+            console.log('❌ No session found');
+            setUser(null);
           }
-        } else {
-          // For other browsers, check session-based authentication
-          console.log('🖥️ Regular browser detected - checking session authentication');
+        } catch (error) {
+          console.log('❌ Session authentication failed:', error.response?.status);
+          setUser(null);
           
-          // Check for remember me token
-          try {
-            const response = await api.get('/api/auth/check-remember-me');
-            if (response.data.user) {
-              setUser(response.data.user);
-              localStorage.setItem('user', JSON.stringify(response.data.user));
-              console.log('🖥️ Regular browser: Restored user from remember me');
-            }
-          } catch (err) {
-            console.error('🖥️ Regular browser: Remember me check failed:', err);
-            
-            // Check if there's stored user data from a previous session
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-              try {
-                const userData = JSON.parse(storedUser);
-                setUser(userData);
-                console.log('🖥️ Regular browser: Restored user from localStorage');
-              } catch (parseErr) {
-                console.error('🖥️ Regular browser: Failed to parse stored user data:', parseErr);
-                localStorage.removeItem('user');
-              }
-            }
-          }
+          // Clear any stored data on auth failure
+          localStorage.removeItem('jwt_token');
+          localStorage.removeItem('user');
         }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
     };
 
-    // Clean up any old JWT tokens if not on iPhone Safari
-    if (!isIPhoneSafari()) {
-      localStorage.removeItem('jwt_token');
-      // Remove any Authorization headers that might interfere with session cookies
-      delete api.defaults.headers.common['Authorization'];
-    }
-    
     initializeAuth();
   }, []);
 
@@ -123,52 +88,23 @@ const AuthProvider = ({ children }) => {
       
       console.log('Full login response:', response.data);
       
-      const isIPhoneSafariBrowser = isIPhoneSafari();
+      const { user, success, sessionId } = response.data;
       
-      if (isIPhoneSafariBrowser && response.data.authType === 'jwt') {
-        // Handle JWT authentication for iPhone Safari
-        console.log('🍎 iPhone Safari: Handling JWT login response');
-        
-        const { token, user } = response.data;
-        
-        if (!token) {
-          throw new Error('No JWT token received from server');
-        }
-        
-        // Store JWT token and user data
-        localStorage.setItem('jwt_token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        
-        console.log('🍎 iPhone Safari: JWT authentication successful:', {
-          userId: user.id,
-          role: user.role,
-          tokenStored: !!localStorage.getItem('jwt_token')
-        });
-        
-        return response.data;
-      } else {
-        // Handle session-based authentication for other browsers
-        console.log('🖥️ Regular browser: Handling session login response');
-        
-        const { user, success, sessionId } = response.data;
-        
-        if (!success || !user) {
-          throw new Error('Login failed - invalid response structure');
-        }
-        
-        // Store user data for session-based auth
-        localStorage.setItem('user', JSON.stringify(user));
-        setUser(user);
-        
-        console.log('🖥️ Regular browser: Session authentication successful:', {
-          userId: user.id,
-          role: user.role,
-          sessionId: sessionId
-        });
-        
-        return response.data;
+      if (!success || !user) {
+        throw new Error('Login failed - invalid response structure');
       }
+      
+      // Store user data for session-based auth
+      localStorage.setItem('user', JSON.stringify(user));
+      setUser(user);
+      
+      console.log('🖥️ Regular browser: Session authentication successful:', {
+        userId: user.id,
+        role: user.role,
+        sessionId: sessionId
+      });
+      
+      return response.data;
     } catch (err) {
       console.error('Login error:', err);
       setError(err.response?.data || 'Login failed');
@@ -179,24 +115,16 @@ const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setError(null);
-      const isIPhoneSafariBrowser = isIPhoneSafari();
       
-      if (isIPhoneSafariBrowser) {
-        // For iPhone Safari, just clear local storage (no server logout needed for JWT)
-        console.log('🍎 iPhone Safari: Logging out (clearing JWT token)');
-        localStorage.removeItem('jwt_token');
-        localStorage.removeItem('user');
-      } else {
-        // For other browsers, call server logout to destroy session
-        console.log('🖥️ Regular browser: Logging out (destroying session)');
-        try {
-          await api.post('/api/auth/logout');
-        } catch (err) {
-          console.error('Server logout error:', err);
-          // Continue with local cleanup even if server logout fails
-        }
-        localStorage.removeItem('user');
+      // Call server logout to destroy session
+      console.log('🖥️ Regular browser: Logging out (destroying session)');
+      try {
+        await api.post('/api/auth/logout');
+      } catch (err) {
+        console.error('Server logout error:', err);
+        // Continue with local cleanup even if server logout fails
       }
+      localStorage.removeItem('user');
       
       setUser(null);
       console.log('Logout successful');
@@ -261,7 +189,6 @@ const AuthProvider = ({ children }) => {
     resetPassword,
     updateProfile,
     isAuthenticated: !!user,
-    isIPhoneSafari: isIPhoneSafari(),
     // Role-based helper properties
     isInstructor: user?.role === 'Instructor' || user?.role === 'Teacher' || user?.role === 'Admin',
     isAdmin: user?.role === 'Admin',

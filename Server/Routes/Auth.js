@@ -1061,4 +1061,56 @@ router.get("/all-instructors", requireAuth, async (req, res) => {
   }
 });
 
+// Check authentication status - used by AuthContext to initialize user state
+router.get("/me", (req, res) => {
+  try {
+    console.log('🔍 Auth check request:', {
+      sessionExists: !!req.session,
+      sessionId: req.sessionID,
+      isAuthenticated: req.session?.isAuthenticated,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole
+    });
+
+    // Check if user is authenticated via session
+    if (req.session && req.session.isAuthenticated && req.session.userId) {
+      const user = {
+        id: req.session.userId,
+        name: req.session.userName,
+        email: req.session.userEmail,
+        role: req.session.userRole,
+        isEmailVerified: true // Assume verified if they can log in
+      };
+
+      console.log('✅ Auth check successful:', {
+        userId: user.id,
+        name: user.name,
+        role: user.role
+      });
+
+      return res.status(200).json({
+        success: true,
+        user: user,
+        authenticated: true
+      });
+    } else {
+      console.log('❌ Auth check failed - no valid session');
+      return res.status(401).json({
+        success: false,
+        user: null,
+        authenticated: false,
+        message: 'Not authenticated'
+      });
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+    return res.status(500).json({
+      success: false,
+      user: null,
+      authenticated: false,
+      message: 'Internal server error'
+    });
+  }
+});
+
 module.exports = router;

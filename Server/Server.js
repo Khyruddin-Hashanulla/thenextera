@@ -144,8 +144,24 @@ app.use(detectMobile);
 const iphoneSafariFix = require('./iphone-safari-fix');
 app.use(iphoneSafariFix);
 
-// Enhanced session configuration with iPhone Safari compatibility
-const isProduction = process.env.NODE_ENV === "production";
+// Enhanced session configuration with proper environment detection
+// Force development mode for localhost to prevent secure cookie issues
+const isProduction = process.env.NODE_ENV === "production" && !process.env.FORCE_DEV;
+const isDevelopment = !isProduction;
+
+// Override production detection for localhost development
+if (process.env.NODE_ENV === "production" && (process.env.PORT === "8081" || !process.env.PORT)) {
+  console.log('🔧 Overriding production mode for localhost development');
+}
+
+console.log('🌍 Environment configuration:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  isProduction: isProduction,
+  isDevelopment: isDevelopment,
+  cookieSecure: isProduction,
+  cookieSameSite: isProduction ? 'none' : 'lax'
+});
 
 app.use(
   session({
@@ -164,7 +180,7 @@ app.use(
       const sessionId = require('crypto').randomBytes(32).toString('hex');
       
       if (req.isIPhoneSafari) {
-        console.log(' Generating session ID for iPhone Safari:', sessionId.substring(0, 8) + '...');
+        console.log('🍎 Generating session ID for iPhone Safari:', sessionId.substring(0, 8) + '...');
         // Force session flags for iPhone Safari
         req.iphoneSafariSession = true;
       }
@@ -173,8 +189,8 @@ app.use(
     },
     
     cookie: {
-      secure: false, // Disable secure requirement for iPhone Safari compatibility
-      sameSite: 'lax', // More permissive than 'none' for iPhone Safari
+      secure: false, // Force non-secure for localhost development
+      sameSite: 'lax', // Use lax for localhost development
       httpOnly: true, // XSS protection
       maxAge: 30 * 24 * 3600 * 1000, // 30 days
       domain: undefined, // Let browser handle domain
@@ -291,8 +307,8 @@ app.get('/debug/session', (req, res) => {
     
     // Session Configuration
     sessionConfig: {
-      secure: false,
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       httpOnly: true,
       maxAge: 30 * 24 * 3600 * 1000,
       path: '/'

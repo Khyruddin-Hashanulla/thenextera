@@ -10,32 +10,26 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, isIPhoneSafari } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+
     try {
-      setError('');
-      setLoading(true);
-      console.log('Attempting login with:', { email, rememberMe, isIPhoneSafari });
+      console.log('Attempting login with:', { email, rememberMe });
       
       const result = await login({ email, password, rememberMe });
       console.log('Login successful:', result);
       
-      if (isIPhoneSafari) {
-        // For iPhone Safari with JWT, use navigate instead of window.location.href
-        // This preserves the JWT token stored in localStorage
-        console.log('🍎 iPhone Safari: Navigating to dashboard with JWT authentication');
-        navigate('/dashboard');
-      } else {
-        // For other browsers with session auth, use window.location.href for proper session persistence
-        // This is critical for iPhone Safari to save the session cookie properly
-        console.log('🖥️ Regular browser: Redirecting to dashboard with session authentication');
-        window.location.href = '/dashboard';
-      }
+      // Use window.location.href for all browsers to ensure proper session persistence
+      // This prevents redirect loops and ensures session cookies are properly saved
+      console.log('🚀 Redirecting to dashboard with session authentication');
+      window.location.href = '/dashboard';
       
-      // Note: No need for setTimeout when using window.location.href
-      // The page will reload and the session will be properly established
+      // Note: Using window.location.href instead of navigate() for all browsers
+      // This ensures proper session persistence across all platforms
     } catch (err) {
       console.error('Login error:', err);
       

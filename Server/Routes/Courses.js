@@ -39,24 +39,72 @@ const uploadToCloudinaryDirect = async (buffer, options) => {
   try {
     console.log(' Trying direct Cloudinary upload (fallback method)...');
     
-    // Convert buffer to base64 data URI
-    const base64Buffer = `data:${options.resource_type === 'video' ? 'video/mp4' : 'image/png'};base64,${buffer.toString('base64')}`;
+    // Detect iPhone Safari for ultra-aggressive optimizations
+    const isIPhoneSafari = options.userAgent && 
+      /iPhone/.test(options.userAgent) && 
+      /Safari/.test(options.userAgent) && 
+      !/Chrome/.test(options.userAgent);
     
-    const result = await cloudinary.uploader.upload(base64Buffer, {
+    const isMobile = options.userAgent && 
+      /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(options.userAgent);
+    
+    // Convert buffer to base64 data URI
+    const mimeType = options.resource_type === 'video' ? 'video/mp4' : 'image/png';
+    const base64Buffer = `data:${mimeType};base64,${buffer.toString('base64')}`;
+    
+    console.log(` Direct upload - Buffer size: ${buffer.length} bytes, Mobile: ${isMobile}, iPhone Safari: ${isIPhoneSafari}`);
+    
+    // Ultra-aggressive settings for iPhone Safari direct upload
+    const directUploadOptions = {
       ...options,
-      // Simpler options for direct upload
-      timeout: 300000, // 5 minutes
-      resource_type: options.resource_type || 'image'
+      resource_type: options.resource_type || 'image',
+      // iPhone Safari gets maximum timeout and lowest quality
+      timeout: isIPhoneSafari ? 1800000 : isMobile ? 1200000 : 600000, // 30min/20min/10min
+      // Ultra-low quality for iPhone Safari to reduce upload size
+      quality: isIPhoneSafari ? 'auto:eco' : isMobile ? 'auto:low' : 'auto:good',
+      // iPhone Safari specific optimizations
+      ...(isIPhoneSafari && {
+        format: options.resource_type === 'video' ? 'mp4' : 'webp',
+        flags: 'progressive',
+        transformation: options.resource_type === 'video' ? 
+          [{ quality: 'auto:eco', bit_rate: '500k', fps: 15 }] : 
+          [{ quality: 'auto:eco', width: 800, height: 600, crop: 'limit' }]
+      }),
+      // General mobile optimizations
+      ...(isMobile && !isIPhoneSafari && {
+        format: 'auto',
+        flags: 'progressive'
+      })
+    };
+    
+    console.log(` Direct upload options:`, {
+      timeout: directUploadOptions.timeout,
+      quality: directUploadOptions.quality,
+      resource_type: directUploadOptions.resource_type,
+      isIPhoneSafari,
+      isMobile
     });
+    
+    const result = await cloudinary.uploader.upload(base64Buffer, directUploadOptions);
     
     console.log(' Direct Cloudinary upload successful:', {
       public_id: result.public_id,
-      secure_url: result.secure_url
+      secure_url: result.secure_url,
+      resource_type: result.resource_type,
+      bytes: result.bytes,
+      isIPhoneSafari,
+      isMobile
     });
     
     return result;
   } catch (error) {
-    console.error(' Direct Cloudinary upload failed:', error.message);
+    console.error(' Direct Cloudinary upload failed:', {
+      message: error.message,
+      http_code: error.http_code,
+      error_code: error.error?.code,
+      isIPhoneSafari: options.userAgent && /iPhone/.test(options.userAgent) && /Safari/.test(options.userAgent) && !/Chrome/.test(options.userAgent),
+      isMobile: options.userAgent && /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(options.userAgent)
+    });
     throw error;
   }
 };
@@ -69,29 +117,40 @@ const uploadToCloudinary = async (buffer, options, maxRetries = 3) => {
     /Safari/.test(options.userAgent) && 
     !/Chrome/.test(options.userAgent);
   
+  // Detect any mobile device for general mobile optimizations
+  const isMobile = options.userAgent && 
+    /Mobile|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(options.userAgent);
+  
   let lastError;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(` Cloudinary upload attempt ${attempt}/${maxRetries}${isIPhoneSafari ? ' (iPhone Safari)' : ''}`);
+      console.log(` Cloudinary upload attempt ${attempt}/${maxRetries}${isIPhoneSafari ? ' (iPhone Safari)' : isMobile ? ' (Mobile)' : ''}`);
       
-      // Mobile-optimized options for iPhone Safari
+      // Aggressive mobile optimizations for iPhone Safari and other mobile devices
       const uploadOptions = {
         ...options,
-        timeout: isIPhoneSafari ? 600000 : 300000, // 10 minutes for iPhone Safari, 5 for others
-        chunk_size: isIPhoneSafari ? 2000000 : 6000000, // 2MB chunks for iPhone Safari, 6MB for others
+        // iPhone Safari gets the most aggressive optimizations
+        timeout: isIPhoneSafari ? 900000 : isMobile ? 600000 : 300000, // 15min/10min/5min
+        chunk_size: isIPhoneSafari ? 1000000 : isMobile ? 2000000 : 6000000, // 1MB/2MB/6MB chunks
         eager_async: true, // Process transformations asynchronously
         use_filename: false, // Let Cloudinary generate filename
         unique_filename: true,
-        // Enhanced connection options to prevent EPIPE errors
-        connection_timeout: 120000, // 2 minutes connection timeout
-        read_timeout: 300000, // 5 minutes read timeout
-        write_timeout: 300000, // 5 minutes write timeout
-        // iPhone Safari specific optimizations
-        ...(isIPhoneSafari && {
-          quality: 'auto:low', // Lower quality for faster upload on mobile
+        // Enhanced connection options to prevent network errors
+        connection_timeout: isIPhoneSafari ? 180000 : 120000, // 3min/2min connection timeout
+        read_timeout: isIPhoneSafari ? 600000 : 300000, // 10min/5min read timeout
+        write_timeout: isIPhoneSafari ? 600000 : 300000, // 10min/5min write timeout
+        // Mobile-specific optimizations
+        ...(isMobile && {
+          quality: isIPhoneSafari ? 'auto:eco' : 'auto:low', // Ultra-low quality for iPhone Safari
           fetch_format: 'auto', // Let Cloudinary choose optimal format
           flags: 'progressive', // Progressive loading for images
+          // Additional iPhone Safari optimizations
+          ...(isIPhoneSafari && {
+            transformation: options.resource_type === 'video' ? 
+              [{ quality: 'auto:eco', format: 'mp4' }] : 
+              [{ quality: 'auto:eco', format: 'webp' }]
+          })
         })
       };
       
@@ -117,6 +176,7 @@ const uploadToCloudinary = async (buffer, options, maxRetries = 3) => {
                   http_code: error.http_code,
                   error_code: error.error?.code,
                   isIPhoneSafari,
+                  isMobile,
                   isNetworkError: error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT'
                 });
                 reject(error);
@@ -124,110 +184,104 @@ const uploadToCloudinary = async (buffer, options, maxRetries = 3) => {
                 console.log(` Cloudinary upload successful (attempt ${attempt}):`, {
                   public_id: result.public_id,
                   secure_url: result.secure_url,
-                  isIPhoneSafari
+                  resource_type: result.resource_type,
+                  isIPhoneSafari,
+                  isMobile
                 });
                 resolve(result);
               }
             }
           );
           
-          // Enhanced error handling for the upload stream
-          uploadStream.on('error', (streamError) => {
-            if (streamClosed) return;
-            streamClosed = true;
-            
-            if (uploadTimeout) {
-              clearTimeout(uploadTimeout);
-            }
-            
-            console.error(` Upload stream error on attempt ${attempt}:`, {
-              message: streamError.message,
-              code: streamError.code,
-              isNetworkError: streamError.code === 'EPIPE' || streamError.code === 'ECONNRESET'
-            });
-            reject(streamError);
-          });
-          
-          // Set up timeout for the upload stream to prevent hanging
+          // Set upload timeout with mobile-specific durations
+          const timeoutDuration = isIPhoneSafari ? 900000 : isMobile ? 600000 : 300000;
           uploadTimeout = setTimeout(() => {
-            if (streamClosed) return;
-            streamClosed = true;
-            
-            console.error(` Upload timeout on attempt ${attempt} after ${uploadOptions.timeout}ms`);
-            if (uploadStream && typeof uploadStream.destroy === 'function') {
-              uploadStream.destroy();
+            if (!streamClosed) {
+              streamClosed = true;
+              console.error(` Upload timeout after ${timeoutDuration}ms (iPhone Safari: ${isIPhoneSafari}, Mobile: ${isMobile})`);
+              if (uploadStream && uploadStream.destroy) {
+                uploadStream.destroy();
+              }
+              reject(new Error(`Upload timeout after ${timeoutDuration}ms`));
             }
-            reject(new Error('Upload timeout - connection took too long'));
-          }, uploadOptions.timeout);
-          
-          // Clear timeout on completion
-          uploadStream.on('finish', () => {
-            if (uploadTimeout) {
-              clearTimeout(uploadTimeout);
-            }
-          });
-          
-          uploadStream.on('close', () => {
-            if (uploadTimeout) {
-              clearTimeout(uploadTimeout);
-            }
-          });
+          }, timeoutDuration);
           
           // Write buffer to stream with error handling
-          if (buffer && buffer.length > 0) {
-            uploadStream.end(buffer);
-          } else {
-            if (uploadTimeout) {
-              clearTimeout(uploadTimeout);
+          uploadStream.on('error', (error) => {
+            if (!streamClosed) {
+              streamClosed = true;
+              if (uploadTimeout) {
+                clearTimeout(uploadTimeout);
+              }
+              console.error(` Upload stream error:`, error.message);
+              reject(error);
             }
-            reject(new Error('Invalid buffer provided for upload'));
-          }
+          });
           
-        } catch (streamCreationError) {
+          uploadStream.end(buffer);
+          
+        } catch (streamError) {
           if (uploadTimeout) {
             clearTimeout(uploadTimeout);
           }
-          console.error(` Stream creation error on attempt ${attempt}:`, streamCreationError);
-          reject(streamCreationError);
+          console.error(` Stream creation error:`, streamError.message);
+          reject(streamError);
         }
       });
       
-      // If we get here, the upload was successful
       return result;
       
     } catch (error) {
       lastError = error;
-      
       console.error(` Upload attempt ${attempt} failed:`, {
         message: error.message,
         code: error.code,
+        isNetworkError: error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT',
         isIPhoneSafari,
-        isNetworkError: error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT'
+        isMobile
       });
       
-      // If this was the last attempt, throw the error
-      if (attempt === maxRetries) {
-        // Try direct upload as fallback
-        if (error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
-          console.log(' Trying direct upload as fallback...');
-          return uploadToCloudinaryDirect(buffer, options);
+      // For network errors on mobile, try direct upload method immediately
+      if ((error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') && isMobile) {
+        console.log(` Network error detected on mobile - trying direct upload method...`);
+        try {
+          return await uploadToCloudinaryDirect(buffer, {
+            ...options,
+            // Even more aggressive settings for direct upload on mobile
+            timeout: isIPhoneSafari ? 1200000 : 900000, // 20min/15min for direct upload
+            quality: isIPhoneSafari ? 'auto:eco' : 'auto:low'
+          });
+        } catch (directError) {
+          console.error(` Direct upload also failed:`, directError.message);
+          // Continue with retry logic
         }
-        throw new Error(`Upload failed after ${maxRetries} attempts: ${error.message}`);
       }
       
-      // Progressive backoff with longer delays for network errors
-      const isNetworkError = error.code === 'EPIPE' || error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT';
-      const baseDelay = isIPhoneSafari ? 3000 : 1000;
-      const networkErrorMultiplier = isNetworkError ? 2 : 1;
-      const delay = baseDelay * attempt * networkErrorMultiplier;
-      
-      console.log(` Waiting ${delay}ms before retry (network error: ${isNetworkError})...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      // Wait before retry with exponential backoff (longer for mobile)
+      if (attempt < maxRetries) {
+        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), isMobile ? 10000 : 5000);
+        console.log(` Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
     }
   }
   
-  // This should never be reached, but just in case
-  throw lastError || new Error('Upload failed for unknown reason');
+  // If all retries failed, try direct upload as final fallback for mobile
+  if (isMobile) {
+    console.log(` All stream uploads failed on mobile - trying direct upload as final fallback...`);
+    try {
+      return await uploadToCloudinaryDirect(buffer, {
+        ...options,
+        timeout: isIPhoneSafari ? 1200000 : 900000, // 20min/15min
+        quality: isIPhoneSafari ? 'auto:eco' : 'auto:low'
+      });
+    } catch (directError) {
+      console.error(` Final direct upload fallback failed:`, directError.message);
+      throw new Error(`Upload failed after ${maxRetries} attempts and direct upload fallback. Last error: ${lastError.message}`);
+    }
+  }
+  
+  throw new Error(`Upload failed after ${maxRetries} attempts. Last error: ${lastError.message}`);
 };
 
 // Helper function to upload from URL to Cloudinary
