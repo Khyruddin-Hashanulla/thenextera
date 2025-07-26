@@ -145,13 +145,16 @@ const iphoneSafariFix = require('./iphone-safari-fix');
 app.use(iphoneSafariFix);
 
 // Enhanced session configuration with proper environment detection
-// Detect if we're running on localhost for development
-const isLocalhost = process.env.PORT === "8081" || 
-                   process.env.NODE_ENV !== "production" ||
-                   !process.env.NODE_ENV;
-
-const isProduction = process.env.NODE_ENV === "production" && !isLocalhost;
+// Simplified production detection for deployment platforms
+const isProduction = process.env.NODE_ENV === "production";
 const isDevelopment = !isProduction;
+
+// Force localhost detection only for specific development scenarios
+const isLocalhost = !isProduction && (
+  process.env.PORT === "8081" || 
+  !process.env.PORT ||
+  process.env.NODE_ENV === "development"
+);
 
 console.log('🌍 Environment configuration:', {
   NODE_ENV: process.env.NODE_ENV,
