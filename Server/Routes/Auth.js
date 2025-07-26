@@ -3,10 +3,10 @@ const router = express.Router();
 const User = require("../Models/User");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 const { sendVerificationOTP, sendPasswordResetEmail } = require("../utils/emailService");
 const passport = require("passport");
-const { requireAuth } = require("../Middleware/auth");
-const { generateJWT, isIPhoneSafari } = require("../Middleware/jwt-auth");
+const Course = require("../Models/Course");
 
 // Generate 6-digit OTP
 const generateOTP = () => {
@@ -37,6 +37,7 @@ router.post("/register", async (req, res) => {
         await existing.save();
         
         return res.status(200).json({
+          success: true,
           message: `Account already exists. Role updated to ${properRole} and password updated. Please log in with your new credentials.`,
           user: {
             id: existing._id,
@@ -100,6 +101,7 @@ router.post("/register", async (req, res) => {
 
     // Return success message without auto-login token
     res.status(201).json({
+      success: true,
       message: "Registration successful! Please check your email for the 6-digit OTP code to verify your account.",
       user: {
         id: newUser._id,
@@ -247,109 +249,53 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // iPhone Safari detection for hybrid authentication
-    const userAgent = req.headers['user-agent'] || '';
-    const isIPhoneSafariBrowser = isIPhoneSafari(userAgent);
+    // Pure JWT authentication for ALL platforms
+    console.log('🔐 JWT-based login for all platforms');
     
-    if (isIPhoneSafariBrowser) {
-      console.log('🍎 iPhone Safari login detected - using JWT authentication fallback');
-      
-      // Generate JWT token for iPhone Safari
-      const jwtToken = generateJWT(user);
-      
-      console.log('🍎 iPhone Safari JWT login successful:', {
+    // Generate JWT token with user data
+    const token = jwt.sign(
+      {
         userId: user._id,
+        email: user.email,
         role: user.role,
         name: user.name,
-        email: user.email,
-        tokenGenerated: !!jwtToken
-      });
+        isEmailVerified: user.isEmailVerified
+      },
+      process.env.JWT_SECRET,
+      { 
+        expiresIn: rememberMe ? "30d" : "7d",
+        issuer: "nextera-app",
+        audience: "nextera-users"
+      }
+    );
 
-      return res.json({ 
-        success: true,
-        authType: 'jwt',
-        token: jwtToken,
-        user: { 
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          isEmailVerified: user.isEmailVerified 
-        },
-        isIPhoneSafari: true,
-        message: "iPhone Safari detected - using JWT authentication for compatibility."
-      });
-    }
-
-    // Unified session-based authentication for ALL other platforms
-    console.log('🔐 Session-based login for other platforms');
-    
-    // Store session data for unified authentication
-    req.session.userId = user._id.toString();
-    req.session.userRole = user.role;
-    req.session.userName = user.name;
-    req.session.userEmail = user.email;
-    req.session.loginTime = new Date();
-    req.session.isAuthenticated = true;
-    req.session.rememberMe = rememberMe || false;
-
-    // Verify session data was set correctly
-    console.log('🔍 Session data before save:', {
-      userId: req.session.userId,
-      userRole: req.session.userRole,
-      userName: req.session.userName,
-      isAuthenticated: req.session.isAuthenticated,
-      sessionId: req.sessionID
-    });
-
-    // Force session save for production reliability
-    await new Promise((resolve, reject) => {
-      req.session.save((err) => {
-        if (err) {
-          console.error('❌ Session save error:', err);
-          reject(err);
-        } else {
-          console.log('✅ Session saved successfully in production');
-          // Verify session data after save
-          console.log('🔍 Session data after save:', {
-            userId: req.session.userId,
-            userRole: req.session.userRole,
-            isAuthenticated: req.session.isAuthenticated
-          });
-          resolve();
-        }
-      });
-    });
-
-    // Handle remember me with session maxAge
+    // Handle remember me with longer token expiry (already set above)
     if (rememberMe) {
-      req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-    } else {
-      req.session.cookie.maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+      const rememberMeToken = crypto.randomBytes(32).toString("hex");
+      user.rememberMeToken = rememberMeToken;
+      await user.save();
     }
 
     // Log the user data being sent
-    console.log(' Unified session login successful:', {
+    console.log('✅ JWT login successful:', {
       userId: user._id,
       role: user.role,
       name: user.name,
       email: user.email,
-      sessionId: req.sessionID,
-      sessionData: req.session
+      tokenExpiry: rememberMe ? "30d" : "7d"
     });
 
     res.json({ 
       success: true,
-      authType: 'session',
+      authType: 'jwt',
+      token: token,
       user: { 
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
         isEmailVerified: user.isEmailVerified 
-      },
-      sessionId: req.sessionID,
-      isIPhoneSafari: false
+      }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -360,23 +306,6 @@ router.post("/login", async (req, res) => {
 // Check remember me token
 router.get("/check-remember-me", async (req, res) => {
   try {
-    // For session-based auth, check if user is already authenticated
-    if (req.session && req.session.isAuthenticated) {
-      const user = await User.findById(req.session.userId);
-      if (user) {
-        return res.json({
-          success: true,
-          user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            isEmailVerified: user.isEmailVerified
-          }
-        });
-      }
-    }
-
     // No valid session found
     res.status(401).json({ error: "No valid session found" });
   } catch (error) {
@@ -387,54 +316,34 @@ router.get("/check-remember-me", async (req, res) => {
 
 // Logout route - destroy session
 router.post("/logout", (req, res) => {
-  if (!req.session) {
-    return res.status(400).json({ error: "No active session" });
-  }
-
-  const sessionId = req.sessionID;
-  
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Session destruction error:', err);
-      return res.status(500).json({ error: "Logout failed" });
-    }
-    
-    res.clearCookie('connect.sid'); // Clear session cookie
-    console.log('Session destroyed:', sessionId);
-    
-    res.json({ 
-      success: true, 
-      message: "Logged out successfully" 
-    });
+  res.json({ 
+    success: true, 
+    message: "Logged out successfully" 
   });
 });
 
 // Test route to verify session-based middleware
-router.get("/test-auth", requireAuth, (req, res) => {
+router.get("/test-auth", async (req, res) => {
   res.json({
-    message: "Session-based authentication working!",
-    user: req.user,
-    sessionId: req.sessionID,
-    sessionData: {
-      userId: req.session.userId,
-      userRole: req.session.userRole,
-      isAuthenticated: req.session.isAuthenticated
-    }
+    message: "No session-based authentication working!",
+    user: null,
+    sessionId: null,
+    sessionData: null
   });
 });
 
 // Session status endpoint for debugging (no auth required)
 router.get("/session-status", (req, res) => {
   res.json({
-    hasSession: !!req.session,
-    sessionId: req.sessionID,
-    isAuthenticated: req.session?.isAuthenticated || false,
-    userId: req.session?.userId || null,
-    userRole: req.session?.userRole || null,
-    userName: req.session?.userName || null,
-    loginTime: req.session?.loginTime || null,
-    cookieMaxAge: req.session?.cookie?.maxAge || null,
-    sessionData: req.session || null
+    hasSession: false,
+    sessionId: null,
+    isAuthenticated: false,
+    userId: null,
+    userRole: null,
+    userName: null,
+    loginTime: null,
+    cookieMaxAge: null,
+    sessionData: null
   });
 });
 
@@ -607,46 +516,77 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/login' }),
     (req, res) => {
-      // Create session instead of JWT token
-      req.session.userId = req.user._id.toString();
-      req.session.userRole = req.user.role;
-      req.session.userName = req.user.name;
-      req.session.userEmail = req.user.email;
-      req.session.loginTime = new Date();
-      req.session.isAuthenticated = true;
-      req.session.rememberMe = false;
-      
-      // Save session explicitly
-      req.session.save((err) => {
-        if (err) {
-          console.error('Google OAuth session save error:', err);
-          return res.redirect('/login?error=session_failed');
-        }
-        
-        console.log('Google OAuth login successful:', {
-          userId: req.user._id,
+      // Generate JWT token with user data
+      const userId = req.user.id || req.user._id;
+      const token = jwt.sign(
+        {
+          userId: userId,
+          email: req.user.email,
           role: req.user.role,
-          sessionId: req.sessionID
-        });
-        
-        // Include user info in the URL (no token needed)
-        const userInfo = encodeURIComponent(JSON.stringify({
-          id: req.user._id,
+          name: req.user.name,
+          isEmailVerified: req.user.isEmailVerified
+        },
+        process.env.JWT_SECRET,
+        { 
+          expiresIn: "7d",
+          issuer: "nextera-app",
+          audience: "nextera-users"
+        }
+      );
+
+      // Log the user data being sent
+      console.log('✅ JWT login successful:', {
+        userId: userId,
+        role: req.user.role,
+        name: req.user.name,
+        email: req.user.email,
+        tokenExpiry: "7d"
+      });
+
+      res.json({ 
+        success: true,
+        authType: 'jwt',
+        token: token,
+        user: { 
+          id: userId,
           name: req.user.name,
           email: req.user.email,
           role: req.user.role,
-          isEmailVerified: req.user.isEmailVerified
-        }));
-        
-        const redirectUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-        res.redirect(`${redirectUrl}/auth/success?user=${userInfo}&sessionId=${req.sessionID}`);
+          isEmailVerified: req.user.isEmailVerified 
+        }
       });
     }
   );
 }
 
+// JWT Authentication Middleware
+const authenticateJWT = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: "No valid JWT token provided" });
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = {
+      id: decoded.userId,
+      userId: decoded.userId,
+      name: decoded.name,
+      email: decoded.email,
+      role: decoded.role,
+      isEmailVerified: decoded.isEmailVerified
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid JWT token" });
+  }
+};
+
 // Update user role
-router.put("/update-role/:userId", requireAuth, async (req, res) => {
+router.put("/update-role/:userId", authenticateJWT, async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
@@ -667,20 +607,6 @@ router.put("/update-role/:userId", requireAuth, async (req, res) => {
     user.role = properRole;
     await user.save();
 
-    // Update session with new role if this is the current user
-    if (req.session.userId === userId) {
-      req.session.userRole = properRole;
-      
-      // Save session with updated role
-      req.session.save((err) => {
-        if (err) {
-          console.error('Session update error after role change:', err);
-        } else {
-          console.log('Session updated with new role:', properRole);
-        }
-      });
-    }
-
     res.json({
       message: "Role updated successfully",
       user: {
@@ -689,8 +615,7 @@ router.put("/update-role/:userId", requireAuth, async (req, res) => {
         email: user.email,
         role: user.role,
         isEmailVerified: user.isEmailVerified
-      },
-      sessionUpdated: req.session.userId === userId
+      }
     });
   } catch (error) {
     console.error("Error updating role:", error);
@@ -699,15 +624,15 @@ router.put("/update-role/:userId", requireAuth, async (req, res) => {
 });
 
 // Apply to become an instructor
-router.post("/apply-instructor", requireAuth, async (req, res) => {
+router.post("/apply-instructor", authenticateJWT, async (req, res) => {
   try {
     console.log(' Instructor application request:', {
-      userId: req.session.userId,
-      userRole: req.session.userRole,
-      sessionId: req.sessionID
+      userId: req.user.userId,
+      userRole: req.user.role,
+      sessionId: req.user.sessionId
     });
 
-    const userId = req.session.userId;
+    const userId = req.user.userId;
     const user = await User.findById(userId);
 
     if (!user) {
@@ -756,6 +681,9 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
       resubmissionAllowed: true
     };
 
+    // Set wantsToBeInstructor to true so admin can find this application
+    user.wantsToBeInstructor = true;
+
     await user.save();
 
     console.log(' Instructor application submitted successfully:', {
@@ -778,54 +706,124 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
 });
 
 // Get all pending instructor applications (Admin only)
-router.get("/pending-instructors", requireAuth, async (req, res) => {
+router.get("/pending-instructors", authenticateJWT, async (req, res) => {
   try {
     // Check if user is admin
-    if (req.session.userRole !== 'Admin') {
+    if (!req.user.role || req.user.role !== 'Admin') {
       return res.status(403).json({ error: "Access denied. Admin privileges required." });
     }
 
     console.log(' Admin fetching pending instructor applications...');
-
-    // Find users with pending instructor applications
-    const pendingInstructors = await User.find({ 
+    
+    const pendingApplications = await User.find({
+      wantsToBeInstructor: true,
+      role: 'Student',
       'instructorApplication.status': 'pending'
-    }).select('name email instructorApplication createdAt').sort({ 
-      'instructorApplication.requestDate': -1 
-    });
+    }).select('name email instructorApplication createdAt');
 
-    console.log(` Found ${pendingInstructors.length} pending instructor applications`);
-    console.log('Pending applications:', pendingInstructors.map(u => ({
-      name: u.name,
-      email: u.email,
-      status: u.instructorApplication?.status,
-      requestDate: u.instructorApplication?.requestDate
-    })));
+    console.log(` Found ${pendingApplications.length} pending instructor applications`);
+    console.log('Pending applications:', pendingApplications);
 
     res.json({
       success: true,
-      count: pendingInstructors.length,
-      pendingApplications: pendingInstructors.map(user => ({
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        requestDate: user.instructorApplication?.requestDate,
-        accountCreated: user.createdAt
-      }))
+      applications: pendingApplications,
+      count: pendingApplications.length
     });
   } catch (error) {
-    console.error("Error fetching pending instructors:", error);
-    res.status(500).json({ error: "Error fetching pending instructor applications" });
+    console.error('Error fetching pending instructor applications:', error);
+    res.status(500).json({ error: "Failed to fetch pending applications" });
+  }
+});
+
+// Get all instructors with course counts - Admin only
+router.get("/all-instructors", authenticateJWT, async (req, res) => {
+  try {
+    console.log(' All instructors request from user:', {
+      userId: req.user.userId,
+      userRole: req.user.role
+    });
+
+    // Check if user is admin
+    if (!req.user.role || req.user.role !== 'Admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+
+    // Get all instructors
+    const instructors = await User.find({ 
+      role: { $in: ['Instructor', 'Admin'] } 
+    }).select('name email role createdAt');
+
+    console.log(` Found ${instructors.length} instructors`);
+
+    // Get course counts for each instructor using actual Course model queries
+    const instructorsWithCourses = await Promise.all(
+      instructors.map(async (instructor) => {
+        // Count courses created by this instructor
+        const courseCount = await Course.countDocuments({ 
+          creatorId: instructor._id 
+        });
+        
+        console.log(` Instructor ${instructor.name}: ${courseCount} courses`);
+        
+        return {
+          _id: instructor._id,
+          name: instructor.name,
+          email: instructor.email,
+          role: instructor.role,
+          createdAt: instructor.createdAt,
+          courseCount: courseCount
+        };
+      })
+    );
+
+    // Calculate comprehensive stats
+    const totalInstructors = instructors.length;
+    const totalCourses = await Course.countDocuments();
+    const totalStudents = await User.countDocuments({ role: 'Student' });
+    
+    // Find top instructor by course count
+    const instructorCourses = instructorsWithCourses.map(i => ({ 
+      name: i.name, 
+      courses: i.courseCount 
+    }));
+    
+    const topInstructorData = instructorCourses.reduce((max, current) => 
+      current.courses > max.courses ? current : max, 
+      { name: 'None', courses: 0 }
+    );
+
+    console.log(' Sending comprehensive admin stats:', {
+      totalInstructors,
+      totalCourses,
+      totalStudents,
+      topInstructor: topInstructorData.name,
+      topInstructorCourses: topInstructorData.courses
+    });
+
+    res.json({
+      success: true,
+      instructors: instructorsWithCourses,
+      stats: {
+        totalInstructors,
+        totalCourses,
+        totalStudents,
+        topInstructor: topInstructorData.name,
+        topInstructorCourses: topInstructorData.courses
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching instructors:', error);
+    res.status(500).json({ error: "Failed to fetch instructors data" });
   }
 });
 
 // Approve or reject instructor application (Admin only)
-router.post("/manage-instructor-application", requireAuth, async (req, res) => {
+router.post("/manage-instructor-application", authenticateJWT, async (req, res) => {
   try {
     const { userId, action, reason } = req.body; // action: 'approve' or 'reject'
     
     // Check if user is admin
-    if (req.session.userRole !== 'Admin') {
+    if (!req.user.role || req.user.role !== 'Admin') {
       return res.status(403).json({ error: "Access denied. Admin privileges required." });
     }
 
@@ -859,7 +857,7 @@ router.post("/manage-instructor-application", requireAuth, async (req, res) => {
       action: action
     });
 
-    const adminId = req.session.userId;
+    const adminId = req.user.userId;
 
     if (action === 'approve') {
       // Approve the application
@@ -906,17 +904,14 @@ router.post("/manage-instructor-application", requireAuth, async (req, res) => {
 });
 
 // Get user's instructor application status
-router.get("/instructor-application-status", requireAuth, async (req, res) => {
+router.get("/instructor-application-status", authenticateJWT, async (req, res) => {
   try {
     console.log(' Instructor application status request:', {
-      sessionExists: !!req.session,
-      sessionId: req.sessionID,
-      userId: req.session?.userId,
-      userRole: req.session?.userRole,
-      isAuthenticated: req.session?.isAuthenticated
+      userId: req.user.userId,
+      userRole: req.user.role
     });
 
-    const userId = req.session.userId;
+    const userId = req.user.userId;
     const user = await User.findById(userId).select('role instructorApplication wantsToBeInstructor');
 
     if (!user) {
@@ -938,8 +933,15 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
     let showApplicationForm = false;
     
     if (user.role === 'Student') {
+      // Check if user has a pending application
+      if (user.instructorApplication?.status === 'pending') {
+        canApply = false;
+        showApplicationForm = false;
+        message = "Your instructor application is pending admin approval. Please wait for a decision.";
+        console.log(' User has pending instructor application');
+      }
       // Check if user wants to be instructor but hasn't applied yet
-      if (user.wantsToBeInstructor && (!user.instructorApplication || !user.instructorApplication.status)) {
+      else if (user.wantsToBeInstructor && (!user.instructorApplication || !user.instructorApplication.status)) {
         canApply = true;
         showApplicationForm = true;
         message = "You registered with intent to teach. Click below to submit your instructor application.";
@@ -952,24 +954,32 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
         console.log(' New student - can apply');
       } 
       // Student who was previously rejected and resubmission is allowed
-      else {
-        canApply = user.instructorApplication.status === 'rejected' && 
-                   user.instructorApplication.resubmissionAllowed !== false;
+      else if (user.instructorApplication?.status === 'rejected') {
+        canApply = user.instructorApplication.resubmissionAllowed !== false;
         showApplicationForm = canApply;
-        console.log(' Previous application found:', {
+        message = canApply ? 
+          "Your previous application was rejected. You can reapply." :
+          "Your previous application was rejected and resubmission is not allowed.";
+        console.log(' Previous application rejected:', {
           status: user.instructorApplication.status,
           resubmissionAllowed: user.instructorApplication.resubmissionAllowed,
           canApply
         });
       }
-    } else if (user.role === 'pending_instructor') {
-      message = "Your instructor application is pending admin approval. You'll be notified once a decision is made.";
-      console.log(' User has pending instructor application');
-    } else if (user.role === 'Instructor') {
-      message = "You are already an approved instructor!";
-      console.log(' User is already an instructor');
-    } else {
-      console.log(' User role is not Student:', user.role);
+      // Student who was approved (shouldn't happen, but handle it)
+      else if (user.instructorApplication?.status === 'approved') {
+        canApply = false;
+        showApplicationForm = false;
+        message = "Your instructor application was approved! Your role should be updated soon.";
+        console.log(' Application approved but role not updated');
+      }
+    }
+    // User is already an instructor or admin
+    else {
+      canApply = false;
+      showApplicationForm = false;
+      message = "You are already an instructor or admin!";
+      console.log(' User is already an instructor or admin');
     }
 
     console.log('Application status check:', {
@@ -1005,161 +1015,122 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
 });
 
 // Get all instructors with course counts - Admin only
-router.get("/all-instructors", requireAuth, async (req, res) => {
+router.get("/all-instructors", authenticateJWT, async (req, res) => {
   try {
     console.log(' All instructors request from user:', {
-      userId: req.session?.userId,
-      userRole: req.session?.userRole
+      userId: req.user.userId,
+      userRole: req.user.role
     });
 
     // Check if user is admin
-    const requestingUser = await User.findById(req.session.userId);
-    if (!requestingUser || requestingUser.role !== 'Admin') {
+    if (!req.user.role || req.user.role !== 'Admin') {
       return res.status(403).json({ error: "Access denied. Admin privileges required." });
     }
 
     // Get all instructors
     const instructors = await User.find({ 
-      role: 'Instructor' 
-    }).select('name email role createdAt profilePic');
+      role: { $in: ['Instructor', 'Admin'] } 
+    }).select('name email role createdAt');
 
     console.log(` Found ${instructors.length} instructors`);
 
-    // Get course counts for each instructor
-    const Course = require('../Models/Course');
-    const instructorsWithCourses = await Promise.all(
-      instructors.map(async (instructor) => {
-        const courseCount = await Course.countDocuments({ 
-          instructor: instructor._id 
-        });
-        
-        // Get recent courses for additional info
-        const recentCourses = await Course.find({ 
-          instructor: instructor._id 
-        })
-        .select('title createdAt')
-        .sort({ createdAt: -1 })
-        .limit(3);
+    // Get course counts for each instructor (if you have a Course model)
+    // For now, we'll just return basic instructor data
+    const instructorsWithCourses = instructors.map(instructor => ({
+      _id: instructor._id,
+      name: instructor.name,
+      email: instructor.email,
+      role: instructor.role,
+      createdAt: instructor.createdAt,
+      courseCount: 0 // TODO: Add actual course count when Course model is available
+    }));
 
-        return {
-          id: instructor._id,
-          name: instructor.name,
-          email: instructor.email,
-          profilePic: instructor.profilePic,
-          joinedDate: instructor.createdAt,
-          courseCount,
-          recentCourses: recentCourses.map(course => ({
-            title: course.title,
-            createdAt: course.createdAt
-          }))
-        };
-      })
-    );
-
-    // Sort by course count (highest first)
-    instructorsWithCourses.sort((a, b) => b.courseCount - a.courseCount);
+    // Calculate stats
+    const totalInstructors = instructors.length;
+    const topInstructor = instructors.length > 0 ? instructors[0].name : 'None';
+    const topInstructorCourses = 0; // TODO: Add actual course count
 
     console.log(' Sending instructors data:', {
-      totalInstructors: instructorsWithCourses.length,
-      topInstructor: instructorsWithCourses[0]?.name,
-      topInstructorCourses: instructorsWithCourses[0]?.courseCount
+      totalInstructors,
+      topInstructor,
+      topInstructorCourses
     });
 
     res.json({
       success: true,
       instructors: instructorsWithCourses,
-      totalInstructors: instructorsWithCourses.length,
-      totalCourses: instructorsWithCourses.reduce((sum, inst) => sum + inst.courseCount, 0)
+      stats: {
+        totalInstructors,
+        topInstructor,
+        topInstructorCourses
+      }
     });
   } catch (error) {
-    console.error(" Error fetching instructors:", error);
-    res.status(500).json({ error: "Error fetching instructors data" });
+    console.error('Error fetching instructors:', error);
+    res.status(500).json({ error: "Failed to fetch instructors data" });
   }
 });
 
 // Check authentication status - used by AuthContext to initialize user state
-router.get("/me", (req, res) => {
+router.get("/me", authenticateJWT, async (req, res) => {
   try {
-    console.log('🔍 Auth check request:', {
-      sessionExists: !!req.session,
-      sessionId: req.sessionID,
-      isAuthenticated: req.session?.isAuthenticated,
-      userId: req.session?.userId,
-      userRole: req.session?.userRole,
-      hasAuthHeader: !!req.headers.authorization,
-      fullSession: req.session // Add full session debug
+    console.log(' Auth check request:', {
+      hasAuthHeader: !!req.headers.authorization
     });
 
-    // Check for iPhone Safari JWT authentication first
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-jwt-secret");
-        console.log('🍎 iPhone Safari JWT auth successful:', {
-          userId: decoded.userId,
-          role: decoded.role
-        });
+    const user = {
+      id: req.user.id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      isEmailVerified: req.user.isEmailVerified
+    };
 
-        const user = {
-          id: decoded.userId,
-          name: decoded.name,
-          email: decoded.email,
-          role: decoded.role,
-          isEmailVerified: true
-        };
+    console.log(' JWT auth successful:', {
+      userId: user.id,
+      role: user.role
+    });
 
-        return res.json({
-          success: true,
-          user: user,
-          authType: 'jwt',
-          authenticated: true,
-          isIPhoneSafari: true
-        });
-      } catch (jwtError) {
-        console.log('🍎 iPhone Safari JWT verification failed:', jwtError.message);
-        // Fall through to session check
-      }
-    }
-
-    // Check session-based authentication for other platforms
-    if (req.session && req.session.isAuthenticated && req.session.userId) {
-      const user = {
-        id: req.session.userId,
-        name: req.session.userName,
-        email: req.session.userEmail,
-        role: req.session.userRole,
-        isEmailVerified: true // Assume verified if they can log in
-      };
-
-      console.log('✅ Session auth check successful:', {
-        userId: user.id,
-        name: user.name,
-        role: user.role
-      });
-
-      return res.json({
-        success: true,
-        user: user,
-        authType: 'session',
-        authenticated: true
-      });
-    } else {
-      console.log('❌ Auth check failed - no valid session or JWT');
-      return res.status(401).json({
-        success: false,
-        user: null,
-        authenticated: false,
-        error: "Not authenticated"
-      });
-    }
+    return res.json({
+      success: true,
+      user: user,
+      authType: 'jwt',
+      authenticated: true
+    });
   } catch (error) {
     console.error('Auth check error:', error);
     res.status(500).json({ 
-      success: false,
-      error: "Server error during authentication check",
-      authenticated: false
+      success: false, 
+      error: "Authentication check failed" 
+    });
+  }
+});
+
+// Simple JWT test endpoint to verify authentication is working
+router.get("/test-jwt", authenticateJWT, async (req, res) => {
+  try {
+    console.log(' JWT Test endpoint hit:', {
+      userId: req.user.id,
+      role: req.user.role,
+      name: req.user.name
+    });
+
+    res.json({
+      success: true,
+      message: "JWT authentication is working!",
+      user: {
+        id: req.user.id,
+        name: req.user.name,
+        role: req.user.role,
+        email: req.user.email
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('JWT test error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: "JWT test failed" 
     });
   }
 });

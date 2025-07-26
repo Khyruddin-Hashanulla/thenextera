@@ -22,7 +22,22 @@ const ResetPassword = () => {
     console.log('Current URL:', window.location.href);
     console.log('Current hash:', window.location.hash);
     
-    setDebugInfo(`Token: ${token}, User: ${user ? 'Logged in' : 'Not logged in'}, URL: ${window.location.href}`);
+    // Debug AuthContext functions
+    console.log('🔍 AuthContext functions availability:', {
+      resetPassword: typeof resetPassword,
+      user: typeof user,
+      logout: typeof logout,
+      resetPasswordExists: !!resetPassword,
+      resetPasswordIsFunction: typeof resetPassword === 'function'
+    });
+    
+    if (!resetPassword) {
+      console.error('❌ CRITICAL: resetPassword function is not available from AuthContext!');
+    } else {
+      console.log('✅ resetPassword function is available');
+    }
+    
+    setDebugInfo(`Token: ${token}, User: ${user ? 'Logged in' : 'Not logged in'}, URL: ${window.location.href}, resetPassword: ${typeof resetPassword}`);
     
     // If user is already logged in, log them out for password reset
     if (user) {
@@ -44,7 +59,7 @@ const ResetPassword = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [user, logout, token]);
+  }, [user, logout, token, resetPassword]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,17 +75,35 @@ const ResetPassword = () => {
     try {
       setError('');
       setLoading(true);
-      console.log('Attempting password reset with token:', token);
+      console.log('🔐 Attempting password reset with token:', token);
       
+      // Debug function availability right before calling
+      console.log('🔍 Pre-call debug:', {
+        resetPasswordType: typeof resetPassword,
+        resetPasswordExists: !!resetPassword,
+        resetPasswordIsFunction: typeof resetPassword === 'function',
+        tokenExists: !!token,
+        passwordExists: !!password
+      });
+      
+      if (!resetPassword) {
+        throw new Error('resetPassword function is not available from AuthContext');
+      }
+      
+      if (typeof resetPassword !== 'function') {
+        throw new Error(`resetPassword is not a function, it's a ${typeof resetPassword}`);
+      }
+      
+      console.log('✅ About to call resetPassword function...');
       const response = await resetPassword({ token, password });
-      console.log('Password reset response:', response);
+      console.log('✅ Password reset response:', response);
       
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
       }, 3000);
     } catch (err) {
-      console.error('Password reset error:', err);
+      console.error('❌ Password reset error:', err);
       
       // Better error handling for different response formats
       let errorMessage = 'Failed to reset password';

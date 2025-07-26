@@ -4,8 +4,7 @@ const Course = require("../Models/Course");
 const User = require("../Models/User");
 const mongoose = require("mongoose");
 const multer = require('multer');
-const { requireAuth, requireTeacher, requireInstructor } = require("../Middleware/auth");
-const { requireHybridAuth, requireRole: hybridRequireRole, requireTeacher: hybridRequireTeacher } = require("../Middleware/jwt-auth");
+const { requireAuth, requireTeacher, requireInstructor, authenticateJWT } = require("../Middleware/auth");
 
 // Import Cloudinary directly
 const { cloudinary } = require('../config/cloudinary');
@@ -64,7 +63,8 @@ const uploadToCloudinaryDirect = async (buffer, options) => {
       quality: isIPhoneSafari ? 'auto:eco' : isMobile ? 'auto:low' : 'auto:good',
       // iPhone Safari specific optimizations
       ...(isIPhoneSafari && {
-        format: options.resource_type === 'video' ? 'mp4' : 'webp',
+        format: options.resource_type === 'video' ? 
+          'mp4' : 'webp',
         flags: 'progressive',
         transformation: options.resource_type === 'video' ? 
           [{ quality: 'auto:eco', bit_rate: '500k', fps: 15 }] : 
@@ -353,7 +353,7 @@ const validateVideoUrl = async (url) => {
 };
 
 // Upload thumbnail from file - Instructor only
-router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.single('thumbnail'), async (req, res) => {
+router.post('/upload/thumbnail', authenticateJWT, requireInstructor, upload.single('thumbnail'), async (req, res) => {
   try {
     console.log(' Thumbnail upload route hit');
     
@@ -472,7 +472,7 @@ router.post('/upload/thumbnail', requireHybridAuth, requireInstructor, upload.si
 });
 
 // Upload thumbnail from URL - Instructor only
-router.post('/upload/thumbnail-url', requireHybridAuth, requireInstructor, async (req, res) => {
+router.post('/upload/thumbnail-url', authenticateJWT, requireInstructor, async (req, res) => {
   try {
     console.log('Thumbnail URL upload request:', {
       hasSession: !!req.session,
@@ -549,7 +549,7 @@ router.post('/upload/thumbnail-url', requireHybridAuth, requireInstructor, async
 });
 
 // Upload video from file - Instructor only
-router.post('/upload/video', requireHybridAuth, requireInstructor, upload.single('video'), async (req, res) => {
+router.post('/upload/video', authenticateJWT, requireInstructor, upload.single('video'), async (req, res) => {
   try {
     console.log(' Video upload route hit');
     
@@ -663,7 +663,7 @@ router.post('/upload/video', requireHybridAuth, requireInstructor, upload.single
 });
 
 // Upload video from URL - Instructor only
-router.post('/upload/video-url', requireHybridAuth, requireInstructor, async (req, res) => {
+router.post('/upload/video-url', authenticateJWT, requireInstructor, async (req, res) => {
   try {
     console.log('Video URL upload request:', {
       hasSession: !!req.session,
@@ -749,7 +749,7 @@ router.get("/", async (req, res) => {
 });
 
 // Get a specific course
-router.get('/:id', requireHybridAuth, async (req, res) => {
+router.get('/:id', authenticateJWT, async (req, res) => {
   try {
     // Log request details
     console.log('Course fetch request:', {
@@ -996,7 +996,7 @@ const formatCourseData = (course, user, req) => {
 };
 
 // Add course (Instructor/Admin only) - Block pending instructors
-router.post("/add", requireHybridAuth, requireInstructor, async (req, res) => {
+router.post("/add", authenticateJWT, requireInstructor, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -1055,14 +1055,15 @@ router.post("/add", requireHybridAuth, requireInstructor, async (req, res) => {
       description: description?.trim() || '',
       thumbnail: formattedThumbnail,
       sections: processedSections,
-      creatorId: req.user._id
+      creatorId: req.user.id || req.user.userId
     });
 
     // Log the processed course data
     console.log('Processed course data:', {
       title: newCourse.title,
       sectionsCount: newCourse.sections.length,
-      totalVideos: newCourse.sections.reduce((total, section) => total + section.videos.length, 0)
+      totalVideos: newCourse.sections.reduce((total, section) => total + section.videos.length, 0),
+      creatorId: req.user.id || req.user.userId
     });
 
     await newCourse.save();
@@ -1087,7 +1088,7 @@ router.post("/add", requireHybridAuth, requireInstructor, async (req, res) => {
 });
 
 // Update course (Instructor/Admin only)
-router.put("/:id", requireHybridAuth, requireInstructor, async (req, res) => {
+router.put("/:id", authenticateJWT, requireInstructor, async (req, res) => {
   try {
     const { title, description, thumbnail, sections } = req.body;
 
@@ -1107,7 +1108,8 @@ router.put("/:id", requireHybridAuth, requireInstructor, async (req, res) => {
 
     // Check if user is creator or admin
     const courseCreatorId = course.creatorId._id || course.creatorId;
-    if (courseCreatorId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const currentUserId = req.user.id || req.user.userId;
+    if (courseCreatorId.toString() !== currentUserId.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ error: "Not authorized to update this course" });
     }
 
@@ -1189,12 +1191,12 @@ router.put("/:id", requireHybridAuth, requireInstructor, async (req, res) => {
 });
 
 // Delete course (Instructor/Admin only)
-router.delete("/:id", requireHybridAuth, requireInstructor, async (req, res) => {
+router.delete("/:id", authenticateJWT, requireInstructor, async (req, res) => {
   try {
     console.log('Delete request received:', {
       courseId: req.params.id,
       user: {
-        id: req.user._id,
+        id: req.user.id || req.user.userId,
         role: req.user.role,
         name: req.user.name,
         email: req.user.email
@@ -1217,7 +1219,7 @@ router.delete("/:id", requireHybridAuth, requireInstructor, async (req, res) => 
 
     // Check if user is creator or admin
     const courseCreatorId = (course.creatorId._id || course.creatorId).toString();
-    const userId = req.user._id.toString();
+    const userId = (req.user.id || req.user.userId).toString();
     const isCreator = courseCreatorId === userId;
     const isAdmin = req.user.role === 'admin';
 
@@ -1259,7 +1261,7 @@ router.delete("/:id", requireHybridAuth, requireInstructor, async (req, res) => 
       message: error.message,
       stack: error.stack,
       courseId: req.params.id,
-      userId: req.user._id
+      userId: req.user.id || req.user.userId
     });
     res.status(500).json({ 
       error: "Error deleting course",
@@ -1269,10 +1271,10 @@ router.delete("/:id", requireHybridAuth, requireInstructor, async (req, res) => 
 });
 
 // Enroll in course (Authenticated users only)
-router.post("/enroll/:courseId", requireHybridAuth, async (req, res) => {
+router.post("/enroll/:courseId", authenticateJWT, async (req, res) => {
   try {
     const { courseId } = req.params;
-    const userId = req.user._id || req.user.id || req.user.userId;
+    const userId = req.user.id || req.user.userId;
 
     // Log the enrollment request
     console.log('Enrollment request:', {
@@ -1392,7 +1394,7 @@ router.post("/enroll/:courseId", requireHybridAuth, async (req, res) => {
 });
 
 // Unenroll from course (for debugging)
-router.post("/unenroll/:courseId", requireHybridAuth, async (req, res) => {
+router.post("/unenroll/:courseId", authenticateJWT, async (req, res) => {
   try {
     const { courseId } = req.params;
     const userId = req.user.userId;
@@ -1427,7 +1429,7 @@ router.post("/unenroll/:courseId", requireHybridAuth, async (req, res) => {
 });
 
 // Update course progress
-router.post('/:id/progress', requireHybridAuth, async (req, res) => {
+router.post('/:id/progress', authenticateJWT, async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     if (!course) {
@@ -1494,10 +1496,10 @@ router.post('/:id/progress', requireHybridAuth, async (req, res) => {
 });
 
 // Get course progress (Authenticated users only)
-router.get("/:courseId/progress", requireHybridAuth, async (req, res) => {
+router.get("/:courseId/progress", authenticateJWT, async (req, res) => {
   try {
     const { courseId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user.id || req.user.userId;
 
     const course = await Course.findById(courseId);
     if (!course) {
@@ -1529,10 +1531,10 @@ router.get("/:courseId/progress", requireHybridAuth, async (req, res) => {
 });
 
 // Test authentication endpoint
-router.get('/test-auth', requireHybridAuth, hybridRequireTeacher, (req, res) => {
+router.get('/test-auth', authenticateJWT, requireTeacher, (req, res) => {
   res.json({
     success: true,
-    message: 'Hybrid authentication working',
+    message: 'Authentication working',
     authType: req.authType,
     user: {
       id: req.user.id,
@@ -1551,7 +1553,7 @@ router.get('/test-auth', requireHybridAuth, hybridRequireTeacher, (req, res) => 
 });
 
 // Test upload route for debugging
-router.post('/test-upload', requireHybridAuth, requireInstructor, (req, res) => {
+router.post('/test-upload', authenticateJWT, requireInstructor, (req, res) => {
   console.log(' Test upload route hit:', {
     hasSession: !!req.session,
     isAuthenticated: req.session?.isAuthenticated,
@@ -1574,7 +1576,7 @@ router.post('/test-upload', requireHybridAuth, requireInstructor, (req, res) => 
 });
 
 // Simple test endpoint for upload functionality
-router.post('/test-upload-basic', requireHybridAuth, requireInstructor, upload.single('thumbnail'), (req, res) => {
+router.post('/test-upload-basic', authenticateJWT, requireInstructor, upload.single('thumbnail'), (req, res) => {
   try {
     console.log(' Basic upload test hit');
     console.log(' Test request details:', {

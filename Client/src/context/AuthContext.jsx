@@ -4,14 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
-// iPhone Safari detection utility
-const isIPhoneSafari = () => {
-  const userAgent = navigator.userAgent;
-  const isIPhone = /iPhone/.test(userAgent);
-  const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-  return isIPhone && isSafari;
-};
-
 // Create the provider component
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -21,43 +13,33 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        console.log('� Initializing hybrid authentication state...');
+        console.log('🔐 Initializing JWT authentication state...');
         
-        // For iPhone Safari, check if we have a stored JWT token
-        if (isIPhoneSafari()) {
-          const token = localStorage.getItem('authToken');
-          if (!token) {
-            console.log('🍎 iPhone Safari: No JWT token found');
-            setLoading(false);
-            return;
-          }
-          console.log('🍎 iPhone Safari: JWT token found, verifying...');
+        // Check if JWT token exists in localStorage
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          console.log('❌ No JWT token found');
+          setLoading(false);
+          return;
         }
         
-        // Call the auth check endpoint (handles both session and JWT)
+        // Call the auth check endpoint with JWT token
         const response = await api.get('/api/auth/me');
         
         if (response.data.success && response.data.user) {
           setUser(response.data.user);
-          console.log('✅ Authentication initialized:', {
+          console.log('✅ JWT authentication initialized:', {
             userId: response.data.user.id,
             name: response.data.user.name,
             role: response.data.user.role,
-            authType: response.data.authType,
-            isIPhoneSafari: response.data.isIPhoneSafari
+            authType: response.data.authType
           });
           console.log('🔍 Full response data:', response.data);
         }
       } catch (error) {
-        console.log('❌ Authentication initialization failed:', error.response?.status);
-        
-        // Clear iPhone Safari token if authentication fails
-        if (isIPhoneSafari()) {
-          localStorage.removeItem('authToken');
-          console.log('🍎 iPhone Safari: JWT token cleared');
-        }
-        
-        setUser(null);
+        console.log('❌ JWT authentication initialization failed:', error.response?.status);
+        // Clear invalid token
+        localStorage.removeItem('authToken');
       } finally {
         setLoading(false);
       }
@@ -68,9 +50,9 @@ const AuthProvider = ({ children }) => {
 
   const login = async (email, password, rememberMe = false) => {
     try {
-      console.log('🔐 Attempting hybrid login...');
       setError(null);
-      
+      setLoading(true);
+
       const response = await api.post('/api/auth/login', {
         email,
         password,
@@ -80,76 +62,257 @@ const AuthProvider = ({ children }) => {
       if (response.data.success) {
         setUser(response.data.user);
         
-        console.log('✅ Login successful:', {
+        // Store JWT token in localStorage
+        localStorage.setItem('authToken', response.data.token);
+        
+        console.log('✅ JWT login successful:', {
           userId: response.data.user.id,
           name: response.data.user.name,
           role: response.data.user.role,
-          authType: response.data.authType,
-          isIPhoneSafari: response.data.isIPhoneSafari
+          authType: response.data.authType
         });
-
-        // Handle different authentication types
-        if (response.data.isIPhoneSafari && response.data.token) {
-          console.log('🍎 iPhone Safari: JWT authentication successful');
-          // JWT token is stored by the API interceptor
-        } else {
-          console.log('� Session-based authentication successful');
-        }
 
         // Use window.location.href for reliable redirect on all platforms
         setTimeout(() => {
           window.location.href = '/dashboard';
         }, 100);
-
-        return { success: true };
       }
     } catch (error) {
-      console.error('❌ Login failed:', error.response?.data?.error || error.message);
+      console.error('Login error:', error);
       setError(error.response?.data?.error || 'Login failed');
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Login failed' 
-      };
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      console.log('🔐 Registration attempt:', {
+        name: userData.name,
+        email: userData.email,
+        role: userData.role,
+        wantsToBeInstructor: userData.wantsToBeInstructor
+      });
+
+      const response = await api.post('/api/auth/register', userData);
+
+      if (response.data.success) {
+        console.log('✅ Registration successful:', response.data.message);
+        
+        // Registration successful - user needs to verify email
+        // Don't auto-login, redirect to login page with success message
+        return {
+          success: true,
+          message: response.data.message,
+          requiresVerification: true
+        };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      const errorMessage = error.response?.data?.error || 'Registration failed';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      console.log('🚪 Attempting logout...');
-      setError(null);
-      
-      // Clear iPhone Safari JWT token
-      if (isIPhoneSafari()) {
-        localStorage.removeItem('authToken');
-        console.log('🍎 iPhone Safari: JWT token cleared');
-      }
-      
-      // Call logout endpoint for session-based auth
+      // Call logout endpoint
       await api.post('/api/auth/logout');
-      
+    } catch (error) {
+      console.error('Logout API error:', error);
+    } finally {
+      // Clear user state and token regardless of API response
       setUser(null);
-      console.log('✅ Logout successful');
+      localStorage.removeItem('authToken');
       
       // Use window.location.href for reliable redirect
       window.location.href = '/';
-    } catch (error) {
-      console.error('❌ Logout error:', error);
-      // Force logout even if API call fails
-      setUser(null);
-      
-      // Clear iPhone Safari token on error
-      if (isIPhoneSafari()) {
-        localStorage.removeItem('authToken');
+    }
+  };
+
+  const forgotPassword = async ({ email }) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      console.log('🔐 Forgot password request:', { email });
+
+      const response = await api.post('/api/auth/forgot-password', { email });
+
+      if (response.data.success) {
+        console.log('✅ Forgot password email sent:', response.data.message);
+        return {
+          success: true,
+          message: response.data.message
+        };
       }
-      
-      window.location.href = '/';
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to send reset email';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async ({ token, password }) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      console.log('🔐 Reset password request:', { token: token?.substring(0, 10) + '...' });
+
+      const response = await api.post('/api/auth/reset-password', { token, password });
+
+      if (response.data.success) {
+        console.log('✅ Password reset successful:', response.data.message);
+        return {
+          success: true,
+          message: response.data.message
+        };
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to reset password';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOTP = async ({ email, otp }) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      console.log('🔐 OTP verification request:', { email, otp: otp?.substring(0, 2) + '****' });
+
+      const response = await api.post('/api/auth/verify-otp', { email, otp });
+
+      if (response.data.success) {
+        console.log('✅ OTP verification successful:', response.data.message);
+        return {
+          success: true,
+          message: response.data.message,
+          instructorApplicationCreated: response.data.instructorApplicationCreated
+        };
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to verify OTP';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendOTP = async ({ email }) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      console.log('🔐 Resend OTP request:', { email });
+
+      const response = await api.post('/api/auth/resend-verification', { email });
+
+      if (response.data.message) {
+        console.log('✅ OTP resent successfully:', response.data.message);
+        return {
+          success: true,
+          message: response.data.message
+        };
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to resend OTP';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const applyInstructor = async () => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      console.log('🎓 Applying for instructor role...');
+      console.log('🔍 Current user state:', {
+        userId: user?.id,
+        userRole: user?.role,
+        userName: user?.name,
+        userEmail: user?.email,
+        hasInstructorApplication: !!user?.instructorApplication,
+        currentApplicationStatus: user?.instructorApplication?.status,
+        wantsToBeInstructor: user?.wantsToBeInstructor
+      });
+
+      const response = await api.post('/api/auth/apply-instructor');
+
+      console.log('📡 Backend response:', response.data);
+
+      if (response.data.message) {
+        console.log('✅ Instructor application submitted:', response.data.message);
+        
+        // Update user state to reflect pending application
+        if (user) {
+          const updatedUser = {
+            ...user,
+            instructorApplication: {
+              status: response.data.status,
+              requestDate: response.data.applicationDate
+            },
+            wantsToBeInstructor: true
+          };
+          
+          console.log('🔄 Updating user state:', updatedUser);
+          setUser(updatedUser);
+        }
+
+        return {
+          success: true,
+          message: response.data.message,
+          status: response.data.status,
+          applicationDate: response.data.applicationDate
+        };
+      }
+    } catch (error) {
+      console.error('❌ Apply instructor error:', error);
+      console.error('❌ Error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      const errorMessage = error.response?.data?.error || 'Failed to submit instructor application';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
   const value = {
     user,
     login,
+    register,
     logout,
+    forgotPassword,
+    resetPassword,
+    verifyOTP,
+    resendOTP,
+    applyInstructor,
     loading,
     error,
     isAuthenticated: !!user,

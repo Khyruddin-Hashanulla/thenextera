@@ -18,19 +18,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('🔐 Attempting login with hybrid authentication...');
-      
-      const result = await login(email, password, rememberMe);
-      
-      if (result.success) {
-        console.log('✅ Login successful - redirect will be handled by AuthContext');
-        // Redirect is handled by AuthContext login function
-      } else {
-        setError(result.error || 'Login failed');
-      }
+      await login(email, password, rememberMe);
+      // Login function handles redirect automatically
     } catch (error) {
-      console.error('❌ Login error:', error);
-      setError(error.message || 'Login failed');
+      setError(error.response?.data?.error || 'Login failed');
     } finally {
       setLoading(false);
     }

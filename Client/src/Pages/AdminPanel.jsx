@@ -32,7 +32,8 @@ const AdminPanel = () => {
     try {
       setLoading(true);
       const response = await api.get('/api/auth/pending-instructors');
-      setPendingApplications(response.data.pendingApplications || []);
+      console.log('📊 Admin panel response:', response.data);
+      setPendingApplications(response.data.applications || []);
     } catch (error) {
       console.error('Error fetching pending applications:', error);
       setMessage('Error loading pending applications');
@@ -73,7 +74,7 @@ const AdminPanel = () => {
       
       // Remove the application from the list
       setPendingApplications(prev => 
-        prev.filter(app => app.id !== userId)
+        prev.filter(app => app._id !== userId)
       );
 
     } catch (error) {
@@ -89,11 +90,13 @@ const AdminPanel = () => {
     const [rejectReason, setRejectReason] = useState('');
 
     const handleApprove = () => {
-      handleApplicationDecision(application.id, 'approve');
+      console.log('🔍 Approving application:', { userId: application._id, name: application.name });
+      handleApplicationDecision(application._id, 'approve');
     };
 
     const handleReject = () => {
-      handleApplicationDecision(application.id, 'reject', rejectReason);
+      console.log('🔍 Rejecting application:', { userId: application._id, name: application.name, reason: rejectReason });
+      handleApplicationDecision(application._id, 'reject', rejectReason);
       setShowRejectModal(false);
       setRejectReason('');
     };
@@ -134,10 +137,10 @@ const AdminPanel = () => {
         <div className="flex space-x-3">
           <button
             onClick={handleApprove}
-            disabled={processing[application.id]}
+            disabled={processing[application._id]}
             className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
           >
-            {processing[application.id] ? (
+            {processing[application._id] ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 <span>Processing...</span>
@@ -152,7 +155,7 @@ const AdminPanel = () => {
           
           <button
             onClick={() => setShowRejectModal(true)}
-            disabled={processing[application.id]}
+            disabled={processing[application._id]}
             className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
           >
             <span>✗</span>
@@ -368,7 +371,7 @@ const AdminPanel = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {pendingApplications.map((application) => (
                     <ApplicationCard
-                      key={application.id}
+                      key={application._id}
                       application={application}
                     />
                   ))}
@@ -432,7 +435,7 @@ const AdminPanel = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {instructors.map((instructor) => (
                     <InstructorCard
-                      key={instructor.id}
+                      key={instructor._id}
                       instructor={instructor}
                     />
                   ))}

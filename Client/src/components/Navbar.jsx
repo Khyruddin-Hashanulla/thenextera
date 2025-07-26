@@ -10,12 +10,12 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      console.log('🚪 Navbar logout initiated...');
       await logout();
-      // Redirect is handled by AuthContext logout function
+      // Logout function handles redirect automatically
     } catch (error) {
-      console.error('❌ Logout error:', error);
-      // Force redirect even if logout fails
+      console.error('Logout error:', error);
+      // Force logout even if API call fails
+      localStorage.removeItem('authToken');
       window.location.href = '/';
     }
   };
