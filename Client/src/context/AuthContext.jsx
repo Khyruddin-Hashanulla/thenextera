@@ -4,10 +4,15 @@ import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
-// Create the hook but don't export it here
-const useAuth = () => useContext(AuthContext);
+// iPhone Safari detection utility
+const isIPhoneSafari = () => {
+  const userAgent = navigator.userAgent;
+  const isIPhone = /iPhone/.test(userAgent);
+  const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  return isIPhone && isSafari;
+};
 
-// Create the provider component but don't export it here
+// Create the provider component
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,29 +21,42 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        console.log('🔄 Initializing authentication...');
+        console.log('� Initializing hybrid authentication state...');
         
-        // Use session-based authentication for all browsers to prevent conflicts
-        // This ensures consistent behavior across all platforms
-        try {
-          const response = await api.get('/api/auth/me');
-          if (response.data.user) {
-            setUser(response.data.user);
-            console.log('✅ Session authentication successful:', response.data.user.name);
-          } else {
-            console.log('❌ No session found');
-            setUser(null);
+        // For iPhone Safari, check if we have a stored JWT token
+        if (isIPhoneSafari()) {
+          const token = localStorage.getItem('authToken');
+          if (!token) {
+            console.log('🍎 iPhone Safari: No JWT token found');
+            setLoading(false);
+            return;
           }
-        } catch (error) {
-          console.log('❌ Session authentication failed:', error.response?.status);
-          setUser(null);
-          
-          // Clear any stored data on auth failure
-          localStorage.removeItem('jwt_token');
-          localStorage.removeItem('user');
+          console.log('🍎 iPhone Safari: JWT token found, verifying...');
+        }
+        
+        // Call the auth check endpoint (handles both session and JWT)
+        const response = await api.get('/api/auth/me');
+        
+        if (response.data.success && response.data.user) {
+          setUser(response.data.user);
+          console.log('✅ Authentication initialized:', {
+            userId: response.data.user.id,
+            name: response.data.user.name,
+            role: response.data.user.role,
+            authType: response.data.authType,
+            isIPhoneSafari: response.data.isIPhoneSafari
+          });
+          console.log('🔍 Full response data:', response.data);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.log('❌ Authentication initialization failed:', error.response?.status);
+        
+        // Clear iPhone Safari token if authentication fails
+        if (isIPhoneSafari()) {
+          localStorage.removeItem('authToken');
+          console.log('🍎 iPhone Safari: JWT token cleared');
+        }
+        
         setUser(null);
       } finally {
         setLoading(false);
@@ -48,154 +66,111 @@ const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const register = async (userData) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
+      console.log('🔐 Attempting hybrid login...');
       setError(null);
-      const response = await api.post('/api/auth/register', userData);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data || 'Registration failed');
-      throw err;
-    }
-  };
-
-  const verifyOTP = async (otpData) => {
-    try {
-      setError(null);
-      const response = await api.post('/api/auth/verify-otp', otpData);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data || 'OTP verification failed');
-      throw err;
-    }
-  };
-
-  const resendOTP = async (emailData) => {
-    try {
-      setError(null);
-      const response = await api.post('/api/auth/resend-verification', emailData);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data || 'Failed to resend OTP');
-      throw err;
-    }
-  };
-
-  const login = async (credentials) => {
-    try {
-      setError(null);
-      const response = await api.post('/api/auth/login', credentials);
       
-      console.log('Full login response:', response.data);
-      
-      const { user, success, sessionId } = response.data;
-      
-      if (!success || !user) {
-        throw new Error('Login failed - invalid response structure');
-      }
-      
-      // Store user data for session-based auth
-      localStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
-      
-      console.log('🖥️ Regular browser: Session authentication successful:', {
-        userId: user.id,
-        role: user.role,
-        sessionId: sessionId
+      const response = await api.post('/api/auth/login', {
+        email,
+        password,
+        rememberMe
       });
-      
-      return response.data;
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.response?.data || 'Login failed');
-      throw err;
+
+      if (response.data.success) {
+        setUser(response.data.user);
+        
+        console.log('✅ Login successful:', {
+          userId: response.data.user.id,
+          name: response.data.user.name,
+          role: response.data.user.role,
+          authType: response.data.authType,
+          isIPhoneSafari: response.data.isIPhoneSafari
+        });
+
+        // Handle different authentication types
+        if (response.data.isIPhoneSafari && response.data.token) {
+          console.log('🍎 iPhone Safari: JWT authentication successful');
+          // JWT token is stored by the API interceptor
+        } else {
+          console.log('� Session-based authentication successful');
+        }
+
+        // Use window.location.href for reliable redirect on all platforms
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 100);
+
+        return { success: true };
+      }
+    } catch (error) {
+      console.error('❌ Login failed:', error.response?.data?.error || error.message);
+      setError(error.response?.data?.error || 'Login failed');
+      return { 
+        success: false, 
+        error: error.response?.data?.error || 'Login failed' 
+      };
     }
   };
 
   const logout = async () => {
     try {
+      console.log('🚪 Attempting logout...');
       setError(null);
       
-      // Call server logout to destroy session
-      console.log('🖥️ Regular browser: Logging out (destroying session)');
-      try {
-        await api.post('/api/auth/logout');
-      } catch (err) {
-        console.error('Server logout error:', err);
-        // Continue with local cleanup even if server logout fails
+      // Clear iPhone Safari JWT token
+      if (isIPhoneSafari()) {
+        localStorage.removeItem('authToken');
+        console.log('🍎 iPhone Safari: JWT token cleared');
       }
-      localStorage.removeItem('user');
+      
+      // Call logout endpoint for session-based auth
+      await api.post('/api/auth/logout');
       
       setUser(null);
-      console.log('Logout successful');
-    } catch (err) {
-      console.error('Logout error:', err);
-      setError(err.response?.data || 'Logout failed');
-      throw err;
-    }
-  };
-
-  const forgotPassword = async (emailData) => {
-    try {
-      setError(null);
-      const response = await api.post('/api/auth/forgot-password', emailData);
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data || 'Failed to send reset email');
-      throw err;
-    }
-  };
-
-  const resetPassword = async (resetData) => {
-    try {
-      setError(null);
-      const response = await api.post(`/api/auth/reset-password/${resetData.token}`, {
-        password: resetData.password
-      });
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data || 'Password reset failed');
-      throw err;
-    }
-  };
-
-  const updateProfile = async (profileData) => {
-    try {
-      setError(null);
-      const response = await api.put('/api/auth/profile', profileData);
+      console.log('✅ Logout successful');
       
-      // Update user state with new profile data
-      const updatedUser = { ...user, ...response.data.user };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Use window.location.href for reliable redirect
+      window.location.href = '/';
+    } catch (error) {
+      console.error('❌ Logout error:', error);
+      // Force logout even if API call fails
+      setUser(null);
       
-      return response.data;
-    } catch (err) {
-      setError(err.response?.data || 'Profile update failed');
-      throw err;
+      // Clear iPhone Safari token on error
+      if (isIPhoneSafari()) {
+        localStorage.removeItem('authToken');
+      }
+      
+      window.location.href = '/';
     }
   };
 
   const value = {
     user,
-    loading,
-    error,
-    register,
-    verifyOTP,
-    resendOTP,
     login,
     logout,
-    forgotPassword,
-    resetPassword,
-    updateProfile,
+    loading,
+    error,
     isAuthenticated: !!user,
-    // Role-based helper properties
-    isInstructor: user?.role === 'Instructor' || user?.role === 'Teacher' || user?.role === 'Admin',
     isAdmin: user?.role === 'Admin',
-    isStudent: user?.role === 'Student'
+    isInstructor: user?.role === 'Instructor' || user?.role === 'Admin'
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Create the hook
+const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 // Protected Route component
@@ -204,31 +179,41 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && !user) {
-      console.log('ProtectedRoute: User not authenticated, redirecting to login');
-      navigate('/login');
-    } else if (!loading && user && allowedRoles.length > 0) {
-      if (!allowedRoles.includes(user.role)) {
-        console.log('ProtectedRoute: User role not authorized:', user.role, 'Required:', allowedRoles);
-        navigate('/unauthorized');
+    if (!loading) {
+      if (!user) {
+        console.log('🔒 No authenticated user - redirecting to login');
+        navigate('/login');
+        return;
       }
+
+      if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+        console.log(`🚫 User role '${user.role}' not in allowed roles:`, allowedRoles);
+        navigate('/unauthorized');
+        return;
+      }
+
+      console.log('✅ Access granted to protected route');
     }
-  }, [user, loading, navigate, allowedRoles]);
+  }, [user, loading, allowedRoles, navigate]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   if (!user) {
-    return null; // Will redirect to login
+    return null; // Will redirect in useEffect
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return null; // Will redirect to unauthorized
+    return null; // Will redirect in useEffect
   }
 
   return children;
 };
 
-// Export all components and hooks at once - remove any previous exports
+// Export all components and hooks
 export { AuthProvider, useAuth, ProtectedRoute };

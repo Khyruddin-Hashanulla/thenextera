@@ -247,8 +247,42 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Unified session-based authentication for ALL platforms (including iPhone Safari)
-    console.log(' Session-based login for all platforms');
+    // iPhone Safari detection for hybrid authentication
+    const userAgent = req.headers['user-agent'] || '';
+    const isIPhoneSafariBrowser = isIPhoneSafari(userAgent);
+    
+    if (isIPhoneSafariBrowser) {
+      console.log('🍎 iPhone Safari login detected - using JWT authentication fallback');
+      
+      // Generate JWT token for iPhone Safari
+      const jwtToken = generateJWT(user);
+      
+      console.log('🍎 iPhone Safari JWT login successful:', {
+        userId: user._id,
+        role: user.role,
+        name: user.name,
+        email: user.email,
+        tokenGenerated: !!jwtToken
+      });
+
+      return res.json({ 
+        success: true,
+        authType: 'jwt',
+        token: jwtToken,
+        user: { 
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified 
+        },
+        isIPhoneSafari: true,
+        message: "iPhone Safari detected - using JWT authentication for compatibility."
+      });
+    }
+
+    // Unified session-based authentication for ALL other platforms
+    console.log('🔐 Session-based login for other platforms');
     
     req.session.userId = user._id.toString();
     req.session.userRole = user.role;
@@ -1030,15 +1064,49 @@ router.get("/all-instructors", requireAuth, async (req, res) => {
 // Check authentication status - used by AuthContext to initialize user state
 router.get("/me", (req, res) => {
   try {
-    console.log(' Auth check request:', {
+    console.log('🔍 Auth check request:', {
       sessionExists: !!req.session,
       sessionId: req.sessionID,
       isAuthenticated: req.session?.isAuthenticated,
       userId: req.session?.userId,
-      userRole: req.session?.userRole
+      userRole: req.session?.userRole,
+      hasAuthHeader: !!req.headers.authorization
     });
 
-    // Check if user is authenticated via session
+    // Check for iPhone Safari JWT authentication first
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-jwt-secret");
+        console.log('🍎 iPhone Safari JWT auth successful:', {
+          userId: decoded.userId,
+          role: decoded.role
+        });
+
+        const user = {
+          id: decoded.userId,
+          name: decoded.name,
+          email: decoded.email,
+          role: decoded.role,
+          isEmailVerified: true
+        };
+
+        return res.json({
+          success: true,
+          user: user,
+          authType: 'jwt',
+          authenticated: true,
+          isIPhoneSafari: true
+        });
+      } catch (jwtError) {
+        console.log('🍎 iPhone Safari JWT verification failed:', jwtError.message);
+        // Fall through to session check
+      }
+    }
+
+    // Check session-based authentication for other platforms
     if (req.session && req.session.isAuthenticated && req.session.userId) {
       const user = {
         id: req.session.userId,
@@ -1048,33 +1116,33 @@ router.get("/me", (req, res) => {
         isEmailVerified: true // Assume verified if they can log in
       };
 
-      console.log(' Auth check successful:', {
+      console.log('✅ Session auth check successful:', {
         userId: user.id,
         name: user.name,
         role: user.role
       });
 
-      return res.status(200).json({
+      return res.json({
         success: true,
         user: user,
+        authType: 'session',
         authenticated: true
       });
     } else {
-      console.log(' Auth check failed - no valid session');
+      console.log('❌ Auth check failed - no valid session or JWT');
       return res.status(401).json({
         success: false,
         user: null,
         authenticated: false,
-        message: 'Not authenticated'
+        error: "Not authenticated"
       });
     }
   } catch (error) {
     console.error('Auth check error:', error);
-    return res.status(500).json({
+    res.status(500).json({ 
       success: false,
-      user: null,
-      authenticated: false,
-      message: 'Internal server error'
+      error: "Server error during authentication check",
+      authenticated: false
     });
   }
 });

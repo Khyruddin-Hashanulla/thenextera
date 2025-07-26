@@ -10,14 +10,12 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
+      console.log('🚪 Navbar logout initiated...');
       await logout();
-      console.log('🚀 Logout successful - redirecting to home');
-      
-      // Use window.location.href for reliable logout redirect on all platforms
-      window.location.href = '/';
+      // Redirect is handled by AuthContext logout function
     } catch (error) {
-      console.error('Logout error:', error);
-      // Fallback: redirect anyway to ensure user sees logged out state
+      console.error('❌ Logout error:', error);
+      // Force redirect even if logout fails
       window.location.href = '/';
     }
   };

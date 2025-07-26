@@ -145,25 +145,23 @@ const iphoneSafariFix = require('./iphone-safari-fix');
 app.use(iphoneSafariFix);
 
 // Enhanced session configuration with proper environment detection
-// Simplified production detection for deployment platforms
+// Fix localhost detection for development
 const isProduction = process.env.NODE_ENV === "production";
-const isDevelopment = !isProduction;
+const isLocalhost = process.env.PORT === "8081" || 
+                   !process.env.NODE_ENV || 
+                   process.env.NODE_ENV === "development";
 
-// Force localhost detection only for specific development scenarios
-const isLocalhost = !isProduction && (
-  process.env.PORT === "8081" || 
-  !process.env.PORT ||
-  process.env.NODE_ENV === "development"
-);
+// Use localhost-friendly settings for development
+const useSecureCookies = isProduction && !isLocalhost;
+const cookieSameSite = isProduction && !isLocalhost ? 'none' : 'lax';
 
 console.log('🌍 Environment configuration:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
   isLocalhost: isLocalhost,
   isProduction: isProduction,
-  isDevelopment: isDevelopment,
-  cookieSecure: isProduction,
-  cookieSameSite: isProduction ? 'none' : 'lax'
+  useSecureCookies: useSecureCookies,
+  cookieSameSite: cookieSameSite
 });
 
 app.use(
@@ -181,8 +179,8 @@ app.use(
     // This ensures session persistence across requests for all browsers
     
     cookie: {
-      secure: isProduction, // Secure cookies in production (HTTPS), non-secure for localhost
-      sameSite: isProduction ? 'none' : 'lax', // Cross-origin in production, lax for localhost
+      secure: useSecureCookies, // False for localhost, true for production HTTPS
+      sameSite: cookieSameSite, // 'lax' for localhost, 'none' for production cross-origin
       httpOnly: true, // XSS protection
       maxAge: 30 * 24 * 3600 * 1000, // 30 days
       domain: undefined, // Let browser handle domain
@@ -299,8 +297,8 @@ app.get('/debug/session', (req, res) => {
     
     // Session Configuration
     sessionConfig: {
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      secure: useSecureCookies,
+      sameSite: cookieSameSite,
       httpOnly: true,
       maxAge: 30 * 24 * 3600 * 1000,
       path: '/'

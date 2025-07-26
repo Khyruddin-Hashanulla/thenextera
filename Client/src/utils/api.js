@@ -1,5 +1,13 @@
 import axios from 'axios';
 
+// iPhone Safari detection utility
+const isIPhoneSafari = () => {
+  const userAgent = navigator.userAgent;
+  const isIPhone = /iPhone/.test(userAgent);
+  const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+  return isIPhone && isSafari;
+};
+
 // Use environment variable for API URL, fallback to localhost for development
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8081',
@@ -12,6 +20,16 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    
+    // Add JWT token for iPhone Safari only
+    if (isIPhoneSafari()) {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        console.log('🍎 iPhone Safari: Adding JWT token to request');
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -24,6 +42,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     console.log(`✅ API Response: ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+    
+    // Store JWT token for iPhone Safari
+    if (isIPhoneSafari() && response.data?.token) {
+      localStorage.setItem('authToken', response.data.token);
+      console.log('🍎 iPhone Safari: JWT token stored');
+    }
+    
     return response;
   },
   (error) => {
@@ -31,8 +56,16 @@ api.interceptors.response.use(
     
     // Handle authentication errors
     if (error.response?.status === 401) {
-      console.log('🔒 Authentication required - redirecting to login');
-      // Don't automatically redirect here, let components handle it
+      // Clear stored token for iPhone Safari
+      if (isIPhoneSafari()) {
+        localStorage.removeItem('authToken');
+        console.log('🍎 iPhone Safari: JWT token cleared due to 401');
+      }
+      
+      // Redirect to login if not already there
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     
     return Promise.reject(error);

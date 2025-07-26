@@ -14,33 +14,23 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
 
     try {
-      console.log('Attempting login with:', { email, rememberMe });
+      console.log('🔐 Attempting login with hybrid authentication...');
       
-      const result = await login({ email, password, rememberMe });
-      console.log('Login successful:', result);
+      const result = await login(email, password, rememberMe);
       
-      // Use window.location.href for all browsers to ensure proper session persistence
-      // This prevents redirect loops and ensures session cookies are properly saved
-      console.log('🚀 Redirecting to dashboard with session authentication');
-      window.location.href = '/dashboard';
-      
-      // Note: Using window.location.href instead of navigate() for all browsers
-      // This ensures proper session persistence across all platforms
-    } catch (err) {
-      console.error('Login error:', err);
-      
-      // Extract the proper error message from the backend response
-      const errorMessage = err.response?.data?.error || 
-                          err.response?.data?.message || 
-                          err.response?.data || 
-                          err.message || 
-                          'Failed to login. Please try again.';
-      
-      setError(errorMessage);
+      if (result.success) {
+        console.log('✅ Login successful - redirect will be handled by AuthContext');
+        // Redirect is handled by AuthContext login function
+      } else {
+        setError(result.error || 'Login failed');
+      }
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      setError(error.message || 'Login failed');
     } finally {
       setLoading(false);
     }
