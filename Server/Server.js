@@ -177,19 +177,8 @@ app.use(
     proxy: isProduction, // Trust proxy in production
     unset: 'destroy', // Clean session destruction
     
-    // iPhone Safari specific session handling
-    genid: (req) => {
-      // iPhone Safari specific session handling
-      const sessionId = require('crypto').randomBytes(32).toString('hex');
-      
-      if (req.isIPhoneSafari) {
-        console.log('🍎 Generating session ID for iPhone Safari:', sessionId.substring(0, 8) + '...');
-        // Force session flags for iPhone Safari
-        req.iphoneSafariSession = true;
-      }
-      
-      return sessionId;
-    },
+    // Let express-session handle session ID generation automatically
+    // This ensures session persistence across requests for all browsers
     
     cookie: {
       secure: isProduction, // Secure cookies in production (HTTPS), non-secure for localhost
