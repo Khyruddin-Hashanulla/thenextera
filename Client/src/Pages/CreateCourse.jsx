@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
-import Navbar from "../Components/Navbar";
+import Navbar from "../components/Navbar";
 import MediaUpload from '../components/MediaUpload';
 
 const CreateCourse = () => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
-import Navbar from "../Components/Navbar";
+import Navbar from "../components/Navbar";
 
 const DeleteConfirmationModal = ({
   isOpen,
