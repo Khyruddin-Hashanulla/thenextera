@@ -154,15 +154,15 @@ const Dashboard = () => {
 
   const StatCard = ({ title, value, icon, color, delay = 0 }) => (
     <div
-      className={`bg-gradient-to-br ${color} rounded-xl p-6 text-white transform transition-all duration-300 shadow-lg hover:shadow-xl animate-fade-in-up`}
+      className={`bg-gradient-to-br ${color} rounded-xl p-4 text-white transform transition-all duration-300 shadow-lg hover:shadow-xl animate-fade-in-up`}
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-white/80 text-sm font-medium">{title}</p>
-          <p className="text-3xl font-bold mt-2">{loading ? "..." : value}</p>
+        <div className="flex-1">
+          <p className="text-white/80 text-sm font-medium mb-1">{title}</p>
+          <p className="text-2xl font-bold leading-none">{loading ? "..." : value}</p>
         </div>
-        <div className="text-4xl opacity-80">{icon}</div>
+        <div className="text-2xl opacity-80">{icon}</div>
       </div>
     </div>
   );

@@ -345,10 +345,11 @@ const Courses = () => {
                 return (
                   <div
                     key={course._id}
-                    className="group bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700/50 hover:border-blue-500/30 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 animate-fade-in-up flex flex-col h-[520px]"
+                    className="group bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700/50 hover:border-blue-500/30 transition-all duration-500 transform hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/20 animate-fade-in-up flex flex-col"
+                    style={{ height: '580px' }} // Increased height for better proportions
                   >
-                    {/* Course Thumbnail */}
-                    <div className="relative h-48 overflow-hidden">
+                    {/* Course Thumbnail - Fixed Height */}
+                    <div className="relative overflow-hidden" style={{ height: '220px' }}>
                       <img
                         src={
                           course.thumbnail ||
@@ -363,21 +364,27 @@ const Courses = () => {
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                    {/* Course Content */}
-                    <div className="p-6 flex flex-col flex-grow">
-                      <h3 className="text-xl font-bold mb-3 text-white group-hover:text-blue-300 transition-colors line-clamp-2">
-                        {course.title}
-                      </h3>
+                    
+                    {/* Course Content - Flexible with fixed structure */}
+                    <div className="p-6 flex flex-col flex-grow" style={{ height: 'calc(580px - 220px)' }}>
+                      {/* Title - Fixed Height */}
+                      <div style={{ height: '70px' }} className="mb-4 overflow-hidden">
+                        <h3 className="text-xl font-bold text-white group-hover:text-blue-300 transition-colors line-clamp-2 leading-tight">
+                          {course.title}
+                        </h3>
+                      </div>
 
-                      <div className="flex-grow overflow-hidden mb-4">
-                        <p className="text-gray-400 text-sm leading-relaxed line-clamp-4 group-hover:text-gray-300 transition-colors">
+                      {/* Description - Fixed Height with scroll */}
+                      <div style={{ height: '100px' }} className="mb-4 overflow-hidden">
+                        <p className="text-gray-400 text-sm leading-relaxed line-clamp-5 group-hover:text-gray-300 transition-colors">
                           {course.description}
                         </p>
                       </div>
 
-                      {/* Course Info */}
+                      {/* Course Info and Actions - Fixed at bottom */}
                       <div className="mt-auto">
-                        <div className="flex items-center text-sm text-gray-500 border-t border-gray-700/50 pt-4 mb-4">
+                        {/* Course Creator Info - Fixed Height */}
+                        <div className="flex items-center text-sm text-gray-500 border-t border-gray-700/50 pt-4 mb-4" style={{ height: '60px' }}>
                           <span className="mr-2">👨‍🏫</span>
                           <span className="text-gray-400 font-medium">
                             Created by:
@@ -387,89 +394,18 @@ const Courses = () => {
                           </span>
                         </div>
 
-                        {/* Action Buttons */}
-                        {canModify ? (
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() =>
-                                navigate(`/courses/edit/${course._id}`)
-                              }
-                              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                        {/* Action Buttons - Fixed Height */}
+                        <div style={{ height: '50px' }}>
+                          {canModify ? (
+                            <div className="flex gap-3 h-full">
+                              <button
+                                onClick={() =>
+                                  navigate(`/courses/edit/${course._id}`)
+                                }
+                                className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
                               >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                />
-                              </svg>
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(course._id)}
-                              className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-500/25 flex items-center justify-center gap-2"
-                            >
-                              <svg
-                                className="w-4 h-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        ) : enrolled ? (
-                          <button
-                            onClick={() => navigate(`/courses/${course._id}`)}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
-                          >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                            View Course
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => enroll(course._id)}
-                            disabled={enrolling}
-                            className={`w-full px-6 py-3 font-semibold rounded-xl transition-all duration-300 transform shadow-lg flex items-center justify-center gap-2 ${
-                              enrolling
-                                ? "bg-gray-600 cursor-not-allowed text-gray-300"
-                                : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white hover:scale-105 hover:shadow-green-500/25"
-                            }`}
-                          >
-                            {enrolling ? (
-                              <>
                                 <svg
-                                  className="w-5 h-5 animate-spin"
+                                  className="w-4 h-4"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -478,15 +414,17 @@ const Courses = () => {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     strokeWidth={2}
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                                   />
                                 </svg>
-                                Enrolling...
-                              </>
-                            ) : (
-                              <>
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(course._id)}
+                                className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-500/25 flex items-center justify-center gap-2"
+                              >
                                 <svg
-                                  className="w-5 h-5"
+                                  className="w-4 h-4"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -495,14 +433,85 @@ const Courses = () => {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     strokeWidth={2}
-                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                                   />
                                 </svg>
-                                Enroll Now
-                              </>
-                            )}
-                          </button>
-                        )}
+                              </button>
+                            </div>
+                          ) : enrolled ? (
+                            <button
+                              onClick={() => navigate(`/courses/${course._id}`)}
+                              className="w-full h-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
+                            >
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                />
+                              </svg>
+                              View Course
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => enroll(course._id)}
+                              disabled={enrolling}
+                              className={`w-full h-full px-6 py-3 font-semibold rounded-xl transition-all duration-300 transform shadow-lg flex items-center justify-center gap-2 ${
+                                enrolling
+                                  ? "bg-gray-600 cursor-not-allowed text-gray-300"
+                                  : "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white hover:scale-105 hover:shadow-green-500/25"
+                              }`}
+                            >
+                              {enrolling ? (
+                                <>
+                                  <svg
+                                    className="w-5 h-5 animate-spin"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                    />
+                                  </svg>
+                                  Enrolling...
+                                </>
+                              ) : (
+                                <>
+                                  <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                    />
+                                  </svg>
+                                  Enroll Now
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

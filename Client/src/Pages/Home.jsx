@@ -76,14 +76,55 @@ const Home = () => {
       <div className="relative text-white bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] min-h-screen overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+          {/* Large floating circles with different animations */}
+          <div className="absolute top-20 left-10 w-96 h-96 bg-blue-400/70 rounded-full blur-2xl animate-pulse"></div>
           <div
-            className="absolute top-40 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-bounce"
-            style={{ animationDuration: "3s" }}
+            className="absolute top-40 right-20 w-[500px] h-[500px] bg-purple-400/60 rounded-full blur-3xl animate-bounce"
+            style={{ animationDuration: "4s" }}
           ></div>
           <div
-            className="absolute bottom-20 left-1/4 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl animate-pulse"
-            style={{ animationDelay: "1s" }}
+            className="absolute bottom-20 left-1/4 w-80 h-80 bg-pink-400/70 rounded-full blur-2xl animate-pulse"
+            style={{ animationDelay: "1s", animationDuration: "3s" }}
+          ></div>
+          
+          {/* Moving gradient circles */}
+          <div
+            className="absolute top-1/2 left-0 w-72 h-72 bg-gradient-to-r from-cyan-300/60 to-blue-300/60 rounded-full blur-3xl animate-ping"
+            style={{ animationDelay: "2s", animationDuration: "6s" }}
+          ></div>
+          <div
+            className="absolute bottom-10 right-10 w-96 h-96 bg-gradient-to-r from-orange-300/65 to-red-300/65 rounded-full blur-2xl animate-pulse"
+            style={{ animationDelay: "0.5s", animationDuration: "5s" }}
+          ></div>
+          
+          {/* Floating and rotating elements */}
+          <div
+            className="absolute top-32 left-1/2 w-64 h-64 bg-green-300/60 rounded-full blur-3xl animate-bounce"
+            style={{ animationDelay: "1.5s", animationDuration: "7s" }}
+          ></div>
+          <div
+            className="absolute bottom-32 left-16 w-80 h-80 bg-indigo-300/65 rounded-full blur-2xl animate-ping"
+            style={{ animationDelay: "3s", animationDuration: "8s" }}
+          ></div>
+          
+          {/* Additional vibrant circles for more color */}
+          <div
+            className="absolute top-60 right-1/3 w-72 h-72 bg-yellow-300/55 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "4s", animationDuration: "6s" }}
+          ></div>
+          <div
+            className="absolute bottom-40 left-1/3 w-64 h-64 bg-teal-300/60 rounded-full blur-2xl animate-bounce"
+            style={{ animationDelay: "2.5s", animationDuration: "5s" }}
+          ></div>
+          
+          {/* Extra bright accent circles */}
+          <div
+            className="absolute top-1/3 right-1/4 w-48 h-48 bg-rose-300/50 rounded-full blur-xl animate-pulse"
+            style={{ animationDelay: "1.8s", animationDuration: "4s" }}
+          ></div>
+          <div
+            className="absolute bottom-1/3 left-1/2 w-56 h-56 bg-violet-300/55 rounded-full blur-2xl animate-bounce"
+            style={{ animationDelay: "3.5s", animationDuration: "6s" }}
           ></div>
         </div>
 
@@ -98,11 +139,11 @@ const Home = () => {
             style={{ animationDelay: "2s" }}
           ></div>
           <div
-            className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 bg-purple-300/40 rounded-full animate-ping"
+            className="absolute bottom-1/3 left-1/2 w-1.5 h-1.5 bg-pink-300/50 rounded-full animate-ping"
             style={{ animationDelay: "4s" }}
           ></div>
           <div
-            className="absolute top-2/3 right-1/4 w-1 h-1 bg-pink-300/50 rounded-full animate-ping"
+            className="absolute top-2/3 right-1/4 w-1 h-1 bg-purple-300/50 rounded-full animate-ping"
             style={{ animationDelay: "1s" }}
           ></div>
         </div>
@@ -416,7 +457,6 @@ const Home = () => {
                   className="h-10 w-10 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
-                  stroke="currentColor"
                 >
                   <path
                     strokeLinecap="round"
@@ -447,7 +487,6 @@ const Home = () => {
                   className="h-10 w-10 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
-                  stroke="currentColor"
                 >
                   <path
                     strokeLinecap="round"
@@ -478,7 +517,6 @@ const Home = () => {
                   className="h-10 w-10 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
-                  stroke="currentColor"
                 >
                   <path
                     strokeLinecap="round"
@@ -504,13 +542,13 @@ const Home = () => {
       <div className="relative bg-gradient-to-br from-purple-900 via-blue-900 to-black text-white py-24 overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-10 right-10 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-10 right-10 w-64 h-64 bg-purple-500/60 rounded-full blur-3xl animate-pulse"></div>
           <div
-            className="absolute bottom-10 left-10 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-10 left-10 w-80 h-80 bg-blue-500/60 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "1s" }}
           ></div>
           <div
-            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse"
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/50 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "2s" }}
           ></div>
         </div>
@@ -652,9 +690,9 @@ const Home = () => {
       <footer className="relative bg-gradient-to-t from-black via-gray-900 to-gray-800 text-white py-16 overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0">
-          <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500/50 rounded-full blur-3xl animate-pulse"></div>
           <div
-            className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-0 right-1/4 w-80 h-80 bg-purple-500/50 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "2s" }}
           ></div>
         </div>
@@ -690,7 +728,7 @@ const Home = () => {
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
+                    <path d="M24 4.37A12.617 12.617 0 0112 0c-2.627 0-5.004.429-7.036 1.266 2.148-.756 4.018-.311 5.24 1.007v14.2c-1.341-.891-3.37-.979-5.578-.979-4.418 0-7.63 2.485-7.63 6.877v3.356h-.01V8.985h-.01c.01.893.261 2.333 1.606 3.524.897-.842 2.169-1.265 3.905-1.265 3.626 0 6.497 2.503 6.497 6.455v6.239H15.89c-.896 0-1.671-.842-1.671-1.885V10.803c0-3.527 2.504-6.497 6.497-6.497a6.498 6.498 0 0112.945 0C20.417 4.44 21.994 4.95 24 4.37z" />
                   </svg>
                 </a>
                 <a
@@ -699,11 +737,12 @@ const Home = () => {
                 >
                   <svg
                     className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
-                    fill="currentColor"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path d="M7.75 2A5.75 5.75 0 002 7.75v8.5A5.75 5.75 0 007.75 22h8.5A5.75 5.75 0 0022 16.25v-8.5A5.75 5.75 0 0016.25 2h-8.5zm0 1.5h8.5A4.25 4.25 0 0120.5 7.75v8.5a4.25 4.25 0 01-4.25 4.25h-8.5A4.25 4.25 0 013.5 16.25v-8.5A4.25 4.25 0 017.75 3.5zm8.75 2a.75.75 0 100 1.5.75.75 0 000-1.5zM12 7a5 5 0 100 10 5 5 0 000-10zm0 1.5a3.5 3.5 0 110 7 3.5 3.5 0 010-7z" />
+                    <path d="M7.05 3.606l13.49 7.788a.601.601 0 010 .892l-7.908 7.77 4.67 8.382L7.05 20.697V3.606z" />
                   </svg>
                 </a>
                 <a
@@ -712,10 +751,22 @@ const Home = () => {
                 >
                   <svg
                     className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
-                    fill="currentColor"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
                 </a>
               </div>
@@ -835,7 +886,7 @@ const Home = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                     />
                   </svg>
                   <a

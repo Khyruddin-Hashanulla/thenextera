@@ -10,7 +10,7 @@ const AdminPanel = () => {
   const navigate = useNavigate();
   const [pendingApplications, setPendingApplications] = useState([]);
   const [instructors, setInstructors] = useState([]);
-  const [instructorStats, setInstructorStats] = useState({ totalInstructors: 0, totalCourses: 0 });
+  const [instructorStats, setInstructorStats] = useState({ totalInstructors: 0, totalCourses: 0, totalStudents: 0, topInstructor: 'None', topInstructorCourses: 0 });
   const [loading, setLoading] = useState(true);
   const [loadingInstructors, setLoadingInstructors] = useState(true);
   const [processing, setProcessing] = useState({});
@@ -46,10 +46,14 @@ const AdminPanel = () => {
     try {
       setLoadingInstructors(true);
       const response = await api.get('/api/auth/all-instructors');
+      console.log('📊 Admin panel instructors response:', response.data);
       setInstructors(response.data.instructors || []);
       setInstructorStats({
-        totalInstructors: response.data.totalInstructors || 0,
-        totalCourses: response.data.totalCourses || 0
+        totalInstructors: response.data.stats?.totalInstructors || 0,
+        totalCourses: response.data.stats?.totalCourses || 0,
+        totalStudents: response.data.stats?.totalStudents || 0,
+        topInstructor: response.data.stats?.topInstructor || 'None',
+        topInstructorCourses: response.data.stats?.topInstructorCourses || 0
       });
     } catch (error) {
       console.error('Error fetching instructors:', error);
