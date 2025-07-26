@@ -76,7 +76,7 @@ router.post("/register", async (req, res) => {
     });
     await newUser.save();
 
-    console.log('📝 New user registered:', {
+    console.log(' New user registered:', {
       email: newUser.email,
       role: newUser.role,
       wantsToBeInstructor: newUser.wantsToBeInstructor
@@ -153,7 +153,7 @@ router.post("/verify-otp", async (req, res) => {
         user.role = 'pending_instructor'; // Update role to pending_instructor
         instructorApplicationCreated = true;
         
-        console.log('🎓 Instructor application created for user:', {
+        console.log(' Instructor application created for user:', {
           email: user.email,
           status: 'pending',
           requestDate: new Date()
@@ -247,42 +247,8 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // iPhone Safari detection for hybrid authentication
-    const userAgent = req.headers['user-agent'] || '';
-    const isIPhoneSafariBrowser = isIPhoneSafari(userAgent);
-    
-    if (isIPhoneSafariBrowser) {
-      console.log('🍎 iPhone Safari login detected - using JWT authentication');
-      
-      // Generate JWT token for iPhone Safari
-      const jwtToken = generateJWT(user);
-      
-      console.log('🍎 iPhone Safari JWT login successful:', {
-        userId: user._id,
-        role: user.role,
-        name: user.name,
-        email: user.email,
-        tokenGenerated: !!jwtToken
-      });
-
-      return res.json({ 
-        success: true,
-        authType: 'jwt',
-        token: jwtToken,
-        user: { 
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          isEmailVerified: user.isEmailVerified 
-        },
-        isIPhoneSafari: true,
-        message: "Login successful. Use the provided JWT token for authentication."
-      });
-    }
-
-    // Regular session-based authentication for other browsers
-    console.log('🖥️ Regular browser login - using session authentication');
+    // Unified session-based authentication for ALL platforms (including iPhone Safari)
+    console.log(' Session-based login for all platforms');
     
     req.session.userId = user._id.toString();
     req.session.userRole = user.role;
@@ -304,7 +270,7 @@ router.post("/login", async (req, res) => {
       req.session.rememberMe = false;
     }
 
-    // Regular session save for non-iPhone Safari browsers
+    // Session save for all browsers (including iPhone Safari)
     req.session.save((err) => {
       if (err) {
         console.error('Session save error:', err);
@@ -312,7 +278,7 @@ router.post("/login", async (req, res) => {
       }
 
       // Log the user data being sent
-      console.log('🖥️ Regular browser login successful:', {
+      console.log(' Unified session login successful:', {
         userId: user._id,
         role: user.role,
         name: user.name,
@@ -685,7 +651,7 @@ router.put("/update-role/:userId", requireAuth, async (req, res) => {
 // Apply to become an instructor
 router.post("/apply-instructor", requireAuth, async (req, res) => {
   try {
-    console.log('🎯 Instructor application request:', {
+    console.log(' Instructor application request:', {
       userId: req.session.userId,
       userRole: req.session.userRole,
       sessionId: req.sessionID
@@ -698,7 +664,7 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log('👤 User applying for instructor:', {
+    console.log(' User applying for instructor:', {
       userId: user._id,
       name: user.name,
       email: user.email,
@@ -709,7 +675,7 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
 
     // Check if user is already an instructor or admin
     if (user.role === 'Instructor' || user.role === 'Admin') {
-      console.log('❌ User already has instructor privileges or higher');
+      console.log(' User already has instructor privileges or higher');
       return res.status(400).json({ 
         error: "You already have instructor privileges or higher" 
       });
@@ -717,7 +683,7 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
 
     // Check if user already has a pending application
     if (user.instructorApplication?.status === 'pending') {
-      console.log('❌ User already has a pending application');
+      console.log(' User already has a pending application');
       return res.status(400).json({ 
         error: "You already have a pending instructor application",
         applicationDate: user.instructorApplication?.requestDate
@@ -727,7 +693,7 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
     // Check if user was previously rejected and resubmission is not allowed
     if (user.instructorApplication?.status === 'rejected' && 
         !user.instructorApplication?.resubmissionAllowed) {
-      console.log('❌ User was rejected and resubmission not allowed');
+      console.log(' User was rejected and resubmission not allowed');
       return res.status(400).json({ 
         error: "Your previous instructor application was rejected and resubmission is not allowed" 
       });
@@ -742,7 +708,7 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
 
     await user.save();
 
-    console.log('✅ Instructor application submitted successfully:', {
+    console.log(' Instructor application submitted successfully:', {
       userId: user._id,
       name: user.name,
       applicationDate: user.instructorApplication.requestDate,
@@ -756,7 +722,7 @@ router.post("/apply-instructor", requireAuth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Error submitting instructor application:", error);
+    console.error(" Error submitting instructor application:", error);
     res.status(500).json({ error: "Error submitting instructor application" });
   }
 });
@@ -769,7 +735,7 @@ router.get("/pending-instructors", requireAuth, async (req, res) => {
       return res.status(403).json({ error: "Access denied. Admin privileges required." });
     }
 
-    console.log('🔍 Admin fetching pending instructor applications...');
+    console.log(' Admin fetching pending instructor applications...');
 
     // Find users with pending instructor applications
     const pendingInstructors = await User.find({ 
@@ -778,7 +744,7 @@ router.get("/pending-instructors", requireAuth, async (req, res) => {
       'instructorApplication.requestDate': -1 
     });
 
-    console.log(`📋 Found ${pendingInstructors.length} pending instructor applications`);
+    console.log(` Found ${pendingInstructors.length} pending instructor applications`);
     console.log('Pending applications:', pendingInstructors.map(u => ({
       name: u.name,
       email: u.email,
@@ -835,7 +801,7 @@ router.post("/manage-instructor-application", requireAuth, async (req, res) => {
       });
     }
 
-    console.log('🔍 Processing instructor application:', {
+    console.log(' Processing instructor application:', {
       userId: user._id,
       userName: user.name,
       currentRole: user.role,
@@ -892,7 +858,7 @@ router.post("/manage-instructor-application", requireAuth, async (req, res) => {
 // Get user's instructor application status
 router.get("/instructor-application-status", requireAuth, async (req, res) => {
   try {
-    console.log('📋 Instructor application status request:', {
+    console.log(' Instructor application status request:', {
       sessionExists: !!req.session,
       sessionId: req.sessionID,
       userId: req.session?.userId,
@@ -904,11 +870,11 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
     const user = await User.findById(userId).select('role instructorApplication wantsToBeInstructor');
 
     if (!user) {
-      console.log('❌ User not found for ID:', userId);
+      console.log(' User not found for ID:', userId);
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log('👤 User found:', {
+    console.log(' User found:', {
       userId: user._id,
       role: user.role,
       wantsToBeInstructor: user.wantsToBeInstructor,
@@ -927,20 +893,20 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
         canApply = true;
         showApplicationForm = true;
         message = "You registered with intent to teach. Click below to submit your instructor application.";
-        console.log('🎓 User wants to be instructor - showing application form');
+        console.log(' User wants to be instructor - showing application form');
       } 
       // New student who has never applied and didn't register with instructor intent
       else if (!user.instructorApplication || !user.instructorApplication.status) {
         canApply = true;
         showApplicationForm = true;
-        console.log('✅ New student - can apply');
+        console.log(' New student - can apply');
       } 
       // Student who was previously rejected and resubmission is allowed
       else {
         canApply = user.instructorApplication.status === 'rejected' && 
                    user.instructorApplication.resubmissionAllowed !== false;
         showApplicationForm = canApply;
-        console.log('🔄 Previous application found:', {
+        console.log(' Previous application found:', {
           status: user.instructorApplication.status,
           resubmissionAllowed: user.instructorApplication.resubmissionAllowed,
           canApply
@@ -948,12 +914,12 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
       }
     } else if (user.role === 'pending_instructor') {
       message = "Your instructor application is pending admin approval. You'll be notified once a decision is made.";
-      console.log('⏳ User has pending instructor application');
+      console.log(' User has pending instructor application');
     } else if (user.role === 'Instructor') {
       message = "You are already an approved instructor!";
-      console.log('✅ User is already an instructor');
+      console.log(' User is already an instructor');
     } else {
-      console.log('🚫 User role is not Student:', user.role);
+      console.log(' User role is not Student:', user.role);
     }
 
     console.log('Application status check:', {
@@ -980,10 +946,10 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
       rejectionReason: user.instructorApplication?.adminDecision?.reason || null
     };
 
-    console.log('📤 Sending response:', responseData);
+    console.log(' Sending response:', responseData);
     res.json(responseData);
   } catch (error) {
-    console.error("❌ Error fetching application status:", error);
+    console.error(" Error fetching application status:", error);
     res.status(500).json({ error: "Error fetching application status" });
   }
 });
@@ -991,7 +957,7 @@ router.get("/instructor-application-status", requireAuth, async (req, res) => {
 // Get all instructors with course counts - Admin only
 router.get("/all-instructors", requireAuth, async (req, res) => {
   try {
-    console.log('📋 All instructors request from user:', {
+    console.log(' All instructors request from user:', {
       userId: req.session?.userId,
       userRole: req.session?.userRole
     });
@@ -1007,7 +973,7 @@ router.get("/all-instructors", requireAuth, async (req, res) => {
       role: 'Instructor' 
     }).select('name email role createdAt profilePic');
 
-    console.log(`📊 Found ${instructors.length} instructors`);
+    console.log(` Found ${instructors.length} instructors`);
 
     // Get course counts for each instructor
     const Course = require('../Models/Course');
@@ -1043,7 +1009,7 @@ router.get("/all-instructors", requireAuth, async (req, res) => {
     // Sort by course count (highest first)
     instructorsWithCourses.sort((a, b) => b.courseCount - a.courseCount);
 
-    console.log('📤 Sending instructors data:', {
+    console.log(' Sending instructors data:', {
       totalInstructors: instructorsWithCourses.length,
       topInstructor: instructorsWithCourses[0]?.name,
       topInstructorCourses: instructorsWithCourses[0]?.courseCount
@@ -1056,7 +1022,7 @@ router.get("/all-instructors", requireAuth, async (req, res) => {
       totalCourses: instructorsWithCourses.reduce((sum, inst) => sum + inst.courseCount, 0)
     });
   } catch (error) {
-    console.error("❌ Error fetching instructors:", error);
+    console.error(" Error fetching instructors:", error);
     res.status(500).json({ error: "Error fetching instructors data" });
   }
 });
@@ -1064,7 +1030,7 @@ router.get("/all-instructors", requireAuth, async (req, res) => {
 // Check authentication status - used by AuthContext to initialize user state
 router.get("/me", (req, res) => {
   try {
-    console.log('🔍 Auth check request:', {
+    console.log(' Auth check request:', {
       sessionExists: !!req.session,
       sessionId: req.sessionID,
       isAuthenticated: req.session?.isAuthenticated,
@@ -1082,7 +1048,7 @@ router.get("/me", (req, res) => {
         isEmailVerified: true // Assume verified if they can log in
       };
 
-      console.log('✅ Auth check successful:', {
+      console.log(' Auth check successful:', {
         userId: user.id,
         name: user.name,
         role: user.role
@@ -1094,7 +1060,7 @@ router.get("/me", (req, res) => {
         authenticated: true
       });
     } else {
-      console.log('❌ Auth check failed - no valid session');
+      console.log(' Auth check failed - no valid session');
       return res.status(401).json({
         success: false,
         user: null,
