@@ -85,7 +85,7 @@ const Home = () => {
           <div
             className="absolute bottom-20 left-1/4 w-80 h-80 bg-pink-400/70 rounded-full blur-2xl animate-pulse"
             style={{ animationDelay: "1s", animationDuration: "3s" }}
-          ></div>
+          />
           
           {/* Moving gradient circles */}
           <div
@@ -457,6 +457,7 @@ const Home = () => {
                   className="h-10 w-10 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
                   <path
                     strokeLinecap="round"
@@ -487,6 +488,7 @@ const Home = () => {
                   className="h-10 w-10 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
                   <path
                     strokeLinecap="round"
@@ -517,6 +519,7 @@ const Home = () => {
                   className="h-10 w-10 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
                   <path
                     strokeLinecap="round"
@@ -719,6 +722,7 @@ const Home = () => {
 
               {/* Social Links */}
               <div className="flex space-x-4">
+                {/* Facebook Icon */}
                 <a
                   href="#"
                   className="group w-12 h-12 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] rounded-full flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-110"
@@ -727,46 +731,39 @@ const Home = () => {
                     className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
                     fill="currentColor"
                     viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path d="M24 4.37A12.617 12.617 0 0112 0c-2.627 0-5.004.429-7.036 1.266 2.148-.756 4.018-.311 5.24 1.007v14.2c-1.341-.891-3.37-.979-5.578-.979-4.418 0-7.63 2.485-7.63 6.877v3.356h-.01V8.985h-.01c.01.893.261 2.333 1.606 3.524.897-.842 2.169-1.265 3.905-1.265 3.626 0 6.497 2.503 6.497 6.455v6.239H15.89c-.896 0-1.671-.842-1.671-1.885V10.803c0-3.527 2.504-6.497 6.497-6.497a6.498 6.498 0 0112.945 0C20.417 4.44 21.994 4.95 24 4.37z" />
+                    <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/>
                   </svg>
                 </a>
+                
+                {/* Twitter Icon */}
                 <a
                   href="#"
                   className="group w-12 h-12 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] rounded-full flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-110"
                 >
                   <svg
                     className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
+                    fill="currentColor"
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path d="M7.05 3.606l13.49 7.788a.601.601 0 010 .892l-7.908 7.77 4.67 8.382L7.05 20.697V3.606z" />
+                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
                   </svg>
                 </a>
+                
+                {/* LinkedIn Icon */}
                 <a
                   href="#"
                   className="group w-12 h-12 bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] rounded-full flex items-center justify-center hover:from-blue-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-110"
                 >
                   <svg
                     className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
+                    fill="currentColor"
                     viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
+                    <path d="M4.98 3.5c0 1.381-1.11 2.5-2.48 2.5s-2.48-1.119-2.48-2.5c0-1.38 1.11-2.5 2.48-2.5s2.48 1.12 2.48 2.5zm.02 4.5h-5v16h5v-16zm7.982 0h-4.968v16h4.969v-8.399c0-4.67 6.029-5.052 6.029 0v8.399h4.988v-10.131c0-7.88-8.922-7.593-11.018-3.714v-2.155z"/>
                   </svg>
                 </a>
               </div>
@@ -928,7 +925,7 @@ const Home = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"
                     />
                     <path
                       strokeLinecap="round"
