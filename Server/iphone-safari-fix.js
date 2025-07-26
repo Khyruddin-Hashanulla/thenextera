@@ -30,6 +30,35 @@ const iphoneSafariFix = (req, res, next) => {
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
     
+    // iPhone Safari Cookie Fix: Set multiple cookie strategies
+    const originalSetHeader = res.setHeader;
+    res.setHeader = function(name, value) {
+      if (name.toLowerCase() === 'set-cookie') {
+        // For iPhone Safari, try multiple cookie configurations
+        const cookies = Array.isArray(value) ? value : [value];
+        const enhancedCookies = cookies.map(cookie => {
+          if (cookie.includes('nextera.sid')) {
+            // Add iPhone Safari specific cookie attributes
+            let enhancedCookie = cookie;
+            
+            // Remove problematic attributes for iPhone Safari
+            enhancedCookie = enhancedCookie.replace(/; Secure/gi, '');
+            enhancedCookie = enhancedCookie.replace(/; SameSite=none/gi, '');
+            
+            // Add iPhone Safari friendly attributes
+            enhancedCookie += '; SameSite=Lax';
+            
+            console.log('🍎 iPhone Safari cookie modified:', enhancedCookie.substring(0, 100) + '...');
+            return enhancedCookie;
+          }
+          return cookie;
+        });
+        
+        return originalSetHeader.call(this, name, enhancedCookies);
+      }
+      return originalSetHeader.call(this, name, value);
+    };
+    
     // Force session touch and save for iPhone Safari
     if (req.session) {
       req.session.touch();
