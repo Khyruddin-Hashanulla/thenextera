@@ -170,7 +170,7 @@ const AuthProvider = ({ children }) => {
 
       console.log('🔐 Reset password request:', { token: token?.substring(0, 10) + '...' });
 
-      const response = await api.post('/api/auth/reset-password', { token, password });
+      const response = await api.post(`/api/auth/reset-password/${token}`, { password });
 
       if (response.data.success) {
         console.log('✅ Password reset successful:', response.data.message);

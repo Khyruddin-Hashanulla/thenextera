@@ -171,8 +171,8 @@ router.post("/verify-otp", async (req, res) => {
     }
 
     res.json({ 
-      message,
       success: true,
+      message,
       instructorApplicationCreated
     });
   } catch (error) {
@@ -216,6 +216,7 @@ router.post("/resend-verification", async (req, res) => {
     try {
       await sendVerificationOTP(email, emailVerificationOTP);
       res.json({ 
+        success: true,
         message: "Verification OTP sent successfully. Please check your inbox." 
       });
     } catch (emailError) {
@@ -433,6 +434,7 @@ router.post("/forgot-password", async (req, res) => {
       await sendPasswordResetEmail(email, resetToken);
       console.log('Password reset email sent successfully for token:', resetToken);
       res.json({ 
+        success: true,
         message: "Password reset email sent successfully. Please check your inbox." 
       });
     } catch (emailError) {
@@ -498,6 +500,7 @@ router.post("/reset-password/:token", async (req, res) => {
 
     console.log('Password reset successful for user:', user.email);
     res.json({ 
+      success: true,
       message: "Password reset successful! You can now log in with your new password." 
     });
   } catch (error) {
@@ -608,6 +611,7 @@ router.put("/update-role/:userId", authenticateJWT, async (req, res) => {
     await user.save();
 
     res.json({
+      success: true,
       message: "Role updated successfully",
       user: {
         id: user._id,
@@ -694,6 +698,7 @@ router.post("/apply-instructor", authenticateJWT, async (req, res) => {
     });
 
     res.json({ 
+      success: true,
       message: "Instructor application submitted successfully! Please wait for admin approval.",
       applicationDate: user.instructorApplication.requestDate,
       status: user.instructorApplication.status
@@ -883,6 +888,7 @@ router.post("/manage-instructor-application", authenticateJWT, async (req, res) 
     await user.save();
 
     res.json({
+      success: true,
       message: `Instructor application ${action}d successfully`,
       user: {
         id: user._id,
@@ -953,7 +959,7 @@ router.get("/instructor-application-status", authenticateJWT, async (req, res) =
         showApplicationForm = true;
         console.log(' New student - can apply');
       } 
-      // Student who was previously rejected and resubmission is allowed
+      // Student who was previously rejected and resubmission is not allowed
       else if (user.instructorApplication?.status === 'rejected') {
         canApply = user.instructorApplication.resubmissionAllowed !== false;
         showApplicationForm = canApply;
