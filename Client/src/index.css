@@ -54,6 +54,7 @@ body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2; /* Standard property for compatibility */
 }
 
 .line-clamp-4 {
@@ -61,4 +62,5 @@ body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
+  line-clamp: 4; /* Standard property for compatibility */
 }
