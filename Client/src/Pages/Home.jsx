@@ -239,7 +239,7 @@ const Home = () => {
             </div>
 
             {/* Trust Indicators */}
-            <div className="flex flex-col sm:flex-row items-center gap-6 pt-8">
+            <div className="flex flex-col sm:flex-row items-center gap-6 pt-12">
               <div className="text-center">
                 <div className="text-3xl font-bold text-white">10K+</div>
                 <div className="text-gray-400">Students Worldwide</div>
@@ -275,7 +275,7 @@ const Home = () => {
               </div>
 
               {/* Editor Content */}
-              <div className="p-6 font-mono text-sm leading-relaxed h-96 overflow-hidden">
+              <div className="p-6 font-mono text-sm leading-relaxed h-[500px] overflow-hidden">
                 {codeLines.map((line, index) => (
                   <div key={index} className="flex">
                     <span className="text-gray-500 w-8 text-right mr-4 select-none">

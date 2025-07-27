@@ -311,7 +311,7 @@ const CourseView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading course...</h2>
           <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -322,7 +322,7 @@ const CourseView = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
           <p className="text-gray-800 mb-6">{error}</p>
@@ -341,7 +341,7 @@ const CourseView = () => {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-[linear-gradient(1deg,_rgba(34,143,186,1)_0%,_rgba(0,0,0,1)_69%,_rgba(0,0,0,1)_100%)] flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-white mb-4">Course not found</h2>
           <div className="flex justify-center">
@@ -451,7 +451,7 @@ const CourseView = () => {
                       className="text-lg font-semibold text-white cursor-pointer hover:text-gray-700 flex items-center justify-between p-2 rounded-lg hover:bg-white/10"
                       onClick={() => toggleSection(sectionIndex)}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-white">
                         <svg
                           className={`w-5 h-5 transform transition-transform ${expandedSections[sectionIndex] ? 'rotate-90' : ''}`}
                           fill="none"
@@ -491,17 +491,17 @@ const CourseView = () => {
                               handleVideoChange(videoIndex);
                               setIsSidebarOpen(false);
                             }}
-                            className={`w-full p-3 text-left rounded-lg transition-all duration-200 ${
+                            className={`w-full p-3 text-left rounded-lg transition-all duration-200 border-b ${
                               isActive
                                 ? 'bg-white/30 text-gray-300'
-                                : 'hover:bg-white/20 text-gray-500'
+                                : 'hover:bg-white/20 text-gray-200'
                             }`}
                           >
                             <div className="flex items-center">
                               <div className={`w-8 h-8 flex items-center justify-center rounded-full border-2 mr-3 transition-colors ${
                                 isCompleted 
-                                  ? 'border-green-500 bg-green-500/20 text-green-700'
-                                  : 'border-current text-gray-700'
+                                  ? 'border-green-500 bg-green-500/20 text-green-300'
+                                  : 'border-current text-white'
                               }`}>
                                 <span>{videoIndex + 1}</span>
                               </div>
