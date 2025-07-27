@@ -206,14 +206,42 @@ if (missingEnvVars.length > 0) {
 try {
   const authRoutes = require("./Routes/Auth");
   app.use("/api/auth", authRoutes);
-  console.log(" Auth routes loaded successfully");
+  console.log("✅ Auth routes loaded successfully");
 } catch (error) {
-  console.error(" Auth routes failed to load:", error.message);
+  console.error("❌ Auth routes failed to load:", error.message);
   console.error("Full error:", error);
   console.error("Stack trace:", error.stack);
   app.use("/api/auth", (req, res) =>
     res.status(501).json({ 
       message: "Authentication routes not implemented",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
+  );
+}
+
+try {
+  const resumeRoutes = require("./Routes/Resume");
+  app.use("/api/resume", resumeRoutes);
+  console.log("✅ Resume & Career Coach routes loaded successfully");
+} catch (error) {
+  console.error("❌ Resume routes failed to load:", error.message);
+  app.use("/api/resume", (req, res) =>
+    res.status(501).json({ 
+      message: "Resume and Career Coach routes not implemented",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
+  );
+}
+
+try {
+  const courseRoutes = require("./Routes/Courses");
+  app.use("/api/courses", courseRoutes);
+  console.log("✅ Course routes loaded successfully");
+} catch (error) {
+  console.error("❌ Course routes failed to load:", error.message);
+  app.use("/api/courses", (req, res) =>
+    res.status(501).json({ 
+      message: "Course routes not implemented",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     })
   );
@@ -375,22 +403,6 @@ app.get('/debug/session', (req, res) => {
 // } catch (error) {
 //   console.error(' Mobile auth test routes failed to load:', error.message);
 // }
-
-try {
-  const courseRoutes = require("./Routes/Courses");
-  app.use("/api/courses", courseRoutes);
-  console.log(" Course routes loaded successfully");
-} catch (error) {
-  console.error(" Course routes failed to load:", error.message);
-  console.error("Full error:", error);
-  console.error("Stack trace:", error.stack);
-  app.use("/api/courses", (req, res) =>
-    res.status(501).json({ 
-      message: "Course routes not implemented",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    })
-  );
-}
 
 // Newsletter Subscription Endpoint
 app.post("/api/subscribe", async (req, res) => {

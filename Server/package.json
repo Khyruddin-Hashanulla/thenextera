@@ -28,7 +28,8 @@
     "nodemailer": "^6.10.1",
     "passport": "^0.6.0",
     "passport-github2": "^0.1.12",
-    "passport-google-oauth20": "^2.0.0"
+    "passport-google-oauth20": "^2.0.0",
+    "puppeteer": "^22.15.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

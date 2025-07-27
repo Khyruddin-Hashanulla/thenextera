@@ -79,18 +79,20 @@ const InstructorApplication = () => {
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <h3 className="text-xl font-semibold text-white">Become an Instructor</h3>
-        {isPending && (
-          <span className="bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-sm font-medium">
-            Pending Approval
-          </span>
-        )}
-        {wasRejected && (
-          <span className="bg-red-500 text-red-100 px-3 py-1 rounded-full text-sm font-medium">
-            Application Rejected
-          </span>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {isPending && (
+            <span className="bg-yellow-500 text-yellow-900 px-3 py-1 rounded-full text-sm font-medium">
+              Pending Approval
+            </span>
+          )}
+          {wasRejected && (
+            <span className="bg-red-500 text-red-100 px-3 py-1 rounded-full text-sm font-medium">
+              Application Rejected
+            </span>
+          )}
+        </div>
       </div>
 
       {loading ? (
