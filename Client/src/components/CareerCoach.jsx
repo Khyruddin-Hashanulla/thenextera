@@ -107,39 +107,41 @@ const CareerCoach = () => {
   };
 
   return (
-    <div className="w-full p-6">
+    <div className="w-full px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
       {/* Simple Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-4">
+      <div className="text-center mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2 sm:mb-4">
           🤖 AI Career Coach
         </h1>
-        <p className="text-xl text-gray-300">
+        <p className="text-lg sm:text-xl text-gray-300">
           Personalized career guidance powered by AI
         </p>
       </div>
 
       {/* Simple Navigation */}
-      <div className="flex justify-center mb-8">
-        <div className="bg-gray-800 rounded-lg p-2">
-          {[
-            { id: 'skills', label: 'Skills', icon: '🎯' },
-            { id: 'jobs', label: 'Jobs', icon: '💼' },
-            { id: 'interview', label: 'Interview', icon: '🎤' },
-            { id: 'mock-interview', label: 'Mock', icon: '🗣️' }
-          ].map((section) => (
-            <button
-              key={section.id}
-              onClick={() => setActiveSection(section.id)}
-              className={`px-4 py-2 mx-1 rounded transition-colors ${
-                activeSection === section.id
-                  ? 'bg-cyan-600 text-white'
-                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
-              }`}
-            >
-              <span className="mr-2">{section.icon}</span>
-              <span className="hidden sm:inline">{section.label}</span>
-            </button>
-          ))}
+      <div className="flex justify-center mb-6 sm:mb-8">
+        <div className="bg-gray-800 rounded-lg p-1 sm:p-2 w-full max-w-md sm:max-w-lg">
+          <div className="grid grid-cols-4 gap-1 sm:gap-2">
+            {[
+              { id: 'skills', label: 'Skills', icon: '🎯' },
+              { id: 'jobs', label: 'Jobs', icon: '💼' },
+              { id: 'interview', label: 'Interview', icon: '🎤' },
+              { id: 'mock-interview', label: 'Mock', icon: '🗣️' }
+            ].map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`px-2 sm:px-4 py-2 rounded transition-colors text-xs sm:text-sm ${
+                  activeSection === section.id
+                    ? 'bg-cyan-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <span className="block sm:inline mr-0 sm:mr-2">{section.icon}</span>
+                <span className="hidden sm:inline">{section.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -156,7 +158,7 @@ const CareerCoach = () => {
         {/* Error */}
         {error && (
           <div className="text-center py-8">
-            <div className="bg-red-900/50 rounded-lg p-6">
+            <div className="bg-red-900/50 rounded-lg p-4 sm:p-6 mx-2 sm:mx-0">
               <p className="text-red-300">⚠️ {error}</p>
             </div>
           </div>
@@ -164,43 +166,43 @@ const CareerCoach = () => {
 
         {/* Content Sections */}
         {!loading && !error && (
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="w-full">
             {activeSection === 'skills' && (
-              <div>
-                <h2 className="text-2xl font-bold text-cyan-400 mb-4">Skill Recommendations</h2>
+              <div className="w-full">
+                <h2 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3 sm:mb-4 px-3 sm:px-4 lg:px-6">Skill Recommendations</h2>
                 {skillRecommendations ? (
                   <SkillRecommendations data={skillRecommendations} />
                 ) : (
-                  <p className="text-gray-300">Click to load skill recommendations...</p>
+                  <p className="text-gray-300 px-3 sm:px-4 lg:px-6">Click to load skill recommendations...</p>
                 )}
               </div>
             )}
 
             {activeSection === 'jobs' && (
-              <div>
-                <h2 className="text-2xl font-bold text-green-400 mb-4">Job Matching</h2>
+              <div className="w-full">
+                <h2 className="text-xl sm:text-2xl font-bold text-green-400 mb-3 sm:mb-4 px-3 sm:px-4 lg:px-6">Job Matching</h2>
                 {jobRecommendations ? (
                   <JobRecommendations data={jobRecommendations} />
                 ) : (
-                  <p className="text-gray-300">Click to load job recommendations...</p>
+                  <p className="text-gray-300 px-3 sm:px-4 lg:px-6">Click to load job recommendations...</p>
                 )}
               </div>
             )}
 
             {activeSection === 'interview' && (
-              <div>
-                <h2 className="text-2xl font-bold text-purple-400 mb-4">Interview Preparation</h2>
+              <div className="w-full">
+                <h2 className="text-xl sm:text-2xl font-bold text-purple-400 mb-3 sm:mb-4 px-3 sm:px-4 lg:px-6">Interview Preparation</h2>
                 {interviewPrep ? (
                   <InterviewPrep data={interviewPrep} />
                 ) : (
-                  <p className="text-gray-300">Click to load interview preparation...</p>
+                  <p className="text-gray-300 px-3 sm:px-4 lg:px-6">Click to load interview preparation...</p>
                 )}
               </div>
             )}
 
             {activeSection === 'mock-interview' && (
-              <div>
-                <h2 className="text-2xl font-bold text-orange-400 mb-4">Mock Interview</h2>
+              <div className="w-full">
+                <h2 className="text-xl sm:text-2xl font-bold text-orange-400 mb-3 sm:mb-4 px-3 sm:px-4 lg:px-6">Mock Interview</h2>
                 <MockInterviewChat />
               </div>
             )}
@@ -230,78 +232,63 @@ const SkillRecommendations = ({ data }) => {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Current Skills Overview */}
-      <div className="bg-gradient-to-r from-gray-800/50 via-gray-800/30 to-transparent backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50 shadow-2xl animate-fade-in-up">
-        <div className="flex items-center mb-6">
-          <div className="w-12 h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mr-4 shadow-lg">
-            <span className="text-2xl">🎯</span>
+      <div className="bg-gradient-to-r from-gray-800/50 via-gray-800/30 to-transparent backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-gray-700/50 shadow-2xl animate-fade-in-up">
+        <div className="flex items-center mb-4 sm:mb-6">
+          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+            <span className="text-lg sm:text-2xl">🎯</span>
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
             Your Current Skills
           </h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           {/* Technical Skills */}
           <div className="group animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 backdrop-blur-sm rounded-2xl p-6 border border-blue-700/30 hover:border-blue-500/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 shadow-lg hover:shadow-blue-500/25">
-              <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <span className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center mr-3">
-                  💻
-                </span>
-                Technical ({(currentSkills.technical || []).length})
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {(currentSkills.technical || []).map((skill, index) => (
-                  <span 
-                    key={index} 
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-200 cursor-default"
-                  >
+            <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-blue-700/30 hover:border-blue-500/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 shadow-lg hover:shadow-blue-500/25">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <span className="text-xl sm:text-2xl mr-2 sm:mr-3">💻</span>
+                <h3 className="text-lg sm:text-xl font-bold text-blue-400">Technical</h3>
+              </div>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
+                {currentSkills.technical?.map((skill, index) => (
+                  <span key={index} className="bg-blue-600/30 text-blue-300 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border border-blue-500/30">
                     {skill}
                   </span>
                 ))}
               </div>
             </div>
           </div>
-          
+
           {/* Tools */}
           <div className="group animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 backdrop-blur-sm rounded-2xl p-6 border border-green-700/30 hover:border-green-500/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 shadow-lg hover:shadow-green-500/25">
-              <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <span className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center mr-3">
-                  🛠️
-                </span>
-                Tools ({(currentSkills.tools || []).length})
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {(currentSkills.tools || []).map((tool, index) => (
-                  <span 
-                    key={index} 
-                    className="bg-gradient-to-r from-green-600 to-green-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:shadow-green-500/25 transform hover:scale-105 transition-all duration-200 cursor-default"
-                  >
-                    {tool}
+            <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-green-700/30 hover:border-green-500/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 shadow-lg hover:shadow-green-500/25">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <span className="text-xl sm:text-2xl mr-2 sm:mr-3">🛠️</span>
+                <h3 className="text-lg sm:text-xl font-bold text-green-400">Tools</h3>
+              </div>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
+                {currentSkills.tools?.map((skill, index) => (
+                  <span key={index} className="bg-green-600/30 text-green-300 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border border-green-500/30">
+                    {skill}
                   </span>
                 ))}
               </div>
             </div>
           </div>
-          
+
           {/* Soft Skills */}
           <div className="group animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-            <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 backdrop-blur-sm rounded-2xl p-6 border border-purple-700/30 hover:border-purple-500/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 shadow-lg hover:shadow-purple-500/25">
-              <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-                <span className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center mr-3">
-                  🧠
-                </span>
-                Soft Skills ({(currentSkills.soft || []).length})
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {(currentSkills.soft || []).map((skill, index) => (
-                  <span 
-                    key={index} 
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-200 cursor-default"
-                  >
+            <div className="bg-gradient-to-br from-purple-900/30 to-purple-800/20 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-purple-700/30 hover:border-purple-500/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 shadow-lg hover:shadow-purple-500/25">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <span className="text-xl sm:text-2xl mr-2 sm:mr-3">�</span>
+                <h3 className="text-lg sm:text-xl font-bold text-purple-400">Soft Skills</h3>
+              </div>
+              <div className="flex flex-wrap gap-1 sm:gap-2">
+                {currentSkills.soft?.map((skill, index) => (
+                  <span key={index} className="bg-purple-600/30 text-purple-300 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium border border-purple-500/30">
                     {skill}
                   </span>
                 ))}
@@ -313,120 +300,72 @@ const SkillRecommendations = ({ data }) => {
 
       {/* Skill Recommendations */}
       {allRecommendations.length > 0 && (
-        <div className="bg-gradient-to-r from-gray-800/50 via-gray-800/30 to-transparent backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50 shadow-2xl animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          <div className="flex items-center mb-8">
-            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center mr-4 shadow-lg animate-pulse">
-              <span className="text-2xl">🚀</span>
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+              <span className="text-lg sm:text-2xl">�</span>
             </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
               Recommended Skills to Learn
             </h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {allRecommendations.slice(0, 9).map((skill, index) => (
-              <div 
-                key={index} 
-                className="group bg-gradient-to-br from-gray-800/60 to-gray-900/40 backdrop-blur-sm rounded-2xl p-6 border border-gray-600/50 hover:border-cyan-500/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 shadow-lg hover:shadow-cyan-500/25 animate-fade-in-up"
-                style={{ animationDelay: `${0.5 + index * 0.1}s` }}
-              >
-                {/* Skill Header */}
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="text-xl font-bold text-white group-hover:text-cyan-300 transition-colors duration-300">
-                    {skill.name || skill.skill || 'Unknown Skill'}
-                  </h3>
-                  <div className="relative">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-lg ${
-                      skill.category === 'High Demand' 
-                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' 
-                        : skill.category === 'Trending'
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                        : 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                    }`}>
-                      {skill.category}
-                    </span>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {allRecommendations.slice(0, 6).map((skill, index) => (
+              <div key={index} className="bg-gray-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-600/50 hover:border-cyan-500/50 transition-all duration-300 hover:bg-gray-700/70">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm sm:text-base font-semibold text-white">{skill.name || skill.skill}</h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    skill.category === 'Trending' ? 'bg-orange-600/30 text-orange-300' :
+                    skill.category === 'High Demand' ? 'bg-red-600/30 text-red-300' :
+                    'bg-cyan-600/30 text-cyan-300'
+                  }`}>
+                    {skill.category}
+                  </span>
                 </div>
-                
-                {/* Description */}
-                <p className="text-gray-300 text-sm mb-4 leading-relaxed group-hover:text-gray-200 transition-colors duration-300">
-                  {skill.description || skill.reason || 'Learn this skill to advance your career.'}
-                </p>
-                
-                {/* Details */}
-                <div className="space-y-3">
-                  {skill.demand && (
-                    <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-600/30">
-                      <span className="text-gray-400 font-medium">Demand:</span>
-                      <span className="text-cyan-300 font-semibold">{skill.demand}</span>
-                    </div>
-                  )}
-                  {skill.averageRate && (
-                    <div className="flex justify-between items-center p-3 bg-gray-700/30 rounded-lg border border-gray-600/30">
-                      <span className="text-gray-400 font-medium">Avg Rate:</span>
-                      <span className="text-green-400 font-bold">{skill.averageRate}</span>
-                    </div>
-                  )}
+                <p className="text-xs sm:text-sm text-gray-300 mb-2">{skill.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">Market Demand</span>
+                  <span className="text-xs font-medium text-cyan-400">{skill.demand || 'High'}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Debug Info */}
-      <div className="bg-gray-800/50 rounded-lg p-4 text-sm text-gray-400">
-        <p>Debug: API returned {Object.keys(data || {}).join(', ')}</p>
-        <p>Recommendations found: {allRecommendations.length}</p>
-      </div>
     </div>
   );
 };
 
 const JobRecommendations = ({ data }) => {
-  const { recommendedRoles, learningPath, careerAdvice, skillGaps } = data;
+  const { recommendedRoles = [], learningPath = {}, careerAdvice = [] } = data || {};
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Job Matches */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-cyan-400 mb-4">💼 Best Job Matches</h2>
-        <div className="space-y-6">
-          {recommendedRoles.map((role, index) => (
-            <div key={index} className="bg-gray-700/50 rounded-lg p-6 border border-gray-600">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-white">{role.title}</h3>
-                  <p className="text-gray-300">{role.description}</p>
-                </div>
-                <div className="text-right">
-                  <div className={`text-2xl font-bold ${
-                    role.match >= 80 ? 'text-green-400' :
-                    role.match >= 60 ? 'text-yellow-400' : 'text-orange-400'
-                  }`}>
-                    {role.match}%
-                  </div>
-                  <p className="text-gray-400 text-sm">Match</p>
-                </div>
+    <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Job Recommendations */}
+      <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+        <div className="flex items-center mb-4 sm:mb-6">
+          <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+            <span className="text-lg sm:text-2xl">💼</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+            Recommended Job Roles
+          </h2>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {recommendedRoles.slice(0, 6).map((role, index) => (
+            <div key={index} className="bg-gray-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-600/50 hover:border-green-500/50 transition-all duration-300 hover:bg-gray-700/70">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm sm:text-base font-semibold text-white">{role.title || role.role}</h3>
+                <span className="bg-green-600/30 text-green-300 px-2 py-1 rounded-full text-xs font-medium">
+                  {role.match || '85%'}
+                </span>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Salary Range:</span>
-                  <p className="text-green-400 font-semibold">{role.salaryRange}</p>
-                </div>
-                <div>
-                  <span className="text-gray-400">Demand Level:</span>
-                  <p className="text-white">{role.demandLevel}</p>
-                </div>
-                <div>
-                  <span className="text-gray-400">Remote Work:</span>
-                  <p className="text-white">{role.remoteOpportunities}</p>
-                </div>
-                <div>
-                  <span className="text-gray-400">Requirements:</span>
-                  <p className="text-white">{role.requirements.slice(0, 2).join(', ')}</p>
-                </div>
+              <p className="text-xs sm:text-sm text-gray-300 mb-2">{role.company || 'Various Companies'}</p>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Match Score</span>
+                <span className="text-xs font-medium text-green-400">{role.match || '85%'}</span>
               </div>
             </div>
           ))}
@@ -434,109 +373,163 @@ const JobRecommendations = ({ data }) => {
       </div>
 
       {/* Learning Path */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-cyan-400 mb-4">🎓 Your Learning Path</h2>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-white mb-2">Dominant Track: {learningPath.dominantTrack}</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(learningPath.skillProgression).map(([track, score]) => (
-              <div key={track} className="text-center">
-                <div className="text-2xl font-bold text-cyan-400">{score}</div>
-                <div className="text-gray-300 text-sm">{track}</div>
+      {learningPath.dominantTrack && (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+              <span className="text-lg sm:text-2xl">🎓</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-cyan-400">Your Learning Path</h2>
+          </div>
+          
+          <div className="mb-4 sm:mb-6">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
+              Dominant Track: <span className="text-cyan-400">{learningPath.dominantTrack}</span>
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+              {Object.entries(learningPath.skillProgression || {}).map(([track, score]) => (
+                <div key={track} className="text-center bg-gray-700/30 rounded-lg p-2 sm:p-3">
+                  <div className="text-lg sm:text-2xl font-bold text-cyan-400">{score}</div>
+                  <div className="text-gray-300 text-xs sm:text-sm">{track}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">Recommended Next Courses:</h3>
+          <div className="flex flex-wrap gap-1 sm:gap-2">
+            {(learningPath.recommendations || []).map((course, index) => (
+              <span key={index} className="bg-cyan-600 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
+                {course}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Career Advice */}
+      {careerAdvice.length > 0 && (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+              <span className="text-lg sm:text-2xl">🎯</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-purple-400">Career Advice</h2>
+          </div>
+          
+          <div className="space-y-2 sm:space-y-3">
+            {careerAdvice.map((advice, index) => (
+              <div key={index} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-700/50 rounded-lg">
+                <span className="text-purple-400 text-base sm:text-xl mt-0.5">💡</span>
+                <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">{advice}</p>
               </div>
             ))}
           </div>
         </div>
-        
-        <h3 className="text-lg font-semibold text-white mb-3">Recommended Next Courses:</h3>
-        <div className="flex flex-wrap gap-2">
-          {learningPath.recommendations.map((course, index) => (
-            <span key={index} className="bg-cyan-600 text-white px-3 py-1 rounded-full text-sm">
-              {course}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Career Advice */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-cyan-400 mb-4">🎯 Career Advice</h2>
-        <div className="space-y-3">
-          {careerAdvice.map((advice, index) => (
-            <div key={index} className="flex items-start gap-3 p-3 bg-gray-700/50 rounded-lg">
-              <span className="text-cyan-400 text-xl">💡</span>
-              <p className="text-gray-300">{advice}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
 const InterviewPrep = ({ data }) => {
-  const { topSkills, technicalQuestions, behavioralQuestions, interviewTips } = data;
+  const { topSkills = [], technicalQuestions = [], behavioralQuestions = [], interviewTips = [] } = data || {};
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Top Skills Focus */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-cyan-400 mb-4">🎯 Interview Focus Areas</h2>
-        <div className="flex flex-wrap gap-3">
-          {topSkills.map((skill, index) => (
-            <span key={index} className="bg-cyan-600 text-white px-4 py-2 rounded-lg font-semibold">
-              {skill}
-            </span>
-          ))}
+      {topSkills.length > 0 && (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+              <span className="text-lg sm:text-2xl">🎯</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-purple-400">Interview Focus Areas</h2>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:gap-3">
+            {topSkills.map((skill, index) => (
+              <span key={index} className="bg-purple-600 text-white px-3 sm:px-4 py-1 sm:py-2 rounded-lg font-semibold text-xs sm:text-sm">
+                {skill}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Technical Questions */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-cyan-400 mb-4">💻 Technical Questions</h2>
-        <div className="space-y-4">
-          {technicalQuestions.map((q, index) => (
-            <div key={index} className="bg-gray-700/50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-white mb-2">{q.question}</h3>
-              <div className="text-sm text-gray-300 mb-2">
-                <span className="text-cyan-400">Difficulty:</span> {q.difficulty} | 
-                <span className="text-cyan-400"> Type:</span> {q.type}
-              </div>
-              <div className="bg-gray-800/50 p-3 rounded mb-2">
-                <p className="text-gray-300 text-sm">{q.answer}</p>
-              </div>
-              <p className="text-yellow-400 text-sm">💡 {q.tips}</p>
+      {technicalQuestions.length > 0 && (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+              <span className="text-lg sm:text-2xl">💻</span>
             </div>
-          ))}
+            <h2 className="text-xl sm:text-2xl font-bold text-cyan-400">Technical Questions</h2>
+          </div>
+          <div className="space-y-3 sm:space-y-4">
+            {technicalQuestions.map((q, index) => (
+              <div key={index} className="bg-gray-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-600/50">
+                <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-white mb-2">{q.question}</h3>
+                <div className="text-xs sm:text-sm text-gray-300 mb-2 flex flex-wrap gap-2">
+                  <span className="text-cyan-400">Difficulty:</span> 
+                  <span>{q.difficulty}</span>
+                  <span className="text-cyan-400">| Type:</span> 
+                  <span>{q.type}</span>
+                </div>
+                {q.answer && (
+                  <div className="bg-gray-800/50 p-2 sm:p-3 rounded mb-2">
+                    <p className="text-gray-300 text-xs sm:text-sm leading-relaxed">{q.answer}</p>
+                  </div>
+                )}
+                {q.tips && (
+                  <p className="text-yellow-400 text-xs sm:text-sm">💡 {q.tips}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Behavioral Questions */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-cyan-400 mb-4">🗣️ Behavioral Questions</h2>
-        <div className="space-y-4">
-          {behavioralQuestions.map((q, index) => (
-            <div key={index} className="bg-gray-700/50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-white mb-2">{q.question}</h3>
-              <div className="text-sm text-cyan-400 mb-2">Category: {q.category}</div>
-              <p className="text-yellow-400 text-sm">💡 {q.tips}</p>
+      {behavioralQuestions.length > 0 && (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+              <span className="text-lg sm:text-2xl">🗣️</span>
             </div>
-          ))}
+            <h2 className="text-xl sm:text-2xl font-bold text-green-400">Behavioral Questions</h2>
+          </div>
+          <div className="space-y-3 sm:space-y-4">
+            {behavioralQuestions.map((q, index) => (
+              <div key={index} className="bg-gray-700/50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-600/50">
+                <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-white mb-2">{q.question}</h3>
+                <div className="text-xs sm:text-sm text-green-400 mb-2">Category: {q.category}</div>
+                {q.tips && (
+                  <p className="text-yellow-400 text-xs sm:text-sm">💡 {q.tips}</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Interview Tips */}
-      <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-cyan-400 mb-4">📝 Interview Tips</h2>
-        <div className="space-y-3">
-          {interviewTips.map((tip, index) => (
-            <div key={index} className="flex items-start gap-3 p-3 bg-gray-700/50 rounded-lg">
-              <span className="text-cyan-400 text-xl">✓</span>
-              <p className="text-gray-300">{tip}</p>
+      {interviewTips.length > 0 && (
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-gray-700/50">
+          <div className="flex items-center mb-4 sm:mb-6">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg">
+              <span className="text-lg sm:text-2xl">📝</span>
             </div>
-          ))}
+            <h2 className="text-xl sm:text-2xl font-bold text-orange-400">Interview Tips</h2>
+          </div>
+          <div className="space-y-2 sm:space-y-3">
+            {interviewTips.map((tip, index) => (
+              <div key={index} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-700/50 rounded-lg">
+                <span className="text-orange-400 text-base sm:text-xl mt-0.5">✓</span>
+                <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">{tip}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

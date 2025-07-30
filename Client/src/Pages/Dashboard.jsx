@@ -324,9 +324,6 @@ const Dashboard = () => {
                       {loading ? "Refreshing..." : "Refresh"}
                     </span>
                   </div>
-                  
-                  {/* Shine effect */}
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 transform -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                 </button>
               </div>
             </div>

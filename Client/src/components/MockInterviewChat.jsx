@@ -153,46 +153,41 @@ const MockInterviewChat = () => {
 
   if (!interviewStarted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
-        <div className="max-w-2xl mx-auto text-center p-8">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-8 border border-gray-700">
-            <h1 className="text-4xl font-bold text-white mb-6">🎤 Mock Interview</h1>
-            <p className="text-gray-300 text-lg mb-8">
+      <div className="w-full bg-gradient-to-br from-gray-900 via-blue-900 to-black min-h-screen flex items-center justify-center px-2 sm:px-4">
+        <div className="w-full max-w-2xl text-center p-4 sm:p-8">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 sm:p-8 border border-gray-700">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-4 sm:mb-6">🎤 Mock Interview</h1>
+            <p className="text-gray-300 text-base sm:text-lg mb-6 sm:mb-8">
               Practice your interview skills with AI-powered questions tailored to your profile. 
               Get real-time feedback and improve your confidence!
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <div className="text-2xl mb-2">💻</div>
-                <h3 className="text-white font-semibold">Technical Questions</h3>
-                <p className="text-gray-400 text-sm">Based on your skills</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className="bg-gray-700/50 rounded-lg p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl mb-2">💻</div>
+                <h3 className="text-white font-semibold text-sm sm:text-base">Technical Questions</h3>
+                <p className="text-gray-400 text-xs sm:text-sm">Based on your skills</p>
               </div>
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <div className="text-2xl mb-2">🗣️</div>
-                <h3 className="text-white font-semibold">Behavioral Questions</h3>
-                <p className="text-gray-400 text-sm">Soft skills assessment</p>
+              
+              <div className="bg-gray-700/50 rounded-lg p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl mb-2">🧠</div>
+                <h3 className="text-white font-semibold text-sm sm:text-base">Behavioral Questions</h3>
+                <p className="text-gray-400 text-xs sm:text-sm">Soft skills assessment</p>
               </div>
-              <div className="bg-gray-700/50 rounded-lg p-4">
-                <div className="text-2xl mb-2">📊</div>
-                <h3 className="text-white font-semibold">Real-time Feedback</h3>
-                <p className="text-gray-400 text-sm">Instant improvement tips</p>
+              
+              <div className="bg-gray-700/50 rounded-lg p-3 sm:p-4">
+                <div className="text-xl sm:text-2xl mb-2">📊</div>
+                <h3 className="text-white font-semibold text-sm sm:text-base">Real-time Feedback</h3>
+                <p className="text-gray-400 text-xs sm:text-sm">Instant improvement tips</p>
               </div>
             </div>
-
+            
             <button
               onClick={startInterview}
               disabled={loading}
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 disabled:opacity-50"
+              className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 text-sm sm:text-base"
             >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Preparing Interview...
-                </span>
-              ) : (
-                'Start Mock Interview'
-              )}
+              {loading ? 'Starting...' : 'Start Mock Interview'}
             </button>
           </div>
         </div>
@@ -201,43 +196,41 @@ const MockInterviewChat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black">
-      <div className="container mx-auto px-4 py-8">
+    <div className="w-full bg-gradient-to-br from-gray-900 via-blue-900 to-black min-h-screen">
+      <div className="w-full px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
           <div>
-            <h1 className="text-3xl font-bold text-white">Mock Interview Session</h1>
-            <p className="text-gray-300">Question {currentQuestion} of {interviewQuestions.length}</p>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">Mock Interview Session</h1>
+            <p className="text-gray-300 text-sm sm:text-base">Question {currentQuestion} of {interviewQuestions.length}</p>
           </div>
           <button
             onClick={resetInterview}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors text-sm sm:text-base"
           >
             End Interview
           </button>
         </div>
 
         {/* Progress Bar */}
-        <div className="mb-6">
-          <div className="bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(currentQuestion / interviewQuestions.length) * 100}%` }}
-            ></div>
-          </div>
+        <div className="w-full bg-gray-700 rounded-full h-2 mb-4 sm:mb-6">
+          <div 
+            className="bg-cyan-600 h-2 rounded-full transition-all duration-300"
+            style={{ width: `${(currentQuestion / interviewQuestions.length) * 100}%` }}
+          ></div>
         </div>
 
         {/* Chat Container */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 h-96 flex flex-col">
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 h-80 sm:h-96 flex flex-col">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg ${
                     message.sender === 'user'
                       ? 'bg-cyan-600 text-white'
                       : message.isFeedback
@@ -246,15 +239,15 @@ const MockInterviewChat = () => {
                   }`}
                 >
                   {message.sender === 'interviewer' && !message.isFeedback && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-cyan-400 text-sm">🤖 AI Interviewer</span>
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
+                      <span className="text-cyan-400 text-xs sm:text-sm">🤖 AI Interviewer</span>
                       {message.questionType && (
-                        <span className="text-xs bg-gray-600 px-2 py-1 rounded">
+                        <span className="text-xs bg-gray-600 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                           {message.questionType}
                         </span>
                       )}
                       {message.difficulty && (
-                        <span className="text-xs bg-orange-600 px-2 py-1 rounded">
+                        <span className="text-xs bg-orange-600 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
                           {message.difficulty}
                         </span>
                       )}
@@ -262,10 +255,10 @@ const MockInterviewChat = () => {
                   )}
                   {message.isFeedback && (
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-green-200 text-sm">💡 Feedback</span>
+                      <span className="text-green-200 text-xs sm:text-sm">💡 Feedback</span>
                     </div>
                   )}
-                  <p className="text-sm">{message.text}</p>
+                  <p className="text-xs sm:text-sm leading-relaxed">{message.text}</p>
                   <p className="text-xs opacity-70 mt-1">{message.timestamp}</p>
                 </div>
               </div>
@@ -273,7 +266,7 @@ const MockInterviewChat = () => {
             
             {isTyping && (
               <div className="flex justify-start">
-                <div className="bg-gray-700 text-white px-4 py-2 rounded-lg">
+                <div className="bg-gray-700 text-white px-3 sm:px-4 py-2 rounded-lg">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -286,7 +279,7 @@ const MockInterviewChat = () => {
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-gray-700">
+          <div className="p-3 sm:p-4 border-t border-gray-700">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -294,13 +287,13 @@ const MockInterviewChat = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                 placeholder="Type your answer here..."
-                className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="flex-1 bg-gray-700 text-white px-3 sm:px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-sm sm:text-base"
                 disabled={isTyping || currentQuestion >= interviewQuestions.length}
               />
               <button
                 onClick={sendMessage}
                 disabled={!inputValue.trim() || isTyping || currentQuestion >= interviewQuestions.length}
-                className="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-cyan-600 hover:bg-cyan-700 text-white px-4 sm:px-6 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 Send
               </button>
@@ -309,9 +302,9 @@ const MockInterviewChat = () => {
         </div>
 
         {/* Tips */}
-        <div className="mt-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
-          <h3 className="text-white font-semibold mb-2">💡 Interview Tips</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-300">
+        <div className="mt-4 sm:mt-6 bg-gray-800/50 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-gray-700">
+          <h3 className="text-white font-semibold mb-2 text-sm sm:text-base">💡 Interview Tips</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-300">
             <div>• Be specific with examples</div>
             <div>• Use the STAR method (Situation, Task, Action, Result)</div>
             <div>• Stay calm and take your time</div>
