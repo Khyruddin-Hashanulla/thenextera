@@ -311,7 +311,7 @@ const CourseView = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Loading course...</h2>
           <div className="w-12 h-12 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -322,7 +322,7 @@ const CourseView = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Error</h2>
           <p className="text-gray-800 mb-6">{error}</p>
@@ -341,7 +341,7 @@ const CourseView = () => {
 
   if (!course) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="bg-white/30 backdrop-blur-md p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-white mb-4">Course not found</h2>
           <div className="flex justify-center">
@@ -358,58 +358,33 @@ const CourseView = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black">
+    <div className="flex flex-col lg:flex-row min-h-screen bg-gray-900">
       {/* Back Button Only in Top Area */}
       <div className="fixed top-0 left-0 z-50 p-4">
         <Link
           to="/courses"
-          className="flex items-center text-white hover:text-black transition-colors"
+          className="flex items-center space-x-2 bg-gray-800/80 hover:bg-gray-700/80 backdrop-blur-sm text-white px-4 py-2 rounded-lg transition-all duration-300 border border-gray-600/50 hover:border-gray-500/50"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="white"
-            cursor="pointer"
-          >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          <span className="ml-2 font-medium text-white">Back to Courses</span>
+          <span className="font-medium">Back to Courses</span>
         </Link>
       </div>
 
-      {/* Hamburger Menu Button */}
+      {/* Mobile Menu Button */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-4 right-4 z-50 p-2 rounded-lg bg-white/30 backdrop-blur-md lg:hidden"
+        className="lg:hidden fixed top-20 left-4 z-50 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg border border-gray-600/50"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6 text-gray-900"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          {isSidebarOpen ? (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          )}
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
 
-      {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
       {/* Sidebar */}
       <div
-        className={`fixed lg:sticky top-0 left-0 h-screen w-80 bg-gradient-to-b from-gray-800 via-blue-900 to-gray-900 text-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 
+        className={`fixed lg:sticky top-0 left-0 h-screen w-80 bg-gray-800 text-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
           lg:translate-x-0 lg:transform-none`}
       >

@@ -5,12 +5,12 @@
 /* Mobile overscroll fix - prevents white area when pulling down */
 html {
   overscroll-behavior: none;
-  background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #000000 100%);
+  background: #111827;
 }
 
 body {
   overscroll-behavior: none;
-  background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #000000 100%);
+  background: #111827;
   min-height: 100vh;
 }
 
@@ -19,7 +19,7 @@ body {
   html, body {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
-    background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #000000 100%);
+    background: #111827;
   }
 }
 
@@ -28,7 +28,7 @@ body {
   html, body {
     overscroll-behavior: none;
     overscroll-behavior-y: none;
-    background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #000000 100%);
+    background: #111827;
   }
   
   /* Ensure smooth scrolling on mobile */

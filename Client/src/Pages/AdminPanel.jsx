@@ -131,21 +131,27 @@ const AdminPanel = () => {
         <div className="space-y-2 mb-4">
           <p className="text-sm text-gray-300">
             <span className="font-medium">Applied:</span>{' '}
-            {new Date(application.requestDate).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
+            {application.instructorApplication?.requestDate 
+              ? new Date(application.instructorApplication.requestDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : 'Recently'
+            }
           </p>
           <p className="text-sm text-gray-300">
             <span className="font-medium">Account Created:</span>{' '}
-            {new Date(application.accountCreated).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
+            {application.createdAt 
+              ? new Date(application.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })
+              : 'Unknown'
+            }
           </p>
         </div>
 
@@ -281,7 +287,7 @@ const AdminPanel = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex flex-col">
+    <div className="min-h-screen bg-gray-900 flex flex-col">
       <Navbar />
       
       <div className="flex-grow container mx-auto px-4 py-8">
@@ -487,6 +493,9 @@ const AdminPanel = () => {
 
       {/* Footer */}
       <footer className="relative bg-gray-900/80 backdrop-blur-sm text-white py-16 px-4">
+        {/* Gradient Divider */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+        
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>

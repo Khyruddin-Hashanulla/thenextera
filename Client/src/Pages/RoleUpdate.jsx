@@ -31,7 +31,7 @@ const RoleUpdate = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black py-6 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-900 py-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white shadow-lg rounded-lg p-6">
           <h2 className="text-2xl font-bold mb-6">Update Role</h2>

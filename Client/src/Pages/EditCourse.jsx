@@ -205,7 +205,7 @@ const EditCourse = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-white">Loading course...</p>
@@ -215,253 +215,254 @@ const EditCourse = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+    <div className="min-h-screen bg-gray-900 relative">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/20 via-gray-900/30 to-gray-900/20"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(107,114,128,0.1),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(107,114,128,0.1),transparent_50%)]"></div>
+      
       <Navbar />
       
-      <div className="relative min-h-screen">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/20 via-blue-900/30 to-purple-900/20"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.1),transparent_50%)]"></div>
+      <div className="relative z-10 flex-grow container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Edit Course</h1>
+            <p className="text-gray-300">Update your course content and information</p>
+          </div>
 
-        <div className="relative z-10 flex-grow container mx-auto px-4 py-8">
-          <div className="max-w-4xl mx-auto">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">Edit Course</h1>
-              <p className="text-gray-300">Update your course content and information</p>
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded-lg">
+              <p className="text-red-200">{error}</p>
+            </div>
+          )}
+
+          {/* Form Card */}
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
+            {/* Tabs */}
+            <div className="flex border-b border-gray-700">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="mb-6 p-4 bg-red-500/20 border border-red-500 rounded-lg">
-                <p className="text-red-200">{error}</p>
-              </div>
-            )}
+            <form onSubmit={handleSubmit} className="p-6">
+              {/* Basic Info Tab */}
+              {activeTab === 'basic' && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Course Title *
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      placeholder="Enter course title"
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                      required
+                    />
+                  </div>
 
-            {/* Form Card */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-              {/* Tabs */}
-              <div className="flex border-b border-gray-700">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                    }`}
-                  >
-                    <span className="mr-2">{tab.icon}</span>
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Course Description
+                    </label>
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      placeholder="Describe what students will learn"
+                      rows={4}
+                      className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none"
+                    />
+                  </div>
 
-              <form onSubmit={handleSubmit} className="p-6">
-                {/* Basic Info Tab */}
-                {activeTab === 'basic' && (
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Course Title *
-                      </label>
-                      <input
-                        type="text"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleChange}
-                        placeholder="Enter course title"
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Course Description
-                      </label>
-                      <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        placeholder="Describe what students will learn"
-                        rows={4}
-                        className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Course Thumbnail
-                      </label>
-                      <div className="flex items-center space-x-4">
-                        <div className="w-24 h-16 bg-gray-700 rounded-lg overflow-hidden">
-                          <img
-                            src={formData.thumbnail || "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80"}
-                            alt="Thumbnail preview"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <MediaUpload
-                          type="thumbnail"
-                          onSuccess={handleThumbnailUpload}
-                          onError={(error) => setError(`Thumbnail upload failed: ${error}`)}
-                          placeholder="Enter image URL or YouTube video URL..."
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Course Thumbnail
+                    </label>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-24 h-16 bg-gray-700 rounded-lg overflow-hidden">
+                        <img
+                          src={formData.thumbnail || "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=500&q=80"}
+                          alt="Thumbnail preview"
+                          className="w-full h-full object-cover"
                         />
                       </div>
+                      <MediaUpload
+                        type="thumbnail"
+                        onSuccess={handleThumbnailUpload}
+                        onError={(error) => setError(`Thumbnail upload failed: ${error}`)}
+                        placeholder="Enter image URL or YouTube video URL..."
+                      />
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Content Tab */}
-                {activeTab === 'content' && (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-white">Course Sections</h3>
-                      <button
-                        type="button"
-                        onClick={addSection}
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
-                      >
-                        + Add Section
-                      </button>
-                    </div>
+              {/* Content Tab */}
+              {activeTab === 'content' && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-white">Course Sections</h3>
+                    <button
+                      type="button"
+                      onClick={addSection}
+                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm"
+                    >
+                      + Add Section
+                    </button>
+                  </div>
 
-                    <div className="space-y-4">
-                      {formData.sections.map((section, sectionIndex) => (
-                        <div key={sectionIndex} className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-white font-medium">Section {sectionIndex + 1}</h4>
-                            {formData.sections.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => removeSection(sectionIndex)}
-                                className="text-red-400 hover:text-red-300 transition-colors"
-                              >
-                                🗑️
-                              </button>
-                            )}
+                  <div className="space-y-4">
+                    {formData.sections.map((section, sectionIndex) => (
+                      <div key={sectionIndex} className="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-white font-medium">Section {sectionIndex + 1}</h4>
+                          {formData.sections.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeSection(sectionIndex)}
+                              className="text-red-400 hover:text-red-300 transition-colors"
+                            >
+                              🗑️
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <input
+                            type="text"
+                            value={section.title}
+                            onChange={(e) => handleSectionChange(sectionIndex, 'title', e.target.value)}
+                            placeholder="Section title"
+                            className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                          />
+                          <input
+                            type="text"
+                            value={section.description}
+                            onChange={(e) => handleSectionChange(sectionIndex, 'description', e.target.value)}
+                            placeholder="Section description"
+                            className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                          />
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-300">Videos</span>
+                            <button
+                              type="button"
+                              onClick={() => addVideoToSection(sectionIndex)}
+                              className="text-blue-400 hover:text-blue-300 transition-colors text-sm"
+                            >
+                              + Add Video
+                            </button>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <input
-                              type="text"
-                              value={section.title}
-                              onChange={(e) => handleSectionChange(sectionIndex, 'title', e.target.value)}
-                              placeholder="Section title"
-                              className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                            />
-                            <input
-                              type="text"
-                              value={section.description}
-                              onChange={(e) => handleSectionChange(sectionIndex, 'description', e.target.value)}
-                              placeholder="Section description"
-                              className="px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                            />
-                          </div>
+                          {section.videos.map((video, videoIndex) => (
+                            <div key={videoIndex} className="bg-gray-600/50 rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-gray-400">Video {videoIndex + 1}</span>
+                                {section.videos.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeVideoFromSection(sectionIndex, videoIndex)}
+                                    className="text-red-400 hover:text-red-300 transition-colors text-sm"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </div>
 
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-300">Videos</span>
-                              <button
-                                type="button"
-                                onClick={() => addVideoToSection(sectionIndex)}
-                                className="text-blue-400 hover:text-blue-300 transition-colors text-sm"
-                              >
-                                + Add Video
-                              </button>
-                            </div>
+                              <input
+                                type="text"
+                                value={video.title}
+                                onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'title', e.target.value)}
+                                placeholder="Video title"
+                                className="w-full px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm"
+                              />
 
-                            {section.videos.map((video, videoIndex) => (
-                              <div key={videoIndex} className="bg-gray-600/50 rounded-lg p-3 space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs text-gray-400">Video {videoIndex + 1}</span>
-                                  {section.videos.length > 1 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => removeVideoFromSection(sectionIndex, videoIndex)}
-                                      className="text-red-400 hover:text-red-300 transition-colors text-sm"
-                                    >
-                                      ✕
-                                    </button>
-                                  )}
-                                </div>
-
+                              <div className="flex gap-2">
                                 <input
-                                  type="text"
-                                  value={video.title}
-                                  onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'title', e.target.value)}
-                                  placeholder="Video title"
-                                  className="w-full px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm"
+                                  type="url"
+                                  value={video.url}
+                                  onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'url', e.target.value)}
+                                  placeholder="Video URL or upload file"
+                                  className="flex-1 px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm"
                                 />
-
-                                <div className="flex gap-2">
-                                  <input
-                                    type="url"
-                                    value={video.url}
-                                    onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'url', e.target.value)}
-                                    placeholder="Video URL or upload file"
-                                    className="flex-1 px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm"
-                                  />
-                                  <MediaUpload
-                                    type="video"
-                                    onSuccess={handleVideoUpload(sectionIndex, videoIndex)}
-                                    onError={(error) => setError(`Video upload failed: ${error}`)}
-                                    placeholder="Enter video URL or YouTube URL..."
-                                  />
-                                </div>
-
-                                <textarea
-                                  value={video.description}
-                                  onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'description', e.target.value)}
-                                  placeholder="Video description (optional)"
-                                  rows={2}
-                                  className="w-full px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm resize-none"
+                                <MediaUpload
+                                  type="video"
+                                  onSuccess={handleVideoUpload(sectionIndex, videoIndex)}
+                                  onError={(error) => setError(`Video upload failed: ${error}`)}
+                                  placeholder="Enter video URL or YouTube URL..."
                                 />
                               </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-6 border-t border-gray-700">
-                  <Link
-                    to="/courses"
-                    className="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                  >
-                    Delete Course
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className={`flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium ${
-                      saving ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {saving ? 'Saving Changes...' : 'Save Changes'}
-                  </button>
+                              <textarea
+                                value={video.description}
+                                onChange={(e) => handleVideoChange(sectionIndex, videoIndex, 'description', e.target.value)}
+                                placeholder="Video description (optional)"
+                                rows={2}
+                                className="w-full px-3 py-2 bg-gray-500 border border-gray-400 rounded text-white placeholder-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-colors text-sm resize-none"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </form>
-            </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-6 border-t border-gray-700">
+                <Link
+                  to="/courses"
+                  className="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                >
+                  Delete Course
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className={`flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium ${
+                    saving ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {saving ? 'Saving Changes...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
 
       {/* Footer */}
       <footer className="relative bg-gray-900/80 backdrop-blur-sm text-white py-16 px-4">
+        {/* Gradient Divider */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+        
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>

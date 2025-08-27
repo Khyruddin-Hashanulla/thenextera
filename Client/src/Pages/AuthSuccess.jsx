@@ -73,7 +73,7 @@ const AuthSuccess = () => {
   }, [navigate, location]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-black py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-lg shadow-md">
         <h1 className="text-2xl font-bold text-center">Authentication Successful!</h1>
         {error ? (

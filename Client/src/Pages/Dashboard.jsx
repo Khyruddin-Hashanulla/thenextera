@@ -3,8 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import InstructorApplication from "../components/InstructorApplication";
-import ResumeBuilder from "../components/ResumeBuilder";
-import CareerCoach from "../components/CareerCoach";
 import api from "../utils/api";
 
 const Dashboard = () => {
@@ -156,29 +154,47 @@ const Dashboard = () => {
 
   const StatCard = ({ title, value, icon, color, delay }) => (
     <div
-      className={`bg-gradient-to-br ${color} px-4 py-2 rounded-lg shadow-md border border-white/10 backdrop-blur-sm transform hover:scale-105 transition-all duration-300 animate-fade-in-up group relative overflow-hidden`}
+      className={`group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl hover:shadow-cyan-500/25 transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 overflow-hidden animate-fade-in-up h-48`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Animated background pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -top-1 -right-1 w-8 h-8 bg-white/10 rounded-full blur-md group-hover:bg-white/20 transition-colors duration-300"></div>
+      {/* Floating orbs */}
+      <div className="absolute -top-2 -right-2 w-12 h-12 bg-gradient-to-br from-cyan-400/20 to-blue-600/20 rounded-full blur-lg group-hover:scale-125 transition-transform duration-500"></div>
+      <div className="absolute -bottom-1 -left-1 w-8 h-8 bg-gradient-to-br from-purple-400/15 to-pink-600/15 rounded-full blur-md group-hover:scale-110 transition-transform duration-300"></div>
       
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-lg filter drop-shadow-lg">{icon}</div>
-          <div className="bg-white/20 backdrop-blur-sm rounded-full p-0.5">
-            <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
+      {/* Animated border */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+      
+      <div className="relative z-10 h-full flex flex-col justify-between">
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-3xl transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 filter drop-shadow-lg">
+              {icon}
+            </div>
+            <div className="flex space-x-1">
+              <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse"></div>
+              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            </div>
+          </div>
+          
+          <div className="text-3xl font-bold text-white mb-2 tracking-tight">
+            {loading ? (
+              <div className="animate-pulse bg-gradient-to-r from-white/20 to-white/40 h-8 w-16 rounded"></div>
+            ) : (
+              <span className="bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">
+                {value}
+              </span>
+            )}
+          </div>
+          
+          <div className="text-white/80 font-medium text-sm uppercase tracking-wider">
+            {title}
           </div>
         </div>
-        <div className="text-lg font-bold text-white mb-0.5 tracking-tight">
-          {loading ? (
-            <div className="animate-pulse bg-white/30 h-4 w-8 rounded"></div>
-          ) : (
-            value
-          )}
-        </div>
-        <div className="text-white/90 font-medium text-xs uppercase tracking-wider leading-none">
-          {title}
+        
+        {/* Progress bar */}
+        <div className="mt-4 w-full bg-white/10 rounded-full h-1 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transform origin-left scale-x-75 group-hover:scale-x-100 transition-transform duration-700"></div>
         </div>
       </div>
     </div>
@@ -201,126 +217,122 @@ const Dashboard = () => {
   );
 
   const ActionCardContent = ({ title, description, icon, color }) => (
-    <div className={`bg-gradient-to-br ${getColorGradient(color)} p-6 rounded-2xl shadow-xl border border-white/10 backdrop-blur-sm transform group-hover:scale-105 transition-all duration-300 relative overflow-hidden`}>
-      {/* Animated background elements */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-colors duration-300"></div>
-      <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-white/5 rounded-full blur-xl"></div>
+    <div className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-lg hover:shadow-xl hover:shadow-cyan-500/20 transform hover:scale-101 hover:-translate-y-0.2 transition-all duration-300 overflow-hidden">
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      
+      {/* Floating particles */}
+      <div className="absolute top-2 right-2 w-2 h-2 bg-cyan-400/60 rounded-full animate-bounce"></div>
+      <div className="absolute bottom-3 left-3 w-1.5 h-1.5 bg-purple-400/60 rounded-full animate-bounce" style={{ animationDelay: '0.5s' }}></div>
       
       <div className="relative z-10">
-        <div className="flex items-center space-x-4 mb-3">
-          <div className="text-3xl filter drop-shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-2xl transform group-hover:scale-105 group-hover:rotate-2 transition-all duration-300 filter drop-shadow-lg">
             {icon}
           </div>
-          <div className="bg-white/20 backdrop-blur-sm rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="w-2 h-2 bg-white rounded-full"></div>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="w-6 h-6 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">→</span>
+            </div>
           </div>
         </div>
-        <h4 className="font-bold text-white text-lg mb-2 tracking-tight">{title}</h4>
-        <p className="text-white/80 text-sm leading-relaxed">{description}</p>
         
-        {/* Hover arrow */}
-        <div className="absolute top-4 right-4 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-300">
-          →
-        </div>
+        <h4 className="font-bold text-white text-base mb-1 tracking-tight group-hover:text-cyan-200 transition-colors duration-300">
+          {title}
+        </h4>
+        <p className="text-white/70 text-sm leading-relaxed group-hover:text-white/90 transition-colors duration-300">
+          {description}
+        </p>
       </div>
     </div>
   );
 
-  const getColorGradient = (color) => {
-    const gradients = {
-      blue: "from-blue-500 via-blue-600 to-cyan-500",
-      green: "from-green-500 via-emerald-500 to-teal-500",
-      purple: "from-purple-500 via-violet-500 to-pink-500",
-      orange: "from-orange-500 via-red-500 to-rose-500",
-      cyan: "from-cyan-500 via-blue-500 to-indigo-500",
-      pink: "from-pink-500 via-rose-500 to-red-500"
-    };
-    return gradients[color] || gradients.blue;
-  };
-
-  const ActivityItem = ({ activity }) => (
+  const ActivityItem = ({ activity, index }) => (
     <div
-      className="flex items-center space-x-4 p-4 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50 hover:border-cyan-500/30 transition-all duration-300 group"
+      className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all duration-300 transform hover:scale-102 hover:-translate-y-0.5 animate-fade-in-up"
+      style={{ animationDelay: `${index * 50}ms` }}
     >
-      <div className="text-2xl group-hover:scale-110 transition-transform duration-300">{activity.icon}</div>
-      <div className="flex-1">
-        <p className="text-white text-sm font-medium">{activity.title}</p>
-        <p className="text-gray-400 text-xs">{activity.time}</p>
+      {/* Glow effect */}
+      <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+      
+      <div className="relative z-10 flex items-center space-x-3">
+        <div className="text-lg transform group-hover:scale-105 transition-transform duration-300">
+          {activity.icon}
+        </div>
+        <div className="flex-1">
+          <p className="text-white text-sm font-medium group-hover:text-cyan-200 transition-colors duration-300">
+            {activity.title}
+          </p>
+          <p className="text-gray-400 text-xs group-hover:text-gray-300 transition-colors duration-300">
+            {activity.time}
+          </p>
+        </div>
+        <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
       </div>
-      <div className="w-2 h-2 bg-cyan-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-black flex flex-col relative overflow-hidden">
-      {/* Animated background elements */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/30 flex flex-col relative overflow-hidden">
+      {/* Enhanced animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-gradient-to-br from-purple-500/15 to-pink-600/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+        
+        {/* Floating particles */}
+        <div className="absolute top-20 left-20 w-2 h-2 bg-cyan-400/30 rounded-full animate-bounce"></div>
+        <div className="absolute top-40 right-32 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-bounce" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-blue-400/30 rounded-full animate-bounce" style={{ animationDelay: '2s' }}></div>
       </div>
 
       <Navbar />
 
-      <div className="flex-grow container mx-auto px-4 py-8 relative z-10">
-        {/* Welcome Section */}
-        <div className="mb-12 animate-fade-in">
-          <div className="bg-gradient-to-r from-gray-800/50 via-gray-800/30 to-transparent backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50 shadow-2xl">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex-grow container mx-auto px-4 py-4 relative z-10">
+        {/* Enhanced Welcome Section */}
+        <div className="mb-4 animate-fade-in">
+          <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl overflow-hidden">
+            {/* Animated background pattern */}
+            <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 via-blue-500/5 to-purple-500/10"></div>
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500"></div>
+            
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <h1 className="text-5xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent mb-4">
-                  {greeting}, {user?.name}! 👋
+                <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent mb-2 animate-pulse">
+                  {greeting}, {user?.name}! 
+                  <span className="inline-block animate-bounce ml-2">👋</span>
                 </h1>
-                <p className="text-gray-300 text-xl font-medium">
-                  Welcome to your <span className="text-cyan-400 font-semibold">{user?.role?.toLowerCase()}</span> dashboard
+                <p className="text-gray-300 text-lg font-medium mb-3">
+                  Welcome to your <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 font-bold">{user?.role?.toLowerCase()}</span> dashboard
                 </p>
-                <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between lg:justify-start gap-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2 bg-green-500/20 px-3 py-1 rounded-full">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      <span className="text-green-300 text-sm font-medium">Online</span>
-                    </div>
-                    <div className="text-gray-400 text-sm">
-                      Last login: {new Date().toLocaleDateString()}
-                    </div>
+                
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center space-x-2 bg-green-500/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-green-400/30">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-green-300 text-sm font-medium">Online</span>
                   </div>
-                  
-                  {/* Mobile refresh button - next to login info */}
-                  <div className="sm:block lg:hidden">
-                    <button
-                      onClick={fetchDashboardData}
-                      disabled={loading}
-                      className={`group relative px-3 py-2 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white rounded-lg transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105 ${
-                        loading ? "opacity-70 cursor-not-allowed" : "hover:border-cyan-400/50"
-                      }`}
-                    >
-                      <span className={`text-lg ${loading ? "animate-spin" : "group-hover:rotate-180"} transition-transform duration-500`}>
-                        🔄
-                      </span>
-                    </button>
+                  <div className="text-gray-400 text-sm bg-white/5 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    Last login: {new Date().toLocaleDateString()}
                   </div>
                 </div>
               </div>
               
-              {/* Desktop refresh button - right side */}
-              <div className="hidden lg:block mt-4 lg:mt-0">
+              {/* Enhanced refresh button */}
+              <div className="mt-3 lg:mt-0">
                 <button
                   onClick={fetchDashboardData}
                   disabled={loading}
-                  className={`group relative px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white rounded-xl transition-all duration-300 flex items-center space-x-3 shadow-xl hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1 ${
+                  className={`group relative px-6 py-3 bg-white/10 backdrop-blur-xl border border-white/20 hover:bg-white/20 text-white rounded-xl transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-cyan-500/25 transform hover:scale-105 hover:-translate-y-0.5 ${
                     loading ? "opacity-70 cursor-not-allowed" : "hover:border-cyan-400/50"
                   }`}
                 >
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-600/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   
-                  {/* Content */}
-                  <div className="relative z-10 flex items-center space-x-3">
-                    <span className={`text-xl ${loading ? "animate-spin" : "group-hover:rotate-180"} transition-transform duration-500`}>
+                  <div className="relative z-10 flex items-center space-x-2">
+                    <span className={`text-lg ${loading ? "animate-spin" : "group-hover:rotate-180"} transition-transform duration-500`}>
                       🔄
                     </span>
-                    <span className="font-semibold tracking-wide">
+                    <span className="font-semibold tracking-wide text-sm">
                       {loading ? "Refreshing..." : "Refresh"}
                     </span>
                   </div>
@@ -330,315 +342,240 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tab Navigation for Resume & Career Features */}
-        {activeTab !== 'overview' && (
-          <div className="mb-8 animate-fade-in">
-            <div className="flex justify-center">
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-2 border border-gray-700/50 shadow-xl">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className="px-6 py-3 rounded-xl transition-all duration-300 text-gray-300 hover:text-white hover:bg-gray-700/50 flex items-center space-x-2"
-                >
-                  <span>←</span>
-                  <span>Back to Dashboard</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('resume')}
-                  className={`px-6 py-3 rounded-xl transition-all duration-300 flex items-center space-x-2 ${
-                    activeTab === 'resume' 
-                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg' 
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                  }`}
-                >
-                  <span>📄</span>
-                  <span>Resume Builder</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('career-coach')}
-                  className={`px-6 py-3 rounded-xl transition-all duration-300 flex items-center space-x-2 ${
-                    activeTab === 'career-coach' 
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg' 
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                  }`}
-                >
-                  <span>🤖</span>
-                  <span>Career Coach</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Conditional Content Rendering */}
-        {activeTab === 'overview' && (
-          <>
-            {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-              {/* Stats Cards */}
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Stats and Actions Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          {/* Stats Cards */}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
                 <StatCard
                   title="Total Courses"
                   value={stats.totalCourses}
                   icon="📚"
-                  color="from-blue-500 via-blue-600 to-cyan-500"
-                  delay={0}
+                  color="blue"
+                  delay={100}
                 />
+              </div>
+              <div className="animate-fade-in-up" style={{ animationDelay: "200ms" }}>
                 <StatCard
                   title={isInstructor || isAdmin ? "Total Students" : "Enrolled Courses"}
                   value={isInstructor || isAdmin ? stats.totalStudents : stats.enrolledCourses}
                   icon={isInstructor || isAdmin ? "👥" : "📖"}
-                  color="from-green-500 via-emerald-500 to-teal-500"
-                  delay={100}
+                  color="green"
+                  delay={200}
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="animate-fade-in-up" style={{ animationDelay: "300ms" }}>
                 <StatCard
                   title="Completed"
                   value={stats.completedCourses}
                   icon="✅"
-                  color="from-purple-500 via-violet-500 to-pink-500"
-                  delay={200}
-                />
-                <StatCard
-                  title={isInstructor || isAdmin ? "Available Courses" : "Available Courses"}
-                  value={isInstructor || isAdmin ? stats.enrolledCourses : stats.totalCourses}
-                  icon="🌟"
-                  color="from-orange-500 via-red-500 to-rose-500"
+                  color="purple"
                   delay={300}
                 />
               </div>
+              <div className="animate-fade-in-up" style={{ animationDelay: "400ms" }}>
+                <StatCard
+                  title="Available Courses"
+                  value={stats.totalCourses - stats.enrolledCourses}
+                  icon="🌟"
+                  color="orange"
+                  delay={400}
+                />
+              </div>
+            </div>
+          </div>
 
-              {/* Quick Actions or Instructor Application */}
-              <div className="space-y-6">
-                {/* Show instructor application for students */}
-                {!isInstructor && !isAdmin && (
-                  <div className="animate-fade-in-up" style={{ animationDelay: "400ms" }}>
-                    <InstructorApplication />
+          {/* Right Column */}
+          <div className="space-y-4">
+            {/* Instructor Application */}
+            {!isInstructor && !isAdmin && (
+              <div className="animate-fade-in-up" style={{ animationDelay: "400ms" }}>
+                <InstructorApplication />
+              </div>
+            )}
+            
+            {/* Quick Actions */}
+            <div className="animate-fade-in-up" style={{ animationDelay: isInstructor || isAdmin ? "400ms" : "500ms" }}>
+              <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 shadow-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5"></div>
+                
+                <div className="relative z-10">
+                  <h3 className="text-xl font-bold text-white mb-4 flex items-center space-x-3">
+                    <span className="text-2xl animate-bounce">⚡</span>
+                    <span className="bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">Quick Actions</span>
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {isInstructor || isAdmin ? (
+                      <>
+                        <QuickActionCard
+                          title="Create Course"
+                          description="Start building a new course"
+                          icon="➕"
+                          to="/courses/create"
+                          color="blue"
+                          delay={0}
+                        />
+                        <QuickActionCard
+                          title="Manage Courses"
+                          description="Edit your existing courses"
+                          icon="⚙️"
+                          to="/courses"
+                          color="green"
+                          delay={100}
+                        />
+                        {isAdmin && (
+                          <QuickActionCard
+                            title="Admin Panel"
+                            description="Manage users and applications"
+                            icon="👑"
+                            to="/admin"
+                            color="purple"
+                            delay={200}
+                          />
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <QuickActionCard
+                          title="Browse Courses"
+                          description="Discover new learning opportunities"
+                          icon="🔍"
+                          to="/courses"
+                          color="blue"
+                          delay={0}
+                        />
+                        <QuickActionCard
+                          title="My Learning"
+                          description="Continue your enrolled courses"
+                          icon="📖"
+                          to="/courses"
+                          color="green"
+                          delay={100}
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Progress Charts */}
+        <div className="mb-4">
+          <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl overflow-hidden animate-fade-in-up" style={{ animationDelay: "800ms" }}>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5"></div>
+            
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                <span className="text-3xl animate-pulse">📊</span>
+                <span className="bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">Learning Progress</span>
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { percentage: 60, label: "Course Completion", color: "text-blue-500", delay: "0ms" },
+                  { percentage: 75, label: "Weekly Goal", color: "text-green-500", delay: "200ms" },
+                  { percentage: 90, label: "Engagement", color: "text-purple-500", delay: "400ms" }
+                ].map((item, index) => (
+                  <div key={index} className="text-center group animate-fade-in-up" style={{ animationDelay: item.delay }}>
+                    <div className="relative w-24 h-24 mx-auto mb-2">
+                      <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeDasharray={`${item.percentage}, 100`}
+                          className={`${item.color} drop-shadow-lg group-hover:drop-shadow-xl transition-all duration-300`}
+                        />
+                        <path
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeDasharray="0, 100"
+                          className="text-gray-700"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-lg font-bold text-white group-hover:scale-105 transition-transform duration-300">
+                          {item.percentage}%
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-gray-300 font-semibold text-sm group-hover:text-white transition-colors duration-300">
+                      {item.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Recent Activity */}
+        <div>
+          <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl overflow-hidden animate-fade-in-up" style={{ animationDelay: "1000ms" }}>
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5"></div>
+            
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                <span className="text-3xl animate-pulse">🔔</span>
+                <span className="bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">Recent Activity</span>
+              </h2>
+              
+              <div className="space-y-3">
+                {stats.recentActivity.length > 0 ? (
+                  stats.recentActivity.map((activity, index) => (
+                    <ActivityItem key={index} activity={activity} index={index} />
+                  ))
+                ) : (
+                  <div className="text-center py-4 animate-fade-in">
+                    <div className="text-5xl mb-2 animate-bounce">📝</div>
+                    <p className="text-gray-400 text-lg font-medium mb-1">No recent activity</p>
+                    <p className="text-gray-500 text-sm">Start learning to see your progress here!</p>
                   </div>
                 )}
-                
-                {/* Quick Actions */}
-                <div className="animate-fade-in-up" style={{ animationDelay: isInstructor || isAdmin ? "400ms" : "500ms" }}>
-                  <div className="bg-gradient-to-br from-gray-800/50 via-gray-800/30 to-transparent backdrop-blur-sm rounded-3xl p-6 border border-gray-700/50 shadow-2xl">
-                    <h3 className="text-2xl font-bold text-white mb-6 flex items-center space-x-3">
-                      <span className="text-3xl">⚡</span>
-                      <span>Quick Actions</span>
-                    </h3>
-                    <div className="space-y-4">
-                      {isInstructor || isAdmin ? (
-                        <>
-                          <QuickActionCard
-                            title="Create Course"
-                            description="Start building a new course"
-                            icon="➕"
-                            to="/courses/create"
-                            color="blue"
-                            delay={0}
-                          />
-                          <QuickActionCard
-                            title="Manage Courses"
-                            description="Edit your existing courses"
-                            icon="⚙️"
-                            to="/courses"
-                            color="green"
-                            delay={100}
-                          />
-                          {isAdmin && (
-                            <QuickActionCard
-                              title="Admin Panel"
-                              description="Manage users and applications"
-                              icon="👑"
-                              to="/admin"
-                              color="purple"
-                              delay={200}
-                            />
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <QuickActionCard
-                            title="Browse Courses"
-                            description="Discover new learning opportunities"
-                            icon="🔍"
-                            to="/courses"
-                            color="blue"
-                            delay={0}
-                          />
-                          <QuickActionCard
-                            title="My Learning"
-                            description="Continue your enrolled courses"
-                            icon="📖"
-                            to="/courses"
-                            color="green"
-                            delay={100}
-                          />
-                          <QuickActionCard
-                            title="Resume Builder"
-                            description="Generate AI-powered resume"
-                            icon="📄"
-                            color="cyan"
-                            delay={200}
-                            onClick={() => setActiveTab('resume')}
-                          />
-                          <QuickActionCard
-                            title="Career Coach"
-                            description="AI-powered career guidance"
-                            icon="🤖"
-                            color="pink"
-                            delay={300}
-                            onClick={() => setActiveTab('career-coach')}
-                          />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
-
-            {/* Progress Chart Section */}
-            <div className="mt-8">
-              <div className="bg-gradient-to-br from-gray-800/50 via-gray-800/30 to-transparent backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50 shadow-2xl animate-fade-in-up" style={{ animationDelay: "800ms" }}>
-                <h2 className="text-3xl font-bold text-white mb-8 flex items-center space-x-3">
-                  <span className="text-4xl">📊</span>
-                  <span>Learning Progress</span>
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="text-center group">
-                    <div className="relative w-32 h-32 mx-auto mb-6">
-                      <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray="60, 100"
-                          className="text-blue-500 drop-shadow-lg group-hover:text-blue-400 transition-colors duration-300"
-                        />
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray="0, 100"
-                          className="text-gray-600"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-white">60%</span>
-                      </div>
-                    </div>
-                    <p className="text-gray-300 font-semibold text-lg">Course Completion</p>
-                  </div>
-                  <div className="text-center group">
-                    <div className="relative w-32 h-32 mx-auto mb-6">
-                      <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray="75, 100"
-                          className="text-green-500 drop-shadow-lg group-hover:text-green-400 transition-colors duration-300"
-                        />
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray="0, 100"
-                          className="text-gray-600"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-white">75%</span>
-                      </div>
-                    </div>
-                    <p className="text-gray-300 font-semibold text-lg">Weekly Goal</p>
-                  </div>
-                  <div className="text-center group">
-                    <div className="relative w-32 h-32 mx-auto mb-6">
-                      <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray="90, 100"
-                          className="text-purple-500 drop-shadow-lg group-hover:text-purple-400 transition-colors duration-300"
-                        />
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeDasharray="0, 100"
-                          className="text-gray-600"
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-white">90%</span>
-                      </div>
-                    </div>
-                    <p className="text-gray-300 font-semibold text-lg">Engagement</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="mt-8">
-              <div className="bg-gradient-to-br from-gray-800/50 via-gray-800/30 to-transparent backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50 shadow-2xl animate-fade-in-up" style={{ animationDelay: "1000ms" }}>
-                <h2 className="text-3xl font-bold text-white mb-8 flex items-center space-x-3">
-                  <span className="text-4xl">🔔</span>
-                  <span>Recent Activity</span>
-                </h2>
-                <div className="space-y-4">
-                  {stats.recentActivity.length > 0 ? (
-                    stats.recentActivity.map((activity, index) => (
-                      <ActivityItem key={index} activity={activity} />
-                    ))
-                  ) : (
-                    <div className="text-center py-12">
-                      <div className="text-6xl mb-4">📝</div>
-                      <p className="text-gray-400 text-lg">No recent activity</p>
-                      <p className="text-gray-500 text-sm">Start learning to see your progress here!</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'resume' && <ResumeBuilder />}
-        {activeTab === 'career-coach' && <CareerCoach />}
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
-      <footer className="relative bg-gray-900/80 backdrop-blur-sm text-white py-16 px-4 relative z-10">
+      <footer className="relative bg-gray-900/80 backdrop-blur-sm text-white py-8 px-4 relative z-10">
+        {/* Gradient Divider */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+        
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-4 gap-4">
             <div>
-              <h3 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+              <h3 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
                 NextEra
               </h3>
-              <p className="text-gray-400 mb-6">
+              <p className="text-gray-400 mb-4">
                 Empowering developers worldwide with cutting-edge education and hands-on experience.
               </p>
-              <div className="flex space-x-4">
-                <a href="#" className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
+              <div className="flex space-x-2">
+                <a href="#" className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
                   <span className="text-white font-bold">f</span>
                 </a>
-                <a href="#" className="w-10 h-10 bg-sky-500 rounded-full flex items-center justify-center hover:bg-sky-600 transition-colors">
+                <a href="#" className="w-8 h-8 bg-sky-500 rounded-full flex items-center justify-center hover:bg-sky-600 transition-colors">
                   <span className="text-white font-bold">t</span>
                 </a>
-                <a href="#" className="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
+                <a href="#" className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
                   <span className="text-white font-bold">in</span>
                 </a>
               </div>
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-4">Courses</h4>
+              <h4 className="text-lg font-semibold mb-2">Courses</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">Full Stack Development</Link></li>
                 <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">AI & Machine Learning</Link></li>
@@ -648,7 +585,7 @@ const Dashboard = () => {
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-4">Company</h4>
+              <h4 className="text-lg font-semibold mb-2">Company</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/about" className="hover:text-cyan-400 transition-colors">About Us</Link></li>
                 <li><Link to="/contact" className="hover:text-cyan-400 transition-colors">Contact</Link></li>
@@ -658,7 +595,7 @@ const Dashboard = () => {
             </div>
             
             <div>
-              <h4 className="text-lg font-semibold mb-4">Support</h4>
+              <h4 className="text-lg font-semibold mb-2">Support</h4>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/help" className="hover:text-cyan-400 transition-colors">Help Center</Link></li>
                 <li><Link to="/community" className="hover:text-cyan-400 transition-colors">Community</Link></li>
@@ -668,9 +605,9 @@ const Dashboard = () => {
             </div>
           </div>
           
-          <div className="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400">
+          <div className="border-t border-gray-700 mt-8 pt-4 text-center text-gray-400">
             <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="text-gray-400 mb-4 md:mb-0">
+              <div className="text-gray-400 mb-2 md:mb-0">
                 <p>
                   &copy; {new Date().getFullYear()} NextEra. Developed &
                   Designed by &nbsp;
