@@ -22,8 +22,9 @@ services:
   - type: web
     name: thenextera-frontend
     env: static
-    buildCommand: cd Client && npm install && npm run build
-    staticPublishPath: ./Client/dist
+    rootDir: ./Client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
     routes:
       - type: rewrite
         source: /*
