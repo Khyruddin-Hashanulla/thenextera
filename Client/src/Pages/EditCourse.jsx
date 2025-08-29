@@ -205,7 +205,7 @@ const EditCourse = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center pt-32">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-white">Loading course...</p>
@@ -223,7 +223,7 @@ const EditCourse = () => {
       
       <Navbar />
       
-      <div className="relative z-10 flex-grow container mx-auto px-4 py-8">
+      <div className="relative z-10 flex-grow container mx-auto px-4 py-8 pt-32">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">

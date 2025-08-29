@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import Navbar from "../components/Navbar";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
 import InstructorApplication from "../components/InstructorApplication";
 import api from "../utils/api";
 
@@ -288,7 +289,7 @@ const Dashboard = () => {
 
       <Navbar />
 
-      <div className="flex-grow container mx-auto px-4 py-4 relative z-10">
+      <div className="flex-grow container mx-auto px-4 py-4 pt-32 relative z-10">
         {/* Enhanced Welcome Section */}
         <div className="mb-4 animate-fade-in">
           <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl overflow-hidden">
@@ -428,32 +429,42 @@ const Dashboard = () => {
                           delay={100}
                         />
                         {isAdmin && (
-                          <QuickActionCard
-                            title="Admin Panel"
-                            description="Manage users and applications"
-                            icon="👑"
-                            to="/admin"
-                            color="purple"
-                            delay={200}
-                          />
+                          <>
+                            <QuickActionCard
+                              title="Admin Panel"
+                              description="Manage users and applications"
+                              icon="👑"
+                              to="/admin"
+                              color="purple"
+                              delay={200}
+                            />
+                            <QuickActionCard
+                              title="Core Subjects"
+                              description="Manage core subjects and topics"
+                              icon="📚"
+                              to="/admin/subjects"
+                              color="cyan"
+                              delay={300}
+                            />
+                          </>
                         )}
                       </>
                     ) : (
                       <>
                         <QuickActionCard
+                          title="Core Subjects"
+                          description="Access programming fundamentals"
+                          icon="🧠"
+                          to="/core-subjects"
+                          color="orange"
+                          delay={0}
+                        />
+                        <QuickActionCard
                           title="Browse Courses"
                           description="Discover new learning opportunities"
                           icon="🔍"
                           to="/courses"
-                          color="blue"
-                          delay={0}
-                        />
-                        <QuickActionCard
-                          title="My Learning"
-                          description="Continue your enrolled courses"
-                          icon="📖"
-                          to="/courses"
-                          color="green"
+                          color="cyan"
                           delay={100}
                         />
                       </>
@@ -508,9 +519,99 @@ const Dashboard = () => {
                         </span>
                       </div>
                     </div>
-                    <p className="text-gray-300 font-semibold text-sm group-hover:text-white transition-colors duration-300">
+                    <p className="text-gray-300 font-semibold text-sm group-hover:text-gray-300 transition-colors duration-300">
                       {item.label}
                     </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Learning Streak & Achievements section */}
+        <div className="mb-4">
+          <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl overflow-hidden animate-fade-in-up" style={{ animationDelay: "900ms" }}>
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-blue-500/5"></div>
+            
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                <span className="text-3xl animate-pulse">🎯</span>
+                <span className="bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">Learning Streak & Achievements</span>
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Learning Streak */}
+                <div className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-300 transform hover:scale-102">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/20 to-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+                  <div className="relative z-10 text-center">
+                    <div className="text-4xl mb-2">🔥</div>
+                    <div className="text-2xl font-bold text-white mb-1">7</div>
+                    <div className="text-gray-300 text-sm">Day Streak</div>
+                  </div>
+                </div>
+
+                {/* Badges Earned */}
+                <div className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-300 transform hover:scale-102">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+                  <div className="relative z-10 text-center">
+                    <div className="text-4xl mb-2">🏆</div>
+                    <div className="text-2xl font-bold text-white mb-1">3</div>
+                    <div className="text-gray-300 text-sm">Badges Earned</div>
+                  </div>
+                </div>
+
+                {/* Hours Learned */}
+                <div className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-300 transform hover:scale-102">
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+                  <div className="relative z-10 text-center">
+                    <div className="text-4xl mb-2">⏰</div>
+                    <div className="text-2xl font-bold text-white mb-1">24</div>
+                    <div className="text-gray-300 text-sm">Hours This Month</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Continue Learning section */}
+        <div className="mb-4">
+          <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl overflow-hidden animate-fade-in-up" style={{ animationDelay: "950ms" }}>
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5"></div>
+            
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold text-white mb-4 flex items-center space-x-2">
+                <span className="text-3xl animate-pulse">📚</span>
+                <span className="bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">Continue Learning</span>
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Sample Course Cards */}
+                {[
+                  { title: "JavaScript Fundamentals", progress: 65, icon: "🟨", color: "yellow" },
+                  { title: "React Development", progress: 40, icon: "⚛️", color: "blue" },
+                  { title: "Node.js Backend", progress: 80, icon: "🟢", color: "green" }
+                ].map((course, index) => (
+                  <div key={index} className="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-300 transform hover:scale-102 cursor-pointer">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-2xl">{course.icon}</div>
+                        <div className="text-xs text-gray-400 bg-white/10 px-2 py-1 rounded-full">
+                          {course.progress}%
+                        </div>
+                      </div>
+                      <h3 className="text-white font-semibold mb-2 group-hover:text-cyan-200 transition-colors">
+                        {course.title}
+                      </h3>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500`}
+                          style={{ width: `${course.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -548,82 +649,7 @@ const Dashboard = () => {
       </div>
 
       {/* Footer */}
-      <footer className="relative bg-gray-900/80 backdrop-blur-sm text-white py-8 px-4 relative z-10">
-        {/* Gradient Divider */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
-        
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-4">
-            <div>
-              <h3 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-                NextEra
-              </h3>
-              <p className="text-gray-400 mb-4">
-                Empowering developers worldwide with cutting-edge education and hands-on experience.
-              </p>
-              <div className="flex space-x-2">
-                <a href="#" className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
-                  <span className="text-white font-bold">f</span>
-                </a>
-                <a href="#" className="w-8 h-8 bg-sky-500 rounded-full flex items-center justify-center hover:bg-sky-600 transition-colors">
-                  <span className="text-white font-bold">t</span>
-                </a>
-                <a href="#" className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center hover:bg-blue-800 transition-colors">
-                  <span className="text-white font-bold">in</span>
-                </a>
-              </div>
-            </div>
-            
-            <div>
-              <h4 className="text-lg font-semibold mb-2">Courses</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">Full Stack Development</Link></li>
-                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">AI & Machine Learning</Link></li>
-                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">DevOps & Cloud</Link></li>
-                <li><Link to="/courses" className="hover:text-cyan-400 transition-colors">Mobile Development</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-lg font-semibold mb-2">Company</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/about" className="hover:text-cyan-400 transition-colors">About Us</Link></li>
-                <li><Link to="/contact" className="hover:text-cyan-400 transition-colors">Contact</Link></li>
-                <li><Link to="/careers" className="hover:text-cyan-400 transition-colors">Careers</Link></li>
-                <li><Link to="/blog" className="hover:text-cyan-400 transition-colors">Blog</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-lg font-semibold mb-2">Support</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to="/help" className="hover:text-cyan-400 transition-colors">Help Center</Link></li>
-                <li><Link to="/community" className="hover:text-cyan-400 transition-colors">Community</Link></li>
-                <li><Link to="/privacy" className="hover:text-cyan-400 transition-colors">Privacy Policy</Link></li>
-                <li><Link to="/terms" className="hover:text-cyan-400 transition-colors">Terms of Service</Link></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-700 mt-8 pt-4 text-center text-gray-400">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="text-gray-400 mb-2 md:mb-0">
-                <p>
-                  &copy; {new Date().getFullYear()} NextEra. Developed &
-                  Designed by &nbsp;
-                  <a
-                    href="https://khyruddin-hashanulla.github.io/MY-PORTFOLIO/"
-                    target="_blank"
-                    className="text-blue-400 hover:text-blue-600 transition-colors duration-200"
-                  >
-                    Khyruddin Hashanulla
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

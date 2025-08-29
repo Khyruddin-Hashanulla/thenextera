@@ -359,8 +359,8 @@ const CourseView = () => {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-900">
-      {/* Back Button Only in Top Area */}
-      <div className="fixed top-0 left-0 z-50 p-4">
+      {/* Back Button - Perfect positioning */}
+      <div className="fixed top-4 left-4 z-50">
         <Link
           to="/courses"
           className="flex items-center space-x-2 bg-gray-800/80 hover:bg-gray-700/80 backdrop-blur-sm text-white px-4 py-2 rounded-lg transition-all duration-300 border border-gray-600/50 hover:border-gray-500/50"
@@ -372,10 +372,10 @@ const CourseView = () => {
         </Link>
       </div>
 
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - Perfect positioning */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-20 left-4 z-50 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg border border-gray-600/50"
+        className="lg:hidden fixed top-4 right-4 z-50 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg border border-gray-600/50 hover:bg-gray-700/80 transition-all duration-300"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -500,7 +500,7 @@ const CourseView = () => {
 
       {/* Main Content */}
       <div className="flex-1 min-h-screen">
-        <div className="p-4 pt-16 lg:p-6 lg:pt-16">
+        <div className="p-4 pt-16 lg:p-6 lg:pt-6">
           <div className="max-w-4xl mx-auto">
             {/* Video Player */}
             <div className="relative bg-black rounded-lg overflow-hidden mb-6" style={{ paddingTop: '56.25%' }}>

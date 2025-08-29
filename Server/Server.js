@@ -138,10 +138,6 @@ const detectMobile = (req, res, next) => {
 
 app.use(detectMobile);
 
-// iPhone Safari session fix - critical for iPhone Safari session persistence
-const iphoneSafariFix = require('./iphone-safari-fix');
-app.use(iphoneSafariFix);
-
 // Enhanced session configuration with proper environment detection
 // Fix production detection for Render deployment
 const isProduction = process.env.NODE_ENV === "production";
@@ -220,31 +216,33 @@ try {
 }
 
 try {
-  const resumeRoutes = require("./Routes/Resume");
-  app.use("/api/resume", resumeRoutes);
-  console.log("✅ Resume & Career Coach routes loaded successfully");
-} catch (error) {
-  console.error("❌ Resume routes failed to load:", error.message);
-  app.use("/api/resume", (req, res) =>
-    res.status(501).json({ 
-      message: "Resume and Career Coach routes not implemented",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    })
-  );
-}
-
-try {
   const courseRoutes = require("./Routes/Courses");
   app.use("/api/courses", courseRoutes);
   console.log("✅ Course routes loaded successfully");
 } catch (error) {
   console.error("❌ Course routes failed to load:", error.message);
-  app.use("/api/courses", (req, res) =>
-    res.status(501).json({ 
-      message: "Course routes not implemented",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    })
-  );
+  console.error("Full error:", error);
+  app.use("/api/courses", (req, res) => {
+    res.status(500).json({ 
+      error: "Course routes not available", 
+      message: "Course routes failed to load during server startup" 
+    });
+  });
+}
+
+try {
+  const subjectRoutes = require("./Routes/Subjects");
+  app.use("/api/subjects", subjectRoutes);
+  console.log("✅ Subject routes loaded successfully");
+} catch (error) {
+  console.error("❌ Subject routes failed to load:", error.message);
+  console.error("Full error:", error);
+  app.use("/api/subjects", (req, res) => {
+    res.status(500).json({ 
+      error: "Subject routes not available", 
+      message: "Subject routes failed to load during server startup" 
+    });
+  });
 }
 
 // iPhone Safari Cookie Debug Endpoint
@@ -462,7 +460,7 @@ const localDbUrl = "mongodb://localhost:27017/thenextera";
 
 async function connectToDatabase() {
   try {
-    console.log(" Attempting to connect to MongoDB Atlas...");
+    console.log("Attempting to connect to MongoDB Atlas...");
     await mongoose.connect(dbUrl, {
       serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
       socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
@@ -473,10 +471,10 @@ async function connectToDatabase() {
         deprecationErrors: true,
       }
     });
-    console.log(" Connected to MongoDB Atlas");
+    console.log("Connected to MongoDB Atlas");
   } catch (atlasError) {
-    console.warn(" MongoDB Atlas connection failed:", atlasError.message);
-    console.log(" Falling back to local MongoDB...");
+    console.warn("MongoDB Atlas connection failed:", atlasError.message);
+    console.log("Falling back to local MongoDB...");
     
     try {
       await mongoose.connect(localDbUrl, {
@@ -484,7 +482,7 @@ async function connectToDatabase() {
         socketTimeoutMS: 45000,
         maxPoolSize: 10,
       });
-      console.log(" Connected to local MongoDB");
+      console.log("Connected to local MongoDB");
     } catch (localError) {
       console.error(" Both Atlas and local MongoDB connections failed:");
       console.error("Atlas error:", atlasError.message);
@@ -501,16 +499,16 @@ async function connectToDatabase() {
 // Connect to database
 connectToDatabase()
   .then(() => {
-    console.log(" Database connection established");
+    console.log("Database connection established");
   })
   .catch((err) => {
-    console.error(" Database connection failed:", err.message);
+    console.error("Database connection failed:", err.message);
     process.exit(1); // Exit if no database connection
   });
 
 async function main() {
   // This function is now handled by connectToDatabase()
-  console.log(" Server initialization complete");
+  console.log("Server initialization complete");
 }
 
 const PORT = process.env.PORT || 8081;

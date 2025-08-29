@@ -290,7 +290,7 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gray-900 flex flex-col">
       <Navbar />
       
-      <div className="flex-grow container mx-auto px-4 py-8">
+      <div className="flex-grow container mx-auto px-4 py-8 pt-32">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
