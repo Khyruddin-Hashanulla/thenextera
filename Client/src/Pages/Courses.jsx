@@ -263,7 +263,7 @@ const Courses = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.1),transparent_50%)]"></div>
       
       <Navbar onLogout={handleLogout} />
-      <div className="flex-grow relative z-10 container mx-auto px-4 py-12 pt-32">
+      <div className="flex-grow relative z-10 container mx-auto px-4 pt-32 pb-8">
         {/* Main content area that grows to fill available space */}
         <div className="flex-grow flex flex-col">
           <div className="text-center mb-12">

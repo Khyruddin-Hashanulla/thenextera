@@ -289,7 +289,7 @@ const Dashboard = () => {
 
       <Navbar />
 
-      <div className="flex-grow container mx-auto px-4 py-4 pt-32 relative z-10">
+      <div className="flex-grow container mx-auto px-4 py-4 pt-32 pb-8 relative z-10">
         {/* Enhanced Welcome Section */}
         <div className="mb-4 animate-fade-in">
           <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-xl overflow-hidden">

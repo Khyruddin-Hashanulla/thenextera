@@ -375,7 +375,7 @@ const CourseView = () => {
       {/* Mobile Menu Button - Perfect positioning */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="lg:hidden fixed top-4 right-4 z-50 bg-gray-800/80 backdrop-blur-sm text-white p-3 rounded-lg border border-gray-600/50 hover:bg-gray-700/80 transition-all duration-300"
+        className="lg:hidden fixed top-4 right-4 z-50 bg-gray-800/80 backdrop-blur-sm text-white p-2 rounded-lg border border-gray-600/50 hover:bg-gray-700/80 transition-all duration-300"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -500,7 +500,7 @@ const CourseView = () => {
 
       {/* Main Content */}
       <div className="flex-1 min-h-screen">
-        <div className="p-4 pt-16 lg:p-6 lg:pt-6">
+        <div className="p-4 pt-20 lg:p-6 lg:pt-8">
           <div className="max-w-4xl mx-auto">
             {/* Video Player */}
             <div className="relative bg-black rounded-lg overflow-hidden mb-6" style={{ paddingTop: '56.25%' }}>

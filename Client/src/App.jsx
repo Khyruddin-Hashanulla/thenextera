@@ -1,4 +1,4 @@
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useState, useEffect } from 'react';
 import LoadingScreen from './components/LoadingScreen';
@@ -169,17 +169,17 @@ function App() {
   );
 }
 
-// Add a hash router component to handle OAuth callbacks
+// Add a browser router component to handle OAuth callbacks
 function HashRouteHandler() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <AuthProvider>
         <Routes>
           <Route path="/auth-success" element={<AuthSuccess />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </AuthProvider>
-    </HashRouter>
+    </BrowserRouter>
   );
 }
 

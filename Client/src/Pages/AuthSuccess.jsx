@@ -9,19 +9,8 @@ const AuthSuccess = () => {
   useEffect(() => {
     const handleAuthSuccess = () => {
       try {
-        // Check if we're on a hash route
-        const isHashRoute = window.location.hash && window.location.hash.includes('/auth-success');
-        
-        // Extract query parameters from the appropriate location
-        let params;
-        if (isHashRoute) {
-          // Extract params from the hash fragment
-          const hashParams = window.location.hash.split('?')[1];
-          params = new URLSearchParams(hashParams);
-        } else {
-          // Extract params from the regular query string
-          params = new URLSearchParams(location.search);
-        }
+        // Extract query parameters from the URL search params
+        const params = new URLSearchParams(location.search);
         
         const token = params.get('token');
         const userParam = params.get('user');

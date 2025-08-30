@@ -390,7 +390,7 @@ const CoreSubjects = () => {
       <Navbar />
       
       <div className="relative z-10 flex flex-col min-h-screen pt-32">
-        <div className="flex-grow py-4 sm:py-8 px-3 sm:px-4 lg:px-6 max-w-7xl mx-auto w-full">
+        <div className="flex-grow py-4 sm:py-8 px-3 sm:px-4 lg:px-6 pb-8 max-w-7xl mx-auto w-full">
           {/* Header Section */}
           <div className="text-center mb-8 sm:mb-12">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-4 animate-fade-in">

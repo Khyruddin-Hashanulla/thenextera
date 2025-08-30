@@ -294,7 +294,7 @@ const SubjectDetail = () => {
       
       <div className="flex-grow flex flex-col">
         {/* Main Content Layout */}
-        <div className="pt-32 px-4 max-w-7xl mx-auto relative z-10">
+        <div className="pt-32 px-4 pb-8 max-w-7xl mx-auto relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* Left Sidebar - Navigation */}

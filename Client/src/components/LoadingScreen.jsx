@@ -7,14 +7,14 @@ const LoadingScreen = () => {
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-gradient-to-br from-purple-500/15 to-pink-600/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-gradient-to-br from-purple-500/15 to-pink-600/15 rounded-full blur-3xl animate-pulse opacity-50" style={{ animationDelay: '2s' }}></div>
         <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
       </div>
 
       {/* Loading content */}
       <div className="relative z-10 text-center">
         {/* Animated logo container */}
-        <div className="relative mb-8">
+        <div className="relative mb-2">
           {/* Logo with zoom animation */}
           <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
             <img 
@@ -49,7 +49,7 @@ const LoadingScreen = () => {
       </div>
 
       {/* Custom animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes zoom-pulse {
           0% {
             transform: scale(0.8);
