@@ -14,10 +14,20 @@ const userProgressSchema = new Schema({
   },
   topicId: {
     type: Schema.Types.ObjectId,
-    ref: 'Topic',
-    required: true
+    ref: 'Topic'
   },
-  // Progress tracking
+  // New status field
+  status: {
+    type: String,
+    enum: ['not_started', 'practiced', 'completed'],
+    default: 'not_started'
+  },
+  // New bookmark field
+  isBookmarked: {
+    type: Boolean,
+    default: false
+  },
+  // Legacy fields for backward compatibility
   practiced: {
     type: Boolean,
     default: false
@@ -29,6 +39,13 @@ const userProgressSchema = new Schema({
   bookmarked: {
     type: Boolean,
     default: false
+  },
+  // Timestamps
+  completedAt: {
+    type: Date
+  },
+  lastAttemptedAt: {
+    type: Date
   },
   // Code attempts
   lastAttemptCode: {
@@ -139,9 +156,33 @@ userProgressSchema.statics.getUserStats = async function(userId) {
         $group: {
           _id: null,
           totalProblems: { $sum: 1 },
-          practicedProblems: { $sum: { $cond: ['$practiced', 1, 0] } },
-          completedProblems: { $sum: { $cond: ['$completed', 1, 0] } },
-          bookmarkedProblems: { $sum: { $cond: ['$bookmarked', 1, 0] } },
+          practicedProblems: { 
+            $sum: { 
+              $cond: [
+                { $or: ['$practiced', { $eq: ['$status', 'practiced'] }, { $eq: ['$status', 'completed'] }] }, 
+                1, 
+                0
+              ] 
+            } 
+          },
+          completedProblems: { 
+            $sum: { 
+              $cond: [
+                { $or: ['$completed', { $eq: ['$status', 'completed'] }] }, 
+                1, 
+                0
+              ] 
+            } 
+          },
+          bookmarkedProblems: { 
+            $sum: { 
+              $cond: [
+                { $or: ['$bookmarked', '$isBookmarked'] }, 
+                1, 
+                0
+              ] 
+            } 
+          },
           totalAttempts: { $sum: '$totalAttempts' },
           successfulAttempts: { $sum: '$successfulAttempts' },
           totalTimeSpent: { $sum: '$timeSpent' }

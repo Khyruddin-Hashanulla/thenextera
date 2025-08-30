@@ -3,6 +3,7 @@ const router = express.Router();
 const Topic = require('../Models/Topic');
 const Problem = require('../Models/Problem');
 const UserProgress = require('../Models/UserProgress');
+const Activity = require('../Models/Activity');
 const { authenticateJWT } = require('../Middleware/auth');
 
 // Middleware to check if user is admin
@@ -703,80 +704,89 @@ router.delete('/admin/problems/:id', authenticateJWT, requireAdmin, async (req, 
 // POST /api/dsa/progress/mark - Mark problem as practiced/completed
 router.post('/progress/mark', authenticateJWT, async (req, res) => {
   try {
-    const { problemId, action } = req.body; // action: 'practiced', 'completed', 'bookmark'
+    const { problemId, action } = req.body;
+    const userId = req.user.id;
 
-    if (!problemId || !action) {
-      return res.status(400).json({
-        success: false,
-        message: 'Problem ID and action are required'
-      });
-    }
-
-    const problem = await Problem.findById(problemId);
-    if (!problem) {
-      return res.status(404).json({
-        success: false,
-        message: 'Problem not found'
-      });
-    }
-
-    let progress = await UserProgress.findOne({
-      userId: req.user.id,
-      problemId
-    });
-
+    // Find or create progress record
+    let progress = await UserProgress.findOne({ userId, problemId });
     if (!progress) {
-      progress = new UserProgress({
-        userId: req.user.id,
-        problemId,
-        topicId: problem.topicId
+      progress = new UserProgress({ 
+        userId, 
+        problemId, 
+        status: 'not_started', 
+        isBookmarked: false,
+        practiced: false,
+        completed: false,
+        bookmarked: false
       });
     }
 
-    // Update based on action
+    // Handle different actions
     switch (action) {
       case 'practiced':
-        progress.practiced = !progress.practiced;
-        if (progress.practiced && !progress.firstCompletedAt) {
-          progress.firstCompletedAt = new Date();
+        if (progress.status === 'not_started') {
+          progress.status = 'practiced';
+          progress.practiced = true;
+          progress.lastAttemptedAt = new Date();
         }
         break;
+        
       case 'completed':
-        progress.completed = !progress.completed;
-        progress.practiced = true; // If completed, it's also practiced
-        if (progress.completed && !progress.firstCompletedAt) {
-          progress.firstCompletedAt = new Date();
+        const wasCompleted = progress.status === 'completed' || progress.completed;
+        if (wasCompleted) {
+          // Toggle back to practiced or not_started
+          progress.status = progress.practiced ? 'practiced' : 'not_started';
+          progress.completed = false;
+          progress.completedAt = null;
+        } else {
+          // Mark as completed
+          progress.status = 'completed';
+          progress.completed = true;
+          progress.practiced = true;
+          progress.completedAt = new Date();
+          progress.lastAttemptedAt = new Date();
+          
+          // Log activity for completion
+          await logProblemActivity(userId, problemId);
         }
         break;
+        
       case 'bookmark':
-        progress.bookmarked = !progress.bookmarked;
+        progress.isBookmarked = !progress.isBookmarked;
+        progress.bookmarked = progress.isBookmarked; // Sync legacy field
         break;
+        
       default:
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid action'
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid action' 
         });
     }
 
-    progress.lastAttemptAt = new Date();
     await progress.save();
 
-    res.json({
-      success: true,
-      message: `Problem ${action} status updated`,
-      progress: {
-        practiced: progress.practiced,
-        completed: progress.completed,
-        bookmarked: progress.bookmarked,
-        lastAttemptAt: progress.lastAttemptAt
-      }
+    // Return progress data in format expected by frontend
+    const responseProgress = {
+      completed: progress.completed,
+      practiced: progress.practiced,
+      bookmarked: progress.bookmarked,
+      isBookmarked: progress.isBookmarked,
+      status: progress.status,
+      completedAt: progress.completedAt,
+      lastAttemptedAt: progress.lastAttemptedAt
+    };
+
+    res.json({ 
+      success: true, 
+      message: `Problem ${action} successfully`, 
+      progress: responseProgress 
     });
   } catch (error) {
-    console.error('Error updating progress:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to update progress',
-      error: error.message
+    console.error('Error marking progress:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to mark progress', 
+      error: error.message 
     });
   }
 });
@@ -1104,6 +1114,219 @@ router.get('/leaderboard', authenticateJWT, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch leaderboard'
+    });
+  }
+});
+
+// POST /api/dsa/activity/log - Log user activity
+router.post('/activity/log', authenticateJWT, async (req, res) => {
+  try {
+    const { type, data } = req.body;
+
+    if (!type || !data) {
+      return res.status(400).json({
+        success: false,
+        message: 'Activity type and data are required'
+      });
+    }
+
+    const activity = new Activity({
+      userId: req.user.id,
+      type,
+      data
+    });
+
+    await activity.save();
+
+    res.json({
+      success: true,
+      message: 'Activity logged successfully'
+    });
+  } catch (error) {
+    console.error('Error logging activity:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to log activity',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/dsa/activity/history - Get user activity history
+router.get('/activity/history', authenticateJWT, async (req, res) => {
+  try {
+    const activities = await Activity.find({ userId: req.user.id })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      activities
+    });
+  } catch (error) {
+    console.error('Error fetching activity history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch activity history',
+      error: error.message
+    });
+  }
+});
+
+// ==================== ACTIVITY TRACKING ROUTES ====================
+
+// Helper function to log activity when problem is solved
+const logProblemActivity = async (userId, problemId) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Find or create today's activity record
+    let activity = await Activity.findOne({ userId, date: today });
+    
+    if (!activity) {
+      activity = new Activity({
+        userId,
+        date: today,
+        problemsSolved: 0,
+        problemIds: []
+      });
+    }
+    
+    // Add problem if not already solved today
+    if (!activity.problemIds.includes(problemId)) {
+      activity.problemIds.push(problemId);
+      activity.problemsSolved = activity.problemIds.length;
+      await activity.save();
+    }
+    
+    return activity;
+  } catch (error) {
+    console.error('Error logging problem activity:', error);
+  }
+};
+
+// GET /api/dsa/progress/activity - Get user's activity data for the grid
+router.get('/progress/activity', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const today = new Date();
+    const oneYearAgo = new Date(today);
+    oneYearAgo.setDate(oneYearAgo.getDate() - 364);
+    
+    // Get all activity records for the past year
+    const activities = await Activity.find({
+      userId,
+      date: {
+        $gte: oneYearAgo.toISOString().split('T')[0],
+        $lte: today.toISOString().split('T')[0]
+      }
+    }).sort({ date: 1 });
+    
+    // Create activity map for quick lookup
+    const activityMap = {};
+    activities.forEach(activity => {
+      activityMap[activity.date] = {
+        date: activity.date,
+        count: activity.problemsSolved,
+        level: activity.level
+      };
+    });
+    
+    // Generate complete 365-day activity array
+    const activityArray = [];
+    for (let i = 364; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      
+      activityArray.push(activityMap[dateStr] || {
+        date: dateStr,
+        count: 0,
+        level: 0
+      });
+    }
+    
+    res.json({
+      success: true,
+      activity: activityArray
+    });
+  } catch (error) {
+    console.error('Error fetching activity data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch activity data',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/dsa/progress/streaks - Get current and max streaks
+router.get('/progress/streaks', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const today = new Date();
+    
+    // Get activities sorted by date descending
+    const activities = await Activity.find({
+      userId,
+      problemsSolved: { $gt: 0 }
+    }).sort({ date: -1 });
+    
+    // Create a Set for faster lookup
+    const activityDates = new Set(activities.map(a => a.date));
+    
+    let currentStreak = 0;
+    let maxStreak = 0;
+    let tempStreak = 0;
+    let currentStreakFound = false;
+    
+    // Calculate streaks by going backwards from today
+    const todayStr = today.toISOString().split('T')[0];
+    let checkDate = new Date(today);
+    
+    for (let i = 0; i < 365; i++) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      const hasActivity = activityDates.has(dateStr);
+      
+      if (hasActivity) {
+        tempStreak++;
+        
+        // For current streak: only count if we haven't broken the streak yet
+        if (!currentStreakFound) {
+          currentStreak++;
+        }
+        
+        // Update max streak
+        maxStreak = Math.max(maxStreak, tempStreak);
+      } else {
+        // No activity on this date
+        if (dateStr === todayStr) {
+          // If no activity today, current streak might still continue from yesterday
+          // Don't break the streak yet, just continue to check yesterday
+        } else {
+          // This breaks the current streak if we're still calculating it
+          if (!currentStreakFound) {
+            currentStreakFound = true;
+          }
+          // Reset temp streak for max calculation
+          tempStreak = 0;
+        }
+      }
+      
+      // Move to previous day
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    
+    res.json({
+      success: true,
+      currentStreak,
+      maxStreak
+    });
+  } catch (error) {
+    console.error('Error calculating streaks:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate streaks',
+      error: error.message
     });
   }
 });

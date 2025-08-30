@@ -19,6 +19,7 @@ import AdminSubjects from './Pages/AdminSubjects';
 import DSASheet from './Pages/DSASheet';
 import AdminDSA from './Pages/AdminDSA';
 import DSABookmarks from './Pages/DSABookmarks';
+import CodeEditor from './Pages/CodeEditor';
 import EmailVerification from './Pages/EmailVerification';
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
@@ -157,6 +158,11 @@ const AppRoutes = () => {
             <DSABookmarks />
           </PrivateRoute>
         }
+      />
+
+      <Route
+        path="/code-editor"
+        element={<CodeEditor />}
       />
 
       <Route

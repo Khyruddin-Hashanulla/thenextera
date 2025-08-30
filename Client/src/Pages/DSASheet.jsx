@@ -1,50 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import ProblemModal from '../components/ProblemModal';
-import ProgressBadge from '../components/ProgressBadge';
-import Leaderboard from '../components/Leaderboard';
-import api from '../utils/api';
-import { FiBookmark, FiAward } from 'react-icons/fi';
 
 const DSASheet = () => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  
+  // State management
   const [topics, setTopics] = useState([]);
-  const [selectedTopic, setSelectedTopic] = useState(null);
   const [problems, setProblems] = useState([]);
-  const [userStats, setUserStats] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [expandedTopics, setExpandedTopics] = useState(new Set());
+  const [userStats, setUserStats] = useState({
+    totalProblems: 0,
+    completedProblems: 0,
+    bookmarkedProblems: 0,
+    currentStreak: 0,
+    maxStreak: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [selectedProblem, setSelectedProblem] = useState(null);
+  const [showProblemModal, setShowProblemModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [activityData, setActivityData] = useState([]);
+  const [showSidebar, setShowSidebar] = useState(true);
   const [filters, setFilters] = useState({
     difficulty: 'All',
     platform: 'All',
-    status: 'All', // All, Completed, Practiced, Not Started
+    status: 'All',
     search: ''
   });
-  const [expandedTopics, setExpandedTopics] = useState(new Set());
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [selectedProblem, setSelectedProblem] = useState(null);
-  const [showProblemModal, setShowProblemModal] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
-  const [activityData, setActivityData] = useState([]);
-  const [selectedProblemForEditor, setSelectedProblemForEditor] = useState(null);
-  const [showCodeEditor, setShowCodeEditor] = useState(false);
-  const [code, setCode] = useState('');
-  const [language, setLanguage] = useState('javascript');
-  const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
+    if (isAuthenticated) {
+      fetchTopics();
+      fetchUserStats();
     }
-    fetchTopics();
-    fetchUserStats();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -53,8 +51,6 @@ const DSASheet = () => {
           closeVideoModal();
         } else if (showProblemModal) {
           closeProblemModal();
-        } else if (showCodeEditor) {
-          closeCodeEditor();
         }
       }
     };
@@ -63,7 +59,16 @@ const DSASheet = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showVideoModal, showProblemModal, showCodeEditor]);
+  }, [showVideoModal, showProblemModal]);
+
+  useEffect(() => {
+    console.log('Activity data changed:', activityData.length, 'entries');
+    if (activityData.length > 0) {
+      console.log('First few activity entries:', activityData.slice(0, 5));
+      console.log('Last few activity entries:', activityData.slice(-5));
+      console.log('Activity data with levels > 0:', activityData.filter(d => d.level > 0).length);
+    }
+  }, [activityData]);
 
   const fetchTopics = async () => {
     try {
@@ -98,25 +103,48 @@ const DSASheet = () => {
 
   const fetchUserStats = async () => {
     try {
+      console.log('🔄 Fetching user stats...');
       const response = await api.get('/api/dsa/progress/stats');
       const stats = response.data.stats || {};
+      console.log('📊 Received stats from API:', stats);
       setUserStats(stats);
 
       // Fetch real activity data from API
       try {
+        console.log('🔄 Fetching activity data...');
         const activityResponse = await api.get('/api/dsa/progress/activity');
         if (activityResponse.data.success) {
+          console.log('✅ Fetched real activity data:', activityResponse.data.activity.length, 'entries');
+          console.log('📅 Activity data sample:', activityResponse.data.activity.slice(-5));
           setActivityData(activityResponse.data.activity || []);
         } else {
-          // Fallback to generating activity data based on user progress
-          generateActivityData(stats);
+          console.log('❌ Activity API returned no data, using empty array');
+          setActivityData([]);
         }
       } catch (activityError) {
-        console.log('Activity API not available, generating fallback data');
-        generateActivityData(stats);
+        console.log('❌ Activity API not available, using empty array');
+        console.error('Activity error:', activityError);
+        setActivityData([]);
+      }
+
+      // Fetch real streak data
+      try {
+        console.log('🔄 Fetching streak data...');
+        const streakResponse = await api.get('/api/dsa/progress/streaks');
+        if (streakResponse.data.success) {
+          console.log('🏆 Received streak data:', streakResponse.data);
+          setUserStats(prev => ({
+            ...prev,
+            currentStreak: streakResponse.data.currentStreak,
+            maxStreak: streakResponse.data.maxStreak
+          }));
+        }
+      } catch (streakError) {
+        console.log('❌ Streak API not available, using defaults');
+        console.error('Streak error:', streakError);
       }
     } catch (error) {
-      console.error('Error fetching user stats:', error);
+      console.error('❌ Error fetching user stats:', error);
       // Set default stats if API fails
       setUserStats({
         totalProblems: 0,
@@ -125,36 +153,13 @@ const DSASheet = () => {
         currentStreak: 0,
         maxStreak: 0
       });
+      setActivityData([]);
     }
   };
 
-  const generateActivityData = (stats) => {
-    const today = new Date();
-    const activityArray = [];
-    const completedProblems = stats.completedProblems || 0;
-    
-    for (let i = 364; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-
-      // Generate more realistic activity based on completion rate
-      let activity = 0;
-      if (completedProblems > 0) {
-        // Higher chance of activity if user has completed problems
-        const activityChance = Math.min(completedProblems / 100, 0.4);
-        if (Math.random() < activityChance) {
-          activity = Math.floor(Math.random() * 4) + 1;
-        }
-      }
-      
-      activityArray.push({
-        date: dateStr,
-        count: activity,
-        level: activity === 0 ? 0 : activity <= 1 ? 1 : activity <= 2 ? 2 : activity <= 3 ? 3 : 4
-      });
-    }
-    setActivityData(activityArray);
+  const refreshActivityData = () => {
+    console.log('Manually refreshing activity data...');
+    fetchUserStats();
   };
 
   const handleTopicSelect = (topic) => {
@@ -207,13 +212,24 @@ const DSASheet = () => {
   };
 
   const openCodeEditor = (problem) => {
-    setSelectedProblemForEditor(problem);
-    setShowCodeEditor(true);
-  };
+    // Check authentication before opening new tab
+    if (!isAuthenticated || !user) {
+      console.log('User not authenticated, redirecting to login');
+      navigate('/login');
+      return;
+    }
 
-  const closeCodeEditor = () => {
-    setSelectedProblemForEditor(null);
-    setShowCodeEditor(false);
+    // Open code editor in new tab with problem data
+    const problemData = encodeURIComponent(JSON.stringify({
+      id: problem.id || problem._id,
+      title: problem.title,
+      description: problem.description,
+      difficulty: problem.difficulty,
+      tags: problem.tags
+    }));
+    
+    const codeEditorUrl = `/code-editor?problem=${problemData}`;
+    window.open(codeEditorUrl, '_blank', 'noopener,noreferrer');
   };
 
   const openNotesModal = (problem) => {
@@ -229,12 +245,15 @@ const DSASheet = () => {
   };
 
   const handleProgressMark = async (problemId, action) => {
+    console.log(`🔄 Starting ${action} for problem:`, problemId);
+    
     try {
       const response = await api.post('/api/dsa/progress/mark', { 
         problemId, 
-        action,
-        userId: user.id || user._id 
+        action
       });
+      
+      console.log(`✅ API Response for ${action}:`, response.data);
       
       if (response.data.success) {
         // Update local state immediately for better UX
@@ -244,11 +263,19 @@ const DSASheet = () => {
               const currentProgress = problem.userProgress || {};
               let updatedProgress = { ...currentProgress };
               
+              console.log(`📊 Current progress for problem ${problemId}:`, currentProgress);
+              
               if (action === 'completed') {
                 updatedProgress.completed = !currentProgress.completed;
-                updatedProgress.practiced = true;
+                updatedProgress.status = updatedProgress.completed ? 'completed' : 'not_started';
+                console.log(`✅ Updated completed status:`, updatedProgress.completed);
+              } else if (action === 'practiced') {
+                updatedProgress.practiced = !currentProgress.practiced;
+                updatedProgress.status = 'practiced';
               } else if (action === 'bookmark') {
                 updatedProgress.bookmarked = !currentProgress.bookmarked;
+                updatedProgress.isBookmarked = !currentProgress.isBookmarked;
+                console.log(`🔖 Updated bookmark status:`, updatedProgress.isBookmarked);
               }
               
               return { 
@@ -260,11 +287,95 @@ const DSASheet = () => {
           })
         );
         
-        // Update stats after state change
-        handleProgressUpdate();
+        // Update local stats immediately for instant UI feedback
+        if (action === 'completed') {
+          console.log(`📈 Updating stats for completed action`);
+          setUserStats(prevStats => {
+            const currentCompleted = prevStats.completedProblems || 0;
+            // Check if the problem was actually completed (not uncompleted)
+            const isCompleting = response.data.progress?.status === 'completed' || 
+                                response.data.progress?.completed === true;
+            const newCompleted = isCompleting 
+              ? currentCompleted + 1 
+              : Math.max(0, currentCompleted - 1);
+            
+            console.log(`📊 Stats update: ${currentCompleted} → ${newCompleted} (completing: ${isCompleting})`);
+            console.log(`🔍 Backend response progress:`, response.data.progress);
+            
+            return {
+              ...prevStats,
+              completedProblems: newCompleted
+            };
+          });
+
+          // Update today's activity immediately for real-time grid updates
+          // Use current timezone date instead of UTC
+          const today = new Date();
+          const todayStr = today.getFullYear() + '-' + 
+                          String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                          String(today.getDate()).padStart(2, '0');
+          console.log(`📅 Updating activity for today: ${todayStr} (local timezone)`);
+          
+          setActivityData(prevActivity => {
+            console.log(`🎯 Current activity data length:`, prevActivity.length);
+            
+            return prevActivity.map(day => {
+              if (day.date === todayStr) {
+                // Check if the problem was actually completed (not uncompleted)
+                const isCompleting = response.data.progress?.status === 'completed' || 
+                                    response.data.progress?.completed === true;
+                const newCount = isCompleting 
+                  ? (day.count || 0) + 1 
+                  : Math.max(0, (day.count || 0) - 1);
+                
+                // Calculate new level based on count
+                let newLevel = 0;
+                if (newCount === 0) newLevel = 0;
+                else if (newCount <= 2) newLevel = 1;
+                else if (newCount <= 5) newLevel = 2;
+                else if (newCount <= 8) newLevel = 3;
+                else newLevel = 4;
+                
+                console.log(`🎨 Activity update for ${todayStr}: count ${day.count || 0} → ${newCount}, level ${day.level || 0} → ${newLevel}`);
+                
+                return {
+                  ...day,
+                  count: newCount,
+                  level: newLevel
+                };
+              }
+              return day;
+            });
+          });
+        } else if (action === 'bookmark') {
+          setUserStats(prevStats => {
+            const currentBookmarked = prevStats.bookmarkedProblems || 0;
+            const isBookmarking = response.data.progress?.isBookmarked;
+            const newBookmarked = isBookmarking 
+              ? currentBookmarked + 1 
+              : Math.max(0, currentBookmarked - 1);
+            
+            console.log(`🔖 Bookmark stats update: ${currentBookmarked} → ${newBookmarked}`);
+            
+            return {
+              ...prevStats,
+              bookmarkedProblems: newBookmarked
+            };
+          });
+        }
+        
+        // Refresh complete stats and activity data from server
+        setTimeout(() => {
+          console.log(`🔄 Refreshing stats from server...`);
+          fetchUserStats();
+        }, 500);
+        
+        console.log(`✅ Problem ${action} completed successfully`);
       }
     } catch (error) {
-      console.error('Error updating progress:', error);
+      console.error(`❌ Error marking problem as ${action}:`, error);
+      // Show user-friendly error message
+      alert(`Failed to ${action} problem. Please try again.`);
     }
   };
 
@@ -339,79 +450,97 @@ const DSASheet = () => {
   };
 
   const getCurrentStreak = () => {
-    if (!activityData.length) return 0;
-    
-    let streak = 0;
-    const sortedActivity = [...activityData].reverse(); // Start from today
-    
-    for (const day of sortedActivity) {
-      if (day.count > 0) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-    
-    return streak;
+    return userStats.currentStreak || 0;
   };
 
   const getMaxStreak = () => {
-    if (!activityData.length) return 0;
-    
-    let maxStreak = 0;
-    let currentStreak = 0;
-    
-    for (const day of activityData) {
-      if (day.count > 0) {
-        currentStreak++;
-        maxStreak = Math.max(maxStreak, currentStreak);
-      } else {
-        currentStreak = 0;
-      }
-    }
-    
-    return maxStreak;
+    return userStats.maxStreak || 0;
   };
 
   const getMonthLabels = () => {
     const months = [];
     const today = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    
+    // Start from September of last year to August of current year
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - 364); // Go back 364 days
+    
+    // Get the starting month (should be around September)
+    let currentDate = new Date(startDate);
+    currentDate.setDate(1); // Set to first day of the month
+    
+    // Generate 12 months from the start date
+    for (let i = 0; i < 12; i++) {
       months.push({
-        name: date.toLocaleDateString('en-US', { month: 'short' }),
-        year: date.getFullYear()
+        name: currentDate.toLocaleDateString('en-US', { month: 'short' }),
+        year: currentDate.getFullYear()
       });
+      
+      // Move to next month
+      currentDate.setMonth(currentDate.getMonth() + 1);
     }
+    
+    console.log('Generated months:', months.map(m => `${m.name} ${m.year}`));
     return months;
   };
 
   const getWeeksInYear = () => {
     const weeks = [];
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 364);
     
-    // Adjust to start from Sunday
-    const dayOfWeek = startDate.getDay();
-    startDate.setDate(startDate.getDate() - dayOfWeek);
+    // If no activity data, return empty array
+    if (activityData.length === 0) {
+      return weeks;
+    }
     
-    for (let week = 0; week < 53; week++) {
+    // Get the date range from activity data
+    const startDate = new Date(activityData[0].date);
+    const endDate = new Date(activityData[activityData.length - 1].date);
+    
+    // Adjust start date to beginning of week (Sunday)
+    const adjustedStartDate = new Date(startDate);
+    adjustedStartDate.setDate(startDate.getDate() - startDate.getDay());
+    
+    let currentWeekStart = new Date(adjustedStartDate);
+    
+    // Generate weeks only up to today
+    while (currentWeekStart <= today) {
       const weekData = [];
+      let hasValidDay = false;
+      
       for (let day = 0; day < 7; day++) {
-        const currentDate = new Date(startDate);
-        currentDate.setDate(startDate.getDate() + (week * 7) + day);
+        const currentDate = new Date(currentWeekStart);
+        currentDate.setDate(currentWeekStart.getDate() + day);
         
-        if (currentDate <= today) {
+        // Only include dates that are within our activity data range and not in the future
+        if (currentDate >= startDate && currentDate <= endDate && currentDate <= today) {
           const dateStr = currentDate.toISOString().split('T')[0];
           const activityDay = activityData.find(d => d.date === dateStr);
-          weekData.push(activityDay || { date: dateStr, count: 0, level: 0 });
+          
+          weekData.push(activityDay || { 
+            date: dateStr, 
+            count: 0, 
+            level: 0 
+          });
+          hasValidDay = true;
+        } else if (currentDate < startDate || currentDate > today) {
+          // Don't show anything for dates before our range or in the future
+          weekData.push(null);
         } else {
           weekData.push(null);
         }
       }
-      weeks.push(weekData);
+      
+      // Only add weeks that have at least one valid day
+      if (hasValidDay) {
+        weeks.push(weekData);
+      }
+      
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
     }
+    
+    console.log('Generated weeks data:', weeks.length, 'weeks');
+    console.log('Date range for weeks:', adjustedStartDate.toISOString().split('T')[0], 'to', today.toISOString().split('T')[0]);
     return weeks;
   };
 
@@ -467,23 +596,6 @@ const DSASheet = () => {
     return '💡 Break down the problem step by step';
   };
 
-  const handleSubmit = async () => {
-    setIsRunning(true);
-    try {
-      await api.post('/api/dsa/progress/save-code', {
-        problemId: selectedProblemForEditor.id || selectedProblemForEditor._id,
-        code,
-        language
-      });
-      alert('Code saved successfully!');
-    } catch (error) {
-      console.error('Error saving code:', error);
-      alert('Failed to save code');
-    } finally {
-      setIsRunning(false);
-    }
-  };
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
@@ -532,68 +644,85 @@ const DSASheet = () => {
                 <div className="flex items-center space-x-4 text-sm text-gray-200">
                   <span>Current streak: {getCurrentStreak()}</span>
                   <span>Max streak: {getMaxStreak()}</span>
+                  <button
+                    onClick={refreshActivityData}
+                    className="text-sm text-gray-200 hover:text-white transition-colors duration-200"
+                  >
+                    Refresh
+                  </button>
                 </div>
               </div>
               
-              {/* Month Labels */}
-              <div className="mb-2">
-                <div className="grid grid-cols-12 gap-2 text-xs text-gray-300 mb-1">
-                  {getMonthLabels().map((month, i) => (
-                    <div key={i} className="text-left">
-                      {month.name} {month.year === new Date().getFullYear() ? '' : month.year}
+              {/* Activity Grid Container with fixed width */}
+              <div className="w-full overflow-x-auto">
+                <div style={{ minWidth: '100%', width: '100%' }}>
+                  
+                  {/* Month Labels */}
+                  <div className="mb-3">
+                    <div className="flex text-xs text-gray-300 mb-2 ml-12">
+                      {getMonthLabels().map((month, i) => (
+                        <div key={i} className="text-left flex-1 min-w-0">
+                          {month.name} {month.year === new Date().getFullYear() ? '' : month.year}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Activity Grid */}
-              <div className="overflow-x-auto">
-                <div className="flex space-x-1 min-w-full">
-                  {/* Day labels */}
-                  <div className="flex flex-col space-y-1 mr-2">
-                    <div className="h-3 text-xs text-gray-300"></div>
-                    <div className="h-3 text-xs text-gray-300">Mon</div>
-                    <div className="h-3 text-xs text-gray-300"></div>
-                    <div className="h-3 text-xs text-gray-300">Wed</div>
-                    <div className="h-3 text-xs text-gray-300"></div>
-                    <div className="h-3 text-xs text-gray-300">Fri</div>
-                    <div className="h-3 text-xs text-gray-300"></div>
+                  {/* Activity Grid */}
+                  <div className="flex space-x-1">
+                    {/* Day labels */}
+                    <div className="flex flex-col space-y-1 mr-3 flex-shrink-0">
+                      <div className="h-4 text-xs text-gray-300"></div>
+                      <div className="h-4 text-xs text-gray-300">Mon</div>
+                      <div className="h-4 text-xs text-gray-300"></div>
+                      <div className="h-4 text-xs text-gray-300">Wed</div>
+                      <div className="h-4 text-xs text-gray-300"></div>
+                      <div className="h-4 text-xs text-gray-300">Fri</div>
+                      <div className="h-4 text-xs text-gray-300"></div>
+                    </div>
+                    
+                    {/* Weeks grid */}
+                    <div className="flex space-x-1 flex-1">
+                      {getWeeksInYear().map((week, weekIndex) => (
+                        <div key={weekIndex} className="flex flex-col space-y-1 flex-1">
+                          {week.map((day, dayIndex) => {
+                            // Don't render anything for future dates (null values)
+                            if (!day) return <div key={dayIndex} className="h-4" />;
+                            
+                            return (
+                              <div
+                                key={dayIndex}
+                                className={`h-4 rounded-sm ${getActivityColor(day.level)} flex-1`}
+                                title={`${day.date}: ${day.count} problems solved`}
+                                style={{ minWidth: '12px' }}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   
-                  {/* Weeks grid */}
-                  <div className="flex space-x-1">
-                    {getWeeksInYear().map((week, weekIndex) => (
-                      <div key={weekIndex} className="flex flex-col space-y-1">
-                        {week.map((day, dayIndex) => (
-                          <div
-                            key={dayIndex}
-                            className={`w-3 h-3 rounded-sm ${day ? getActivityColor(day.level) : 'bg-transparent'}`}
-                            title={day ? `${day.date}: ${day.count} problems solved` : ''}
-                          />
-                        ))}
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
-
-              {/* Legend */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center space-x-2 text-xs text-gray-300">
-                  <span>Less</span>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-3 h-3 bg-gray-600/50 rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-300 rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-700 rounded-sm"></div>
-                    <div className="w-3 h-3 bg-green-900 rounded-sm"></div>
-                  </div>
-                  <span>More</span>
+            </div>
+            
+            {/* Legend */}
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center space-x-2 text-xs text-gray-300">
+                <span>Less</span>
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 bg-gray-600/50 rounded-sm"></div>
+                  <div className="w-3 h-3 bg-green-300 rounded-sm"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
+                  <div className="w-3 h-3 bg-green-700 rounded-sm"></div>
+                  <div className="w-3 h-3 bg-green-900 rounded-sm"></div>
                 </div>
-                
-                <div className="text-xs text-gray-300">
-                  {userStats.completedProblems || 0} problems solved in the last year
-                </div>
+                <span>More</span>
+              </div>
+              
+              <div className="text-xs text-gray-300">
+                {userStats.completedProblems || 0} problems solved in the last year
               </div>
             </div>
           </div>
@@ -807,7 +936,7 @@ const DSASheet = () => {
                                               <td className="px-3 py-4 text-center">
                                                 <input
                                                   type="checkbox"
-                                                  checked={problem.userProgress?.completed || false}
+                                                  checked={problem.userProgress?.status === 'completed' || problem.userProgress?.completed || false}
                                                   onChange={() => handleProgressMark(problem.id || problem._id, 'completed')}
                                                   className="w-4 h-4 text-green-600 bg-gray-700 border-gray-700 rounded focus:ring-green-500 focus:ring-2"
                                                 />
@@ -832,7 +961,7 @@ const DSASheet = () => {
                                                 {problem.solution && problem.solution.type && problem.solution.type !== 'none' ? (
                                                   <button 
                                                     onClick={() => openYouTubeDirectly(problem)}
-                                                    className="inline-flex items-center justify-center w-8 h-8 bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors duration-200"
+                                                    className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded transition-colors duration-200"
                                                     title="View Solution"
                                                   >
                                                     <span className="text-xs font-medium">Sol</span>
@@ -847,7 +976,7 @@ const DSASheet = () => {
                                                 {problem.tags && problem.tags.length > 0 ? (
                                                   <div className="flex flex-wrap gap-1 justify-center">
                                                     {problem.tags.slice(0, 2).map((tag, idx) => (
-                                                      <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-600 text-white">
+                                                      <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-500 text-white">
                                                         {tag}
                                                       </span>
                                                     ))}
@@ -865,7 +994,7 @@ const DSASheet = () => {
                                                 {problem.companies && problem.companies.length > 0 ? (
                                                   <div className="flex flex-wrap gap-1 justify-center">
                                                     {problem.companies.slice(0, 2).map((company, idx) => (
-                                                      <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-600 text-white">
+                                                      <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-500 text-white">
                                                         {company}
                                                       </span>
                                                     ))}
@@ -885,13 +1014,13 @@ const DSASheet = () => {
                                                     href={problem.practiceLink.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white transition-colors duration-200 cursor-pointer"
+                                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500 hover:bg-violet-600 text-white transition-colors duration-200 cursor-pointer"
                                                     title={`Open on ${problem.practiceLink.platform}`}
                                                   >
                                                     {problem.practiceLink.platform}
                                                   </a>
                                                 ) : problem.practiceLink?.platform ? (
-                                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-600 text-white">
+                                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500 text-white">
                                                     {problem.practiceLink.platform}
                                                   </span>
                                                 ) : (
@@ -903,7 +1032,7 @@ const DSASheet = () => {
                                               <td className="px-3 py-4 text-center">
                                                 <button
                                                   onClick={() => openCodeEditor(problem)}
-                                                  className="inline-flex items-center justify-center w-8 h-8 bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors duration-200"
+                                                  className="inline-flex items-center justify-center w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors duration-200"
                                                   title="Practice Problem"
                                                 >
                                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -916,7 +1045,7 @@ const DSASheet = () => {
                                               <td className="px-3 py-4 text-center">
                                                 <button
                                                   onClick={() => openNotesModal(problem)}
-                                                  className="w-8 h-8 bg-blue-600 text-white rounded flex items-center justify-center text-sm font-bold"
+                                                  className="w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white rounded flex items-center justify-center text-sm font-bold transition-colors duration-200"
                                                   title={getNotesHint(problem)}
                                                 >
                                                   N
@@ -928,13 +1057,13 @@ const DSASheet = () => {
                                                 <button
                                                   onClick={() => handleProgressMark(problem.id || problem._id, 'bookmark')}
                                                   className={`inline-flex items-center justify-center w-8 h-8 rounded transition-colors duration-200 mx-auto ${
-                                                    problem.userProgress?.bookmarked 
-                                                      ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                                                    problem.userProgress?.isBookmarked || problem.userProgress?.bookmarked 
+                                                      ? 'bg-orange-500 hover:bg-orange-600 text-white' 
                                                       : 'bg-gray-600 hover:bg-gray-700 text-gray-300'
                                                   }`}
-                                                  title="Mark for Revision"
+                                                  title={problem.userProgress?.isBookmarked || problem.userProgress?.bookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
                                                 >
-                                                  <svg className="w-4 h-4" fill={problem.userProgress?.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                                  <svg className="w-4 h-4" fill={problem.userProgress?.isBookmarked || problem.userProgress?.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                                   </svg>
                                                 </button>
@@ -992,194 +1121,6 @@ const DSASheet = () => {
           onClose={closeProblemModal}
           onProgressUpdate={handleProgressUpdate}
         />
-      )}
-
-      {/* Code Editor Modal */}
-      {showCodeEditor && selectedProblemForEditor && (
-        <div className="fixed inset-0 bg-gray-900 z-50 flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              </div>
-              <h3 className="text-white font-medium">{selectedProblemForEditor.title}</h3>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={handleSubmit}
-                disabled={isRunning}
-                className="bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
-              >
-                {isRunning ? 'Saving...' : 'Submit'}
-              </button>
-              <button
-                onClick={closeCodeEditor}
-                className="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Main Content */}
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Panel - Problem Description */}
-            <div className="w-1/2 bg-gray-800 border-r border-gray-700 flex flex-col">
-              {/* Tab Headers */}
-              <div className="flex border-b border-gray-700">
-                <div className="px-4 py-3 text-white bg-gray-700 border-r border-gray-600 text-sm font-medium">
-                  Description
-                </div>
-                <div className="px-4 py-3 text-gray-400 text-sm font-medium cursor-pointer hover:text-white">
-                  Editorial
-                </div>
-                <div className="px-4 py-3 text-gray-400 text-sm font-medium cursor-pointer hover:text-white">
-                  Submissions
-                </div>
-                <div className="px-4 py-3 text-gray-400 text-sm font-medium cursor-pointer hover:text-white">
-                  Discussion
-                </div>
-                <div className="px-4 py-3 text-gray-400 text-sm font-medium cursor-pointer hover:text-white">
-                  Notes
-                </div>
-              </div>
-
-              {/* Problem Content */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-6">
-                  {/* Problem Title and Difficulty */}
-                  <div>
-                    <h1 className="text-xl font-semibold text-white mb-2">{selectedProblemForEditor.title}</h1>
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        selectedProblemForEditor.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
-                        selectedProblemForEditor.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-red-500/20 text-red-400'
-                      }`}>
-                        {selectedProblemForEditor.difficulty}
-                      </span>
-                      {selectedProblemForEditor.tags && selectedProblemForEditor.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {selectedProblemForEditor.tags.map((tag, idx) => (
-                            <span key={idx} className="px-2 py-1 bg-blue-600/20 text-blue-400 rounded text-xs">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Problem Description */}
-                  <div className="text-gray-300 leading-relaxed">
-                    <p>{selectedProblemForEditor.description}</p>
-                  </div>
-
-                  {/* Examples Section */}
-                  <div>
-                    <h3 className="text-white font-medium mb-3">Examples:</h3>
-                    <div className="space-y-4">
-                      <div className="bg-gray-900 rounded-lg p-4">
-                        <div className="text-gray-400 text-sm mb-2">Input: nums = [2,7,11,15]</div>
-                        <div className="text-gray-400 text-sm">Output: [0,1]</div>
-                      </div>
-                      <div className="bg-gray-900 rounded-lg p-4">
-                        <div className="text-gray-400 text-sm mb-2">Input: nums = [3,2,4]</div>
-                        <div className="text-gray-400 text-sm">Output: [1,2]</div>
-                      </div>
-                      <div className="bg-gray-900 rounded-lg p-4">
-                        <div className="text-gray-400 text-sm mb-2">Input: nums = [3,3]</div>
-                        <div className="text-gray-400 text-sm">Output: [0,1]</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Constraints */}
-                  <div>
-                    <h3 className="text-white font-medium mb-3">Constraints:</h3>
-                    <ul className="text-gray-400 text-sm space-y-1">
-                      <li>• 2 ≤ nums.length ≤ 10⁴</li>
-                      <li>• -10⁹ ≤ nums[i] ≤ 10⁹</li>
-                      <li>• -10⁹ ≤ target ≤ 10⁹</li>
-                      <li>• Only one valid answer exists.</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Panel - Code Editor */}
-            <div className="w-1/2 bg-gray-900 flex flex-col">
-              {/* Code Editor Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-                <select
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm"
-                >
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java</option>
-                  <option value="cpp">C++</option>
-                </select>
-                <div className="flex items-center space-x-2">
-                  <button className="text-gray-400 hover:text-white p-2 rounded">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
-                  <button className="text-gray-400 hover:text-white p-2 rounded">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Code Editor */}
-              <div className="flex-1 relative">
-                <textarea
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  placeholder={`class Solution {
-    public twoSum(nums, target) {
-        // Write your solution here
-        
-    }
-}`}
-                  className="w-full h-full bg-gray-900 text-white p-4 font-mono text-sm resize-none border-none outline-none"
-                  style={{ lineHeight: '1.5' }}
-                />
-                {/* Line numbers could be added here */}
-              </div>
-
-              {/* Bottom Panel - Test Cases */}
-              <div className="h-48 border-t border-gray-700 bg-gray-800">
-                <div className="flex border-b border-gray-700">
-                  <div className="px-4 py-2 text-white bg-gray-700 text-sm font-medium">
-                    Test Cases
-                  </div>
-                </div>
-                <div className="p-4 h-full overflow-y-auto">
-                  <div className="text-gray-400 text-sm">
-                    <div className="mb-2">Case 1:</div>
-                    <div className="bg-gray-900 rounded p-2 mb-2">
-                      <div>nums = [2,7,11,15]</div>
-                      <div>target = 9</div>
-                    </div>
-                    <div className="text-green-400 text-xs">Expected: [0,1]</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
