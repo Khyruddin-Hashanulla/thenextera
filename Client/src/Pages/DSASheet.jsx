@@ -607,7 +607,7 @@ const DSASheet = () => {
     );
   }
 
-  return (
+  return (<>
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-purple-900/30 flex flex-col relative overflow-hidden">
       {/* Enhanced animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -629,40 +629,41 @@ const DSASheet = () => {
       <div className="flex-grow container mx-auto px-4 py-4 pt-32 pb-8 relative z-10">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent mb-2">DSA Practice Sheet</h1>
-            <p className="text-gray-300">Master Data Structures and Algorithms with curated problems</p>
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white via-cyan-200 to-blue-200 bg-clip-text text-transparent mb-2">DSA Practice Sheet</h1>
+            <p className="text-sm md:text-base text-gray-300">Master Data Structures and Algorithms with curated problems</p>
           </div>
 
           {/* Activity Section - GitHub Style */}
-          <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-6 shadow-xl mb-8 overflow-hidden">
+          <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-4 md:p-6 shadow-xl mb-6 md:mb-8 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10"></div>
             
             <div className="relative z-10">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 md:mb-6 gap-4">
                 <h3 className="text-lg font-semibold text-white">Activity</h3>
-                <div className="flex items-center space-x-4 text-sm text-gray-200">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-200">
                   <span>Current streak: {getCurrentStreak()}</span>
                   <span>Max streak: {getMaxStreak()}</span>
                   <button
                     onClick={refreshActivityData}
-                    className="text-sm text-gray-200 hover:text-white transition-colors duration-200"
+                    className="text-sm text-gray-200 hover:text-white transition-colors duration-200 px-2 py-1 rounded bg-white/10"
                   >
                     Refresh
                   </button>
                 </div>
               </div>
               
-              {/* Activity Grid Container with fixed width */}
-              <div className="w-full overflow-x-auto">
-                <div style={{ minWidth: '100%', width: '100%' }}>
+              {/* Activity Grid Container with better mobile handling */}
+              <div className="w-full">
+                <div style={{ minWidth: '320px', width: '100%' }}>
                   
                   {/* Month Labels */}
                   <div className="mb-3">
-                    <div className="flex text-xs text-gray-300 mb-2 ml-12">
+                    <div className="flex text-xs text-gray-300 mb-2 ml-8 sm:ml-12">
                       {getMonthLabels().map((month, i) => (
-                        <div key={i} className="text-left flex-1 min-w-0">
-                          {month.name} {month.year === new Date().getFullYear() ? '' : month.year}
+                        <div key={i} className="text-left flex-1 min-w-0 text-center sm:text-left">
+                          <span className="hidden sm:inline">{month.name} {month.year === new Date().getFullYear() ? '' : month.year}</span>
+                          <span className="sm:hidden">{month.name.slice(0, 3)}</span>
                         </div>
                       ))}
                     </div>
@@ -671,14 +672,14 @@ const DSASheet = () => {
                   {/* Activity Grid */}
                   <div className="flex space-x-1">
                     {/* Day labels */}
-                    <div className="flex flex-col space-y-1 mr-3 flex-shrink-0">
-                      <div className="h-4 text-xs text-gray-300"></div>
-                      <div className="h-4 text-xs text-gray-300">Mon</div>
-                      <div className="h-4 text-xs text-gray-300"></div>
-                      <div className="h-4 text-xs text-gray-300">Wed</div>
-                      <div className="h-4 text-xs text-gray-300"></div>
-                      <div className="h-4 text-xs text-gray-300">Fri</div>
-                      <div className="h-4 text-xs text-gray-300"></div>
+                    <div className="flex flex-col space-y-1 mr-2 sm:mr-3 flex-shrink-0">
+                      <div className="h-3 sm:h-4 text-xs text-gray-300"></div>
+                      <div className="h-3 sm:h-4 text-xs text-gray-300">M</div>
+                      <div className="h-3 sm:h-4 text-xs text-gray-300"></div>
+                      <div className="h-3 sm:h-4 text-xs text-gray-300">W</div>
+                      <div className="h-3 sm:h-4 text-xs text-gray-300"></div>
+                      <div className="h-3 sm:h-4 text-xs text-gray-300">F</div>
+                      <div className="h-3 sm:h-4 text-xs text-gray-300"></div>
                     </div>
                     
                     {/* Weeks grid */}
@@ -687,14 +688,14 @@ const DSASheet = () => {
                         <div key={weekIndex} className="flex flex-col space-y-1 flex-1">
                           {week.map((day, dayIndex) => {
                             // Don't render anything for future dates (null values)
-                            if (!day) return <div key={dayIndex} className="h-4" />;
+                            if (!day) return <div key={dayIndex} className="h-3 sm:h-4" />;
                             
                             return (
                               <div
                                 key={dayIndex}
-                                className={`h-4 rounded-sm ${getActivityColor(day.level)} flex-1`}
+                                className={`h-3 sm:h-4 rounded-sm ${getActivityColor(day.level)} flex-1`}
                                 title={`${day.date}: ${day.count} problems solved`}
-                                style={{ minWidth: '12px' }}
+                                style={{ minWidth: '8px' }}
                               />
                             );
                           })}
@@ -702,27 +703,7 @@ const DSASheet = () => {
                       ))}
                     </div>
                   </div>
-                  
                 </div>
-              </div>
-            </div>
-            
-            {/* Legend */}
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center space-x-2 text-xs text-gray-300">
-                <span>Less</span>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-gray-600/50 rounded-sm"></div>
-                  <div className="w-3 h-3 bg-green-300 rounded-sm"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-sm"></div>
-                  <div className="w-3 h-3 bg-green-700 rounded-sm"></div>
-                  <div className="w-3 h-3 bg-green-900 rounded-sm"></div>
-                </div>
-                <span>More</span>
-              </div>
-              
-              <div className="text-xs text-gray-300">
-                {userStats.completedProblems || 0} problems solved in the last year
               </div>
             </div>
           </div>
@@ -880,21 +861,21 @@ const DSASheet = () => {
                           <div className="relative z-10">
                             <button
                               onClick={() => toggleTopicExpansion(topic.id)}
-                              className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-white/15 transition-colors duration-300"
+                              className="w-full px-4 md:px-6 py-4 text-left flex flex-col sm:flex-row sm:items-center justify-between hover:bg-white/15 transition-colors duration-300 gap-3"
                             >
-                              <div className="flex items-center space-x-3">
-                                <div className="text-lg">{topic.icon}</div>
-                                <div>
-                                  <h3 className="font-semibold text-white">{topic.name}</h3>
-                                  <p className="text-sm text-gray-300">{topic.description}</p>
+                              <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <div className="text-lg flex-shrink-0">{topic.icon}</div>
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-white text-sm md:text-base truncate">{topic.name}</h3>
+                                  <p className="text-xs md:text-sm text-gray-300 line-clamp-2 md:line-clamp-1">{topic.description}</p>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-4">
-                                <span className="text-sm text-gray-300">
+                              <div className="flex items-center justify-between sm:justify-end space-x-4 flex-shrink-0">
+                                <span className="text-xs md:text-sm text-gray-300 whitespace-nowrap">
                                   {topic.userProgress?.completedProblems || 0}/{topic.totalProblems || 0}
                                 </span>
                                 <svg 
-                                  className={`w-5 h-5 text-gray-400 transition-transform ${expandedTopics.has(topic.id) ? 'rotate-180' : ''}`}
+                                  className={`w-4 h-4 md:w-5 md:h-5 text-gray-400 transition-transform flex-shrink-0 ${expandedTopics.has(topic.id) ? 'rotate-180' : ''}`}
                                   fill="none" 
                                   stroke="currentColor" 
                                   viewBox="0 0 24 24"
@@ -913,19 +894,19 @@ const DSASheet = () => {
                                   </div>
                                 ) : (
                                   <div className="overflow-x-auto">
-                                    <table className="w-full table-auto">
+                                    <table className="w-full table-auto min-w-[900px]">
                                       <thead className="bg-white/10">
                                         <tr>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Status</th>
-                                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider min-w-48">Problem</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Sol</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-20">Tag</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-24">Companies</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-20">Platform</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Practice</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Notes</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Rev</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Diff</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Status</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Practice</th>
+                                          <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider min-w-[150px]">Problem</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Difficulty</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Platform</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Sol</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Tag</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-20">Companies</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Notes</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Rev</th>
                                         </tr>
                                       </thead>
                                       <tbody className="bg-white/5 divide-y divide-white/5">
@@ -942,6 +923,19 @@ const DSASheet = () => {
                                                 />
                                               </td>
 
+                                              {/* Practice Column */}
+                                              <td className="px-3 py-4 text-center">
+                                                <button
+                                                  onClick={() => openCodeEditor(problem)}
+                                                  className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded transition-colors duration-200"
+                                                  title="Practice in Code Editor"
+                                                >
+                                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7l10 10M17 7l-10 10" />
+                                                  </svg>
+                                                </button>
+                                              </td>
+
                                               {/* Problem Column */}
                                               <td className="px-4 py-4">
                                                 <div className="flex items-center space-x-3">
@@ -954,6 +948,33 @@ const DSASheet = () => {
                                                     </div>
                                                   </div>
                                                 </div>
+                                              </td>
+
+                                              {/* Difficulty Column */}
+                                              <td className="px-3 py-4 text-center">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                                  problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                                                  problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                  'bg-red-500/20 text-red-400'
+                                                }`}>
+                                                  {problem.difficulty}
+                                                </span>
+                                              </td>
+
+                                              {/* Platform Column */}
+                                              <td className="px-3 py-4 text-center">
+                                                {problem.practiceLink?.platform ? (
+                                                  <a
+                                                    href={problem.practiceLink.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                                                  >
+                                                    {problem.practiceLink.platform}
+                                                  </a>
+                                                ) : (
+                                                  <span className="text-gray-500 text-xs">-</span>
+                                                )}
                                               </td>
 
                                               {/* Solution Column */}
@@ -1007,48 +1028,16 @@ const DSASheet = () => {
                                                 )}
                                               </td>
 
-                                              {/* Platform Column */}
-                                              <td className="px-3 py-4 text-center">
-                                                {problem.practiceLink?.platform && problem.practiceLink?.url ? (
-                                                  <a
-                                                    href={problem.practiceLink.url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500 hover:bg-violet-600 text-white transition-colors duration-200 cursor-pointer"
-                                                    title={`Open on ${problem.practiceLink.platform}`}
-                                                  >
-                                                    {problem.practiceLink.platform}
-                                                  </a>
-                                                ) : problem.practiceLink?.platform ? (
-                                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-violet-500 text-white">
-                                                    {problem.practiceLink.platform}
-                                                  </span>
-                                                ) : (
-                                                  <span className="text-gray-500 text-xs">-</span>
-                                                )}
-                                              </td>
-
-                                              {/* Practice Column */}
-                                              <td className="px-3 py-4 text-center">
-                                                <button
-                                                  onClick={() => openCodeEditor(problem)}
-                                                  className="inline-flex items-center justify-center w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors duration-200"
-                                                  title="Practice Problem"
-                                                >
-                                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                                                  </svg>
-                                                </button>
-                                              </td>
-
                                               {/* Notes Column */}
                                               <td className="px-3 py-4 text-center">
                                                 <button
                                                   onClick={() => openNotesModal(problem)}
-                                                  className="w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white rounded flex items-center justify-center text-sm font-bold transition-colors duration-200"
-                                                  title={getNotesHint(problem)}
+                                                  className="inline-flex items-center justify-center w-8 h-8 bg-purple-500 hover:bg-purple-600 text-white rounded transition-colors duration-200"
+                                                  title="View Notes"
                                                 >
-                                                  N
+                                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                  </svg>
                                                 </button>
                                               </td>
 
@@ -1068,20 +1057,9 @@ const DSASheet = () => {
                                                   </svg>
                                                 </button>
                                                 {/* Auto revision schedule - hidden for now to match other columns */}
-                                                <div className={`text-xs font-medium mt-1 ${getRevisionStatus(problem).color}`} style={{display: 'none'}}>
+                                                <div className={`text-xs font-medium mt-1 hidden ${getRevisionStatus(problem).color}`}>
                                                   {getRevisionStatus(problem).text}
                                                 </div>
-                                              </td>
-
-                                              {/* Difficulty Column */}
-                                              <td className="px-3 py-4 text-center">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                                  problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                                                  problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                                                  'bg-red-500/20 text-red-400 border border-red-500/30'
-                                                }`}>
-                                                  {problem.difficulty}
-                                                </span>
                                               </td>
                                             </tr>
                                           ))
@@ -1109,11 +1087,7 @@ const DSASheet = () => {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
       <Footer />
-
-      {/* Problem Modal */}
       {showProblemModal && selectedProblem && (
         <ProblemModal
           problem={selectedProblem}
@@ -1123,7 +1097,8 @@ const DSASheet = () => {
         />
       )}
     </div>
-  );
+  </>
+);
 };
 
 export default DSASheet;
