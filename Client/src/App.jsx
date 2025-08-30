@@ -16,6 +16,9 @@ import CoreSubjects from './Pages/CoreSubjects';
 import SubjectDetail from './Pages/SubjectDetail';
 import TopicDetailModular from './Pages/TopicDetailModular';
 import AdminSubjects from './Pages/AdminSubjects';
+import DSASheet from './Pages/DSASheet';
+import AdminDSA from './Pages/AdminDSA';
+import DSABookmarks from './Pages/DSABookmarks';
 import EmailVerification from './Pages/EmailVerification';
 import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
@@ -134,6 +137,33 @@ const AppRoutes = () => {
         element={
           <AdminRoute>
             <AdminSubjects />
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/dsa-sheet"
+        element={
+          <PrivateRoute>
+            <DSASheet />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/dsa-bookmarks"
+        element={
+          <PrivateRoute>
+            <DSABookmarks />
+          </PrivateRoute>
+        }
+      />
+
+      <Route
+        path="/admin/dsa"
+        element={
+          <AdminRoute>
+            <AdminDSA />
           </AdminRoute>
         }
       />

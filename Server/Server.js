@@ -245,6 +245,21 @@ try {
   });
 }
 
+try {
+  const dsaRoutes = require("./Routes/DSA");
+  app.use("/api/dsa", dsaRoutes);
+  console.log("✅ DSA routes loaded successfully");
+} catch (error) {
+  console.error("❌ DSA routes failed to load:", error.message);
+  console.error("Full error:", error);
+  app.use("/api/dsa", (req, res) => {
+    res.status(500).json({ 
+      error: "DSA routes not available", 
+      message: "DSA routes failed to load during server startup" 
+    });
+  });
+}
+
 // iPhone Safari Cookie Debug Endpoint
 app.get('/debug/cookies', (req, res) => {
   const userAgent = req.headers['user-agent'] || '';

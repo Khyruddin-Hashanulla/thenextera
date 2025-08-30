@@ -439,10 +439,10 @@ const Dashboard = () => {
                               delay={200}
                             />
                             <QuickActionCard
-                              title="Core Subjects"
-                              description="Manage core subjects and topics"
+                              title="DSA Management"
+                              description="Manage Data Structures and Algorithms"
                               icon="📚"
-                              to="/admin/subjects"
+                              to="/admin/dsa"
                               color="cyan"
                               delay={300}
                             />

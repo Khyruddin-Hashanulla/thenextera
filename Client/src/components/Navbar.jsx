@@ -433,11 +433,13 @@ const Navbar = () => {
                     <div className="flex flex-col">
                       <span className="text-white text-sm font-medium group-hover:text-space-cyan transition-colors duration-300">{user.name}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                        isInstructor 
+                        user.role === 'Admin'
+                          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 text-red-400 border border-red-500/30'
+                          : isInstructor 
                           ? 'bg-gradient-to-r from-space-emerald/20 to-space-cyan/20 text-space-emerald border border-space-emerald/30' 
                           : 'bg-gradient-to-r from-space-blue/20 to-space-purple/20 text-space-blue border border-space-blue/30'
                       }`}>
-                        {isInstructor ? 'Instructor' : 'Student'}
+                        {user.role === 'Admin' ? 'Admin' : isInstructor ? 'Instructor' : 'Student'}
                       </span>
                     </div>
 
@@ -693,8 +695,8 @@ const Navbar = () => {
                     <div className="flex-1">
                       <p className="text-white font-medium">{user.name}</p>
                       <div className="flex items-center space-x-1">
-                        <p className={`text-xs ${isInstructor ? 'text-space-emerald' : 'text-space-blue'}`}>
-                          {isInstructor ? 'Instructor' : 'Student'}
+                        <p className={`text-xs ${user.role === 'Admin' ? 'text-red-400' : isInstructor ? 'text-space-emerald' : 'text-space-blue'}`}>
+                          {user.role === 'Admin' ? 'Admin' : isInstructor ? 'Instructor' : 'Student'}
                         </p>
                         {isInstructor && <FaStar className="w-3 h-3 text-yellow-400" />}
                       </div>
