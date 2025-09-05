@@ -36,6 +36,8 @@ const DSASheet = () => {
     status: 'All',
     search: ''
   });
+  const [showDevelopmentModal, setShowDevelopmentModal] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,6 +53,8 @@ const DSASheet = () => {
           closeVideoModal();
         } else if (showProblemModal) {
           closeProblemModal();
+        } else if (showDevelopmentModal) {
+          setShowDevelopmentModal(false);
         }
       }
     };
@@ -59,7 +63,7 @@ const DSASheet = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [showVideoModal, showProblemModal]);
+  }, [showVideoModal, showProblemModal, showDevelopmentModal]);
 
   useEffect(() => {
     console.log('Activity data changed:', activityData.length, 'entries');
@@ -212,24 +216,9 @@ const DSASheet = () => {
   };
 
   const openCodeEditor = (problem) => {
-    // Check authentication before opening new tab
-    if (!isAuthenticated || !user) {
-      console.log('User not authenticated, redirecting to login');
-      navigate('/login');
-      return;
-    }
-
-    // Open code editor in new tab with problem data
-    const problemData = encodeURIComponent(JSON.stringify({
-      id: problem.id || problem._id,
-      title: problem.title,
-      description: problem.description,
-      difficulty: problem.difficulty,
-      tags: problem.tags
-    }));
-    
-    const codeEditorUrl = `/code-editor?problem=${problemData}`;
-    window.open(codeEditorUrl, '_blank', 'noopener,noreferrer');
+    // Show "Under Development" modal instead of opening code editor
+    setSelectedFeature('CodeEditor');
+    setShowDevelopmentModal(true);
   };
 
   const openNotesModal = (problem) => {
@@ -812,13 +801,28 @@ const DSASheet = () => {
                       <button className="border-b-2 border-cyan-400 py-4 px-2 lg:px-1 text-sm font-medium text-cyan-400 whitespace-nowrap">
                         Khyruddin's All DSA Patterns
                       </button>
-                      <button className="border-b-2 border-transparent py-4 px-2 lg:px-1 text-sm font-medium text-gray-300 hover:text-white whitespace-nowrap">
+                      <button className="border-b-2 border-transparent py-4 px-2 lg:px-1 text-sm font-medium text-gray-300 hover:text-white whitespace-nowrap"
+                        onClick={() => {
+                          setSelectedFeature('InterviewSheet');
+                          setShowDevelopmentModal(true);
+                        }}
+                      >
                         Khyruddin's Interview Sheet
                       </button>
-                      <button className="border-b-2 border-transparent py-4 px-2 lg:px-1 text-sm font-medium text-gray-300 hover:text-white whitespace-nowrap">
+                      <button className="border-b-2 border-transparent py-4 px-2 lg:px-1 text-sm font-medium text-gray-300 hover:text-white whitespace-nowrap"
+                        onClick={() => {
+                          setSelectedFeature('LastMinuteSheet');
+                          setShowDevelopmentModal(true);
+                        }}
+                      >
                         Khyruddin's Last Minute Sheet
                       </button>
-                      <button className="border-b-2 border-transparent py-4 px-2 lg:px-1 text-sm font-medium text-gray-300 hover:text-white whitespace-nowrap">
+                      <button className="border-b-2 border-transparent py-4 px-2 lg:px-1 text-sm font-medium text-gray-300 hover:text-white whitespace-nowrap"
+                        onClick={() => {
+                          setSelectedFeature('QASheet');
+                          setShowDevelopmentModal(true);
+                        }}
+                      >
                         Khyruddin's OA Sheet
                       </button>
                     </nav>
@@ -893,8 +897,8 @@ const DSASheet = () => {
                                     <p className="mt-2 text-gray-300">Loading problems...</p>
                                   </div>
                                 ) : (
-                                  <div className="overflow-x-auto">
-                                    <table className="w-full table-auto min-w-[900px]">
+                                  <div className="overflow-x-auto lg:overflow-x-visible lg:scrollbar-hide">
+                                    <table className="w-full table-auto min-w-[900px] lg:min-w-0">
                                       <thead className="bg-white/10">
                                         <tr>
                                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Status</th>
@@ -1095,6 +1099,88 @@ const DSASheet = () => {
           onClose={closeProblemModal}
           onProgressUpdate={handleProgressUpdate}
         />
+      )}
+      {/* Under Development Modal */}
+      {showDevelopmentModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4 relative">
+            <div className="text-center">
+              <div className="mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">Under Development</h3>
+                <p className="text-gray-300 mb-4">Coming Soon!</p>
+                <div className="bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-lg p-4 mb-4">
+                  {selectedFeature === 'CodeEditor' && (
+                    <>
+                      <h4 className="text-lg font-medium text-cyan-400 mb-2">NextEra Code Editor</h4>
+                      <p className="text-gray-300 text-sm">
+                        We're working hard to bring you an amazing coding experience with our advanced code editor. 
+                        Stay tuned for the launch!
+                      </p>
+                    </>
+                  )}
+                  {selectedFeature === 'InterviewSheet' && (
+                    <>
+                      <h4 className="text-lg font-medium text-cyan-400 mb-2">Interview Preparation Sheet</h4>
+                      <p className="text-gray-300 text-sm">
+                        A comprehensive collection of interview-focused problems and patterns to help you ace your technical interviews. 
+                        Coming soon with curated questions from top companies!
+                      </p>
+                    </>
+                  )}
+                  {selectedFeature === 'LastMinuteSheet' && (
+                    <>
+                      <h4 className="text-lg font-medium text-cyan-400 mb-2">Last Minute Revision Sheet</h4>
+                      <p className="text-gray-300 text-sm">
+                        Quick revision materials and essential problems for last-minute preparation before interviews and exams. 
+                        Perfect for brushing up on key concepts!
+                      </p>
+                    </>
+                  )}
+                  {selectedFeature === 'QASheet' && (
+                    <>
+                      <h4 className="text-lg font-medium text-cyan-400 mb-2">Online Assessment Sheet</h4>
+                      <p className="text-gray-300 text-sm">
+                        Specialized problems and patterns commonly found in online assessments and coding challenges. 
+                        Get ready for your OA rounds with targeted practice!
+                      </p>
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center justify-center space-x-2 text-sm text-gray-400 mb-4">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span>Development in progress...</span>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setShowDevelopmentModal(false)}
+                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200"
+              >
+                Got it!
+              </button>
+            </div>
+            
+            {/* Close button */}
+            <button
+              onClick={() => setShowDevelopmentModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
       )}
     </div>
   </>
