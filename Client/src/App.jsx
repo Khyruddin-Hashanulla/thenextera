@@ -25,6 +25,15 @@ import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
 import RoleUpdate from './Pages/RoleUpdate';
 import AuthSuccess from './Pages/AuthSuccess';
+// Footer page imports
+import About from './Pages/About';
+import Contact from './Pages/Contact';
+import Help from './Pages/Help';
+import Privacy from './Pages/Privacy';
+import Terms from './Pages/Terms';
+import Careers from './Pages/Careers';
+import Blog from './Pages/Blog';
+import Community from './Pages/Community';
 
 // Route protection components
 const PrivateRoute = ({ children }) => {
@@ -62,6 +71,16 @@ const AppRoutes = () => {
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/role-update" element={<RoleUpdate />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
+      
+      {/* Footer Pages - Public Routes */}
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/careers" element={<Careers />} />
+      <Route path="/blog" element={<Blog />} />
+      <Route path="/help" element={<Help />} />
+      <Route path="/community" element={<Community />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/courses" element={<Courses />} />

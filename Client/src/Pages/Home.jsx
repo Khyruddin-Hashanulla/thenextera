@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import api from "../utils/api";
+import founderImage from "../assets/founder.png";
 
 const Home = () => {
   const { user } = useAuth();
@@ -323,7 +324,7 @@ const Home = () => {
       <div className="relative">
         <div className="relative flex justify-center">
           <div className="bg-gray-900/50 backdrop-blur-sm px-6">
-            <div className="w-16 h-0.5 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 rounded-full"></div>
+            <div className="w-16 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full"></div>
           </div>
         </div>
       </div>
@@ -363,7 +364,7 @@ const Home = () => {
               <div className="relative bg-gray-800/40 backdrop-blur-md border border-gray-700/50 rounded-2xl p-8 hover:border-purple-400/50 transition-all duration-300 transform hover:scale-105">
                 <div className="w-16 h-16 bg-gradient-to-r from-purple-400 to-pink-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M17 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M17 20H7m10 0v-2a3 3 0 00-5.356-1.857M17 20H2v-2a3 3 0 015.356-1.857M7 20H2v-2c0-.656-.126-1.283-.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-purple-400 transition-colors">Hands-on Projects</h3>
@@ -444,7 +445,7 @@ const Home = () => {
       <div className="relative">
         <div className="relative flex justify-center">
           <div className="bg-gray-900/50 backdrop-blur-sm px-6">
-            <div className="w-16 h-0.5 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 rounded-full"></div>
+            <div className="w-16 h-0.5 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full"></div>
           </div>
         </div>
       </div>
@@ -559,7 +560,7 @@ const Home = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center text-gray-400 text-sm">
                           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4.5 0 000 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                           </svg>
                           {course.studentsEnrolled?.length || 0} students
                         </div>
@@ -825,6 +826,291 @@ const Home = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Decorative Border */}
+      <div className="relative">
+        <div className="relative flex justify-center">
+          <div className="bg-gray-900/50 backdrop-blur-sm px-6">
+            <div className="w-16 h-0.5 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Founder/Testimonial Section */}
+      <section className="relative py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+                Meet Our Founder
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Learn from the visionary behind NextEra's revolutionary approach to education
+            </p>
+          </div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="group relative">
+              {/* Glowing background effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
+              
+              {/* Main card */}
+              <div className="relative bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-12 text-center hover:bg-white/10 transition-all duration-500 transform hover:scale-[1.02]">
+                {/* Founder Image */}
+                <div className="relative inline-block mb-8">
+                  <div className="w-48 h-48 rounded-full bg-gradient-to-r from-cyan-400 to-purple-400 p-1.5 shadow-2xl shadow-cyan-500/30 group-hover:shadow-cyan-500/50 transition-all duration-500">
+                    <img 
+                      src={founderImage} 
+                      alt="Khyruddin Hashanulla" 
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  </div>
+                  {/* Floating elements */}
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"></div>
+                  <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-pulse"></div>
+                </div>
+
+                {/* Content */}
+                <h3 className="text-3xl font-bold text-white mb-3 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-cyan-400 group-hover:to-purple-400 transition-all duration-300">
+                  Khyruddin Hashanulla
+                </h3>
+                <p className="text-cyan-400 text-xl mb-6 font-semibold">Founder & CEO</p>
+                
+                <blockquote className="text-gray-300 text-lg leading-relaxed max-w-3xl mx-auto mb-8 italic">
+                  "Education should be accessible, engaging, and transformative. At NextEra, we're not just teaching code—we're building the future leaders of technology."
+                </blockquote>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-cyan-400 mb-1">10K+</div>
+                    <div className="text-gray-400 text-sm">Students Mentored</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-purple-400 mb-1">5+</div>
+                    <div className="text-gray-400 text-sm">Years Experience</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-400 mb-1">95%</div>
+                    <div className="text-gray-400 text-sm">Success Rate</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-400 mb-1">50+</div>
+                    <div className="text-gray-400 text-sm">Courses Created</div>
+                  </div>
+                </div>
+
+                {/* Social Links */}
+                <div className="flex justify-center space-x-6">
+                  <a 
+                    href="https://www.linkedin.com/in/khyruddin-hashanulla" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group/link flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    </svg>
+                    <span className="font-medium">LinkedIn</span>
+                  </a>
+                  <a 
+                    href="https://khyruddin-hashanulla.github.io/MY-PORTFOLIO/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group/link flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                    </svg>
+                    <span className="font-medium">Portfolio</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Decorative Border */}
+      <div className="relative">
+        <div className="relative flex justify-center">
+          <div className="bg-gray-900/50 backdrop-blur-sm px-6">
+            <div className="w-16 h-0.5 bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Featured Courses Section */}
+      <section className="relative py-20 px-4 bg-gray-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
+                Featured Courses
+              </span>
+            </h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              Discover our most popular courses designed by industry experts to accelerate your career
+            </p>
+          </div>
+
+          {coursesLoading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-400"></div>
+            </div>
+          ) : coursesError ? (
+            <div className="text-center py-20">
+              <div className="text-red-400 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Unable to load courses</h3>
+              <p className="text-gray-400 mb-6">{coursesError}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : courses.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-gray-400 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">No courses available</h3>
+              <p className="text-gray-400">Check back soon for new courses!</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {courses.map((course, index) => (
+                  <div 
+                    key={course.id || course._id} 
+                    className="group relative bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden hover:transform hover:scale-105 transition-all duration-300 border border-gray-700/50 hover:border-cyan-400/50"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {/* Course Thumbnail */}
+                    <div className="relative h-48 overflow-hidden">
+                      {course.thumbnail ? (
+                        <img 
+                          src={course.thumbnail} 
+                          alt={course.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            e.target.src = 'https://via.placeholder.com/400x200/1f2937/60a5fa?text=Course+Thumbnail';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+                          <svg className="w-16 h-16 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                        </div>
+                      )}
+                      
+                      {/* Overlay gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      
+                      {/* Course duration badge */}
+                      <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm">
+                        {course.sections?.length || 0} sections
+                      </div>
+                    </div>
+
+                    {/* Course Content */}
+                    <div className="p-6">
+                      {/* Course Title */}
+                      <h3 className="text-xl font-bold text-white mb-3 line-clamp-2 group-hover:text-cyan-400 transition-colors">
+                        {course.title || 'Untitled Course'}
+                      </h3>
+
+                      {/* Course Description */}
+                      <p className="text-gray-400 text-sm mb-4 line-clamp-3">
+                        {course.description || 'No description available for this course.'}
+                      </p>
+
+                      {/* Creator Info */}
+                      <div className="flex items-center mb-4">
+                        <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                          {course.creatorId?.name?.charAt(0) || 'I'}
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-medium">
+                            {course.creatorId?.name || 'Instructor'}
+                          </p>
+                          <p className="text-gray-500 text-xs">Course Creator</p>
+                        </div>
+                      </div>
+
+                      {/* Enrollment Info */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center text-gray-400 text-sm">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                          </svg>
+                          {course.studentsEnrolled?.length || 0} students
+                        </div>
+                        <div className="flex items-center text-green-400 text-sm font-medium">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                          Free
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3">
+                        <Link
+                          to={`/courses/${course.id || course._id}`}
+                          className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white py-3 px-4 rounded-lg font-medium text-center transition-all duration-300 transform hover:scale-105"
+                        >
+                          View Course
+                        </Link>
+                        <button
+                          onClick={() => handleLikeCourse(course.id || course._id)}
+                          className={`px-4 py-3 border rounded-lg transition-all duration-300 transform hover:scale-105 ${
+                            likedCourses.has(course.id || course._id)
+                              ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-purple-500 text-white hover:from-purple-600 hover:to-pink-600 hover:border-purple-600'
+                              : 'border-cyan-400 text-cyan-400 hover:bg-cyan-400 hover:text-white'
+                          }`}
+                          title={likedCourses.has(course.id || course._id) ? 'Remove from favorites' : 'Add to favorites'}
+                        >
+                          <svg 
+                            className="w-5 h-5" 
+                            fill={likedCourses.has(course.id || course._id) ? "currentColor" : "none"} 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* View All Courses Button */}
+              <div className="text-center mt-12">
+                <Link
+                  to="/courses"
+                  className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+                >
+                  <span>View All Courses</span>
+                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
