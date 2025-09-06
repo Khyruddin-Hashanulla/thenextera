@@ -18,6 +18,36 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist', // default, but explicitly set
+    outDir: 'dist',
+    // Enable minification
+    minify: 'terser',
+    // Optimize chunks
+    rollupOptions: {
+      output: {
+        // Manual chunk splitting for better caching
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['react-icons'],
+          editor: ['@monaco-editor/react'],
+          utils: ['axios']
+        },
+        // Optimize chunk file names
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+      }
+    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+    // Enable source maps for production debugging (optional)
+    sourcemap: false,
+    // Optimize CSS
+    cssCodeSplit: true,
+    // Enable tree shaking
+    target: 'es2015'
   },
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'axios', 'react-icons']
+  }
 });

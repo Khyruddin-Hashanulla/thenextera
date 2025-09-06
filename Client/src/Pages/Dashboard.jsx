@@ -65,28 +65,46 @@ const Dashboard = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showInstructorApp, setShowInstructorApp] = useState(false);
 
+  const handleFocus = () => {
+    fetchDashboardData();
+    fetchCoreSubjectsProgress();
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Only fetch data once when component mounts
+    const initializeData = async () => {
+      try {
+        await Promise.all([
+          fetchDashboardData(),
+          fetchDSAStats(),
+          fetchCoreSubjectsProgress()
+        ]);
+      } catch (error) {
+        console.error('Error initializing dashboard data:', error);
+      }
+    };
+
+    initializeData();
+    
+    // Add window focus listener for data refresh (optional)
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user?.id]); // Only re-run if user ID changes
+
   useEffect(() => {
     const hour = new Date().getHours();
     if (hour < 12) setGreeting("Good Morning");
     else if (hour < 17) setGreeting("Good Afternoon");
     else setGreeting("Good Evening");
-
-    fetchDashboardData();
-    fetchCoreSubjectsProgress();
-
-    const handleFocus = () => {
-      fetchDashboardData();
-      fetchCoreSubjectsProgress();
-    };
-
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [user?.userId, user?._id]);
+  }, []);
 
   useEffect(() => {
     if (user) {
-      fetchDashboardData();
-
       // Set up real-time progress tracking
       const progressInterval = setInterval(() => {
         refreshProgressData();

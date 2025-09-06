@@ -1,41 +1,45 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import LoadingScreen from './components/LoadingScreen';
-import Home from './Pages/Home'; // Import the new Home component
-import Login from './Pages/Login';
-import Register from './Pages/Register';
-import VerifyOTP from './Pages/VerifyOTP';
+
+// Import Dashboard directly to fix black screen issue
 import Dashboard from './Pages/Dashboard';
-import Courses from './Pages/Courses';
-import CreateCourse from './Pages/CreateCourse';
-import EditCourse from './Pages/EditCourse';
-import CourseView from './Pages/CourseView';
-import AdminPanel from './Pages/AdminPanel';
-import CoreSubjects from './Pages/CoreSubjects';
-import SubjectDetail from './Pages/SubjectDetail';
-import TopicDetailModular from './Pages/TopicDetailModular';
-import AdminSubjects from './Pages/AdminSubjects';
-import DSASheet from './Pages/DSASheet';
-import AdminDSA from './Pages/AdminDSA';
-import DSABookmarks from './Pages/DSABookmarks';
-import CodeEditor from './Pages/CodeEditor';
-import EmailVerification from './Pages/EmailVerification';
-import ForgotPassword from './Pages/ForgotPassword';
-import ResetPassword from './Pages/ResetPassword';
-import RoleUpdate from './Pages/RoleUpdate';
-import AuthSuccess from './Pages/AuthSuccess';
-import Profile from './Pages/Profile';
-import InstructorPanel from './Pages/InstructorPanel';
-// Footer page imports
-import About from './Pages/About';
-import Contact from './Pages/Contact';
-import Help from './Pages/Help';
-import Privacy from './Pages/Privacy';
-import Terms from './Pages/Terms';
-import Careers from './Pages/Careers';
-import Blog from './Pages/Blog';
-import Community from './Pages/Community';
+
+// Lazy load other components for better performance
+const Home = lazy(() => import('./Pages/Home'));
+const Login = lazy(() => import('./Pages/Login'));
+const Register = lazy(() => import('./Pages/Register'));
+const VerifyOTP = lazy(() => import('./Pages/VerifyOTP'));
+const Courses = lazy(() => import('./Pages/Courses'));
+const CreateCourse = lazy(() => import('./Pages/CreateCourse'));
+const EditCourse = lazy(() => import('./Pages/EditCourse'));
+const CourseView = lazy(() => import('./Pages/CourseView'));
+const AdminPanel = lazy(() => import('./Pages/AdminPanel'));
+const CoreSubjects = lazy(() => import('./Pages/CoreSubjects'));
+const SubjectDetail = lazy(() => import('./Pages/SubjectDetail'));
+const TopicDetailModular = lazy(() => import('./Pages/TopicDetailModular'));
+const AdminSubjects = lazy(() => import('./Pages/AdminSubjects'));
+const DSASheet = lazy(() => import('./Pages/DSASheet'));
+const AdminDSA = lazy(() => import('./Pages/AdminDSA'));
+const DSABookmarks = lazy(() => import('./Pages/DSABookmarks'));
+const CodeEditor = lazy(() => import('./Pages/CodeEditor'));
+const EmailVerification = lazy(() => import('./Pages/EmailVerification'));
+const ForgotPassword = lazy(() => import('./Pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./Pages/ResetPassword'));
+const RoleUpdate = lazy(() => import('./Pages/RoleUpdate'));
+const AuthSuccess = lazy(() => import('./Pages/AuthSuccess'));
+const Profile = lazy(() => import('./Pages/Profile'));
+const InstructorPanel = lazy(() => import('./Pages/InstructorPanel'));
+// Footer page imports - lazy loaded
+const About = lazy(() => import('./Pages/About'));
+const Contact = lazy(() => import('./Pages/Contact'));
+const Help = lazy(() => import('./Pages/Help'));
+const Privacy = lazy(() => import('./Pages/Privacy'));
+const Terms = lazy(() => import('./Pages/Terms'));
+const Careers = lazy(() => import('./Pages/Careers'));
+const Blog = lazy(() => import('./Pages/Blog'));
+const Community = lazy(() => import('./Pages/Community'));
 
 // Route protection components
 const PrivateRoute = ({ children }) => {
@@ -69,45 +73,125 @@ const AppRoutes = () => {
   return (
     <Routes>
       {/* Set the Home component as the root route */}
-      <Route path="/" element={<Home />} />
-      <Route path="/Home" element={<Home />} />
+      <Route path="/" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Home />
+        </Suspense>
+      } />
+      <Route path="/Home" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Home />
+        </Suspense>
+      } />
       
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/api/auth/success" element={<AuthSuccess />} />
-      <Route path="/verify-email/:token" element={<EmailVerification />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/reset-password/:token" element={<ResetPassword />} />
-      <Route path="/role-update" element={<RoleUpdate />} />
-      <Route path="/verify-otp" element={<VerifyOTP />} />
+      <Route path="/login" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Login />
+        </Suspense>
+      } />
+      <Route path="/register" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Register />
+        </Suspense>
+      } />
+      <Route path="/api/auth/success" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <AuthSuccess />
+        </Suspense>
+      } />
+      <Route path="/verify-email/:token" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <EmailVerification />
+        </Suspense>
+      } />
+      <Route path="/forgot-password" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <ForgotPassword />
+        </Suspense>
+      } />
+      <Route path="/reset-password/:token" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <ResetPassword />
+        </Suspense>
+      } />
+      <Route path="/role-update" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <RoleUpdate />
+        </Suspense>
+      } />
+      <Route path="/verify-otp" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <VerifyOTP />
+        </Suspense>
+      } />
       
       {/* Footer Pages - Public Routes */}
-      <Route path="/about" element={<About />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/careers" element={<Careers />} />
-      <Route path="/blog" element={<Blog />} />
-      <Route path="/help" element={<Help />} />
-      <Route path="/community" element={<Community />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="/terms" element={<Terms />} />
+      <Route path="/about" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <About />
+        </Suspense>
+      } />
+      <Route path="/contact" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Contact />
+        </Suspense>
+      } />
+      <Route path="/careers" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Careers />
+        </Suspense>
+      } />
+      <Route path="/blog" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Blog />
+        </Suspense>
+      } />
+      <Route path="/help" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Help />
+        </Suspense>
+      } />
+      <Route path="/community" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Community />
+        </Suspense>
+      } />
+      <Route path="/privacy" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Privacy />
+        </Suspense>
+      } />
+      <Route path="/terms" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Terms />
+        </Suspense>
+      } />
       
       {/* Profile Route - Private Route */}
       <Route 
         path="/profile" 
         element={
           <PrivateRoute>
-            <Profile />
+            <Suspense fallback={<LoadingScreen />}>
+              <Profile />
+            </Suspense>
           </PrivateRoute>
         } 
       />
       
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/courses" element={<Courses />} />
+      <Route path="/courses" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <Courses />
+        </Suspense>
+      } />
       <Route 
         path="/core-subjects" 
         element={
           <PrivateRoute>
-            <CoreSubjects />
+            <Suspense fallback={<LoadingScreen />}>
+              <CoreSubjects />
+            </Suspense>
           </PrivateRoute>
         } 
       />
@@ -115,7 +199,9 @@ const AppRoutes = () => {
         path="/core-subject" 
         element={
           <PrivateRoute>
-            <CoreSubjects />
+            <Suspense fallback={<LoadingScreen />}>
+              <CoreSubjects />
+            </Suspense>
           </PrivateRoute>
         } 
       />
@@ -123,7 +209,9 @@ const AppRoutes = () => {
         path="/subject/:subjectId" 
         element={
           <PrivateRoute>
-            <SubjectDetail />
+            <Suspense fallback={<LoadingScreen />}>
+              <SubjectDetail />
+            </Suspense>
           </PrivateRoute>
         } 
       />
@@ -131,7 +219,9 @@ const AppRoutes = () => {
         path="/subject/:subjectId/topic/:topicId" 
         element={
           <PrivateRoute>
-            <TopicDetailModular />
+            <Suspense fallback={<LoadingScreen />}>
+              <TopicDetailModular />
+            </Suspense>
           </PrivateRoute>
         } 
       />
@@ -139,7 +229,9 @@ const AppRoutes = () => {
         path="/subject/:subjectId/topic/:topicId/subtopic/:subtopicId" 
         element={
           <PrivateRoute>
-            <TopicDetailModular />
+            <Suspense fallback={<LoadingScreen />}>
+              <TopicDetailModular />
+            </Suspense>
           </PrivateRoute>
         } 
       />
@@ -148,7 +240,9 @@ const AppRoutes = () => {
         path="/courses/create"
         element={
           <InstructorRoute>
-            <CreateCourse />
+            <Suspense fallback={<LoadingScreen />}>
+              <CreateCourse />
+            </Suspense>
           </InstructorRoute>
         }
       />
@@ -157,7 +251,9 @@ const AppRoutes = () => {
         path="/courses/edit/:courseId"
         element={
           <InstructorRoute>
-            <EditCourse />
+            <Suspense fallback={<LoadingScreen />}>
+              <EditCourse />
+            </Suspense>
           </InstructorRoute>
         }
       />
@@ -166,7 +262,9 @@ const AppRoutes = () => {
         path="/admin"
         element={
           <AdminRoute>
-            <AdminPanel />
+            <Suspense fallback={<LoadingScreen />}>
+              <AdminPanel />
+            </Suspense>
           </AdminRoute>
         }
       />
@@ -175,7 +273,9 @@ const AppRoutes = () => {
         path="/admin/subjects"
         element={
           <AdminRoute>
-            <AdminSubjects />
+            <Suspense fallback={<LoadingScreen />}>
+              <AdminSubjects />
+            </Suspense>
           </AdminRoute>
         }
       />
@@ -184,7 +284,9 @@ const AppRoutes = () => {
         path="/dsa-sheet"
         element={
           <PrivateRoute>
-            <DSASheet />
+            <Suspense fallback={<LoadingScreen />}>
+              <DSASheet />
+            </Suspense>
           </PrivateRoute>
         }
       />
@@ -193,21 +295,29 @@ const AppRoutes = () => {
         path="/dsa-bookmarks"
         element={
           <PrivateRoute>
-            <DSABookmarks />
+            <Suspense fallback={<LoadingScreen />}>
+              <DSABookmarks />
+            </Suspense>
           </PrivateRoute>
         }
       />
 
       <Route
         path="/code-editor"
-        element={<CodeEditor />}
+        element={
+          <Suspense fallback={<LoadingScreen />}>
+            <CodeEditor />
+          </Suspense>
+        }
       />
 
       <Route
         path="/admin/dsa"
         element={
           <AdminRoute>
-            <AdminDSA />
+            <Suspense fallback={<LoadingScreen />}>
+              <AdminDSA />
+            </Suspense>
           </AdminRoute>
         }
       />
@@ -216,7 +326,9 @@ const AppRoutes = () => {
         path="/dsa-management"
         element={
           <InstructorOrAdminRoute>
-            <AdminDSA />
+            <Suspense fallback={<LoadingScreen />}>
+              <AdminDSA />
+            </Suspense>
           </InstructorOrAdminRoute>
         }
       />
@@ -225,33 +337,24 @@ const AppRoutes = () => {
         path="/instructor-panel"
         element={
           <InstructorRoute>
-            <InstructorPanel />
+            <Suspense fallback={<LoadingScreen />}>
+              <InstructorPanel />
+            </Suspense>
           </InstructorRoute>
         }
       />
 
-      <Route path="/courses/:courseId" element={<CourseView />} />
+      <Route path="/courses/:courseId" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <CourseView />
+        </Suspense>
+      } />
     </Routes>
   );
 };
 
 // Main App component
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Force loading screen to show every time for testing
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
   return (
     <AuthProvider>
       <Router>
