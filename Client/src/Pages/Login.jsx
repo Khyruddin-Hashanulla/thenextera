@@ -18,8 +18,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await login(email, password, rememberMe);
-      // Login function handles redirect automatically
+      const result = await login(email, password, rememberMe);
+      if (result && result.success) {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (error) {
       setError(error.response?.data?.error || 'Login failed');
     } finally {

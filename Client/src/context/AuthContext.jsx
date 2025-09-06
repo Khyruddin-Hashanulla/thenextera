@@ -72,10 +72,11 @@ const AuthProvider = ({ children }) => {
           authType: response.data.authType
         });
 
-        // Use window.location.href for reliable redirect on all platforms
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 100);
+        // Return success to let the component handle navigation
+        return {
+          success: true,
+          user: response.data.user
+        };
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -132,8 +133,10 @@ const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('authToken');
       
-      // Use window.location.href for reliable redirect
-      window.location.href = '/';
+      // Return success to let the component handle navigation
+      return {
+        success: true
+      };
     }
   };
 
