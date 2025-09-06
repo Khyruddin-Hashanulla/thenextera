@@ -155,11 +155,14 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      const result = await logout();
+      if (result.success) {
+        navigate('/login');
+      }
     } catch (error) {
       console.error('Logout error:', error);
       localStorage.removeItem('authToken');
-      window.location.href = '/';
+      navigate('/login');
     }
   };
 
