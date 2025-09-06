@@ -230,57 +230,66 @@ const AdminPanel = () => {
   };
 
   // Instructor Card Component
-  const InstructorCard = ({ instructor }) => (
-    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-gray-600 transition-colors">
-      <div className="flex items-center space-x-4 mb-4">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-          {instructor.name.charAt(0).toUpperCase()}
-        </div>
-        <div className="flex-1">
-          <h3 className="text-white font-semibold text-lg">{instructor.name}</h3>
-          <p className="text-gray-400 text-sm">{instructor.email}</p>
-        </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold text-blue-400">{instructor.courseCount}</div>
-          <div className="text-gray-400 text-xs">Courses</div>
-        </div>
-      </div>
-      
-      <div className="space-y-2 mb-4">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Joined:</span>
-          <span className="text-gray-300">
-            {new Date(instructor.joinedDate).toLocaleDateString()}
-          </span>
-        </div>
-        {instructor.courseCount > 0 && (
-          <div className="text-sm">
-            <span className="text-gray-400">Recent courses:</span>
-            <div className="mt-1 space-y-1">
-              {instructor.recentCourses.slice(0, 2).map((course, index) => (
-                <div key={index} className="text-gray-300 text-xs bg-gray-700 px-2 py-1 rounded truncate">
-                  {course.title}
-                </div>
-              ))}
-            </div>
+  const InstructorCard = ({ instructor }) => {
+    // Safely handle missing data
+    const name = instructor?.name || 'Unknown';
+    const email = instructor?.email || 'No email';
+    const courseCount = instructor?.courseCount || 0;
+    const joinedDate = instructor?.createdAt || instructor?.joinedDate || new Date();
+    const recentCourses = instructor?.recentCourses || [];
+
+    return (
+      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-gray-600 transition-colors">
+        <div className="flex items-center space-x-4 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+            {name.charAt(0).toUpperCase()}
           </div>
-        )}
+          <div className="flex-1">
+            <h3 className="text-white font-semibold text-lg">{name}</h3>
+            <p className="text-gray-400 text-sm">{email}</p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-blue-400">{courseCount}</div>
+            <div className="text-gray-400 text-xs">Courses</div>
+          </div>
+        </div>
+        
+        <div className="space-y-2 mb-4">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-400">Joined:</span>
+            <span className="text-gray-300">
+              {new Date(joinedDate).toLocaleDateString()}
+            </span>
+          </div>
+          {courseCount > 0 && recentCourses.length > 0 && (
+            <div className="text-sm">
+              <span className="text-gray-400">Recent courses:</span>
+              <div className="mt-1 space-y-1">
+                {recentCourses.slice(0, 2).map((course, index) => (
+                  <div key={index} className="text-gray-300 text-xs bg-gray-700 px-2 py-1 rounded truncate">
+                    {course.title || course.name || 'Untitled Course'}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            courseCount > 0 
+              ? 'bg-green-900/20 border border-green-800 text-green-300'
+              : 'bg-yellow-900/20 border border-yellow-800 text-yellow-300'
+          }`}>
+            {courseCount > 0 ? 'Active Instructor' : 'New Instructor'}
+          </span>
+          {courseCount > 5 && (
+            <span className="text-purple-400 text-xs font-medium">⭐ Top Instructor</span>
+          )}
+        </div>
       </div>
-      
-      <div className="flex items-center justify-between">
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          instructor.courseCount > 0 
-            ? 'bg-green-900/20 border border-green-800 text-green-300'
-            : 'bg-yellow-900/20 border border-yellow-800 text-yellow-300'
-        }`}>
-          {instructor.courseCount > 0 ? 'Active Instructor' : 'New Instructor'}
-        </span>
-        {instructor.courseCount > 5 && (
-          <span className="text-purple-400 text-xs font-medium">⭐ Top Instructor</span>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (!isAdmin) {
     return null;

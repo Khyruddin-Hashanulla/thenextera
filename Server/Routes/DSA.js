@@ -773,7 +773,7 @@ router.post('/progress/mark', authenticateJWT, async (req, res) => {
       isBookmarked: progress.isBookmarked,
       status: progress.status,
       completedAt: progress.completedAt,
-      lastAttemptedAt: progress.lastAttemptedAt
+      lastAttemptAt: progress.lastAttemptAt
     };
 
     res.json({ 
@@ -794,14 +794,35 @@ router.post('/progress/mark', authenticateJWT, async (req, res) => {
 // GET /api/dsa/progress/stats - Get user statistics
 router.get('/progress/stats', authenticateJWT, async (req, res) => {
   try {
-    const stats = await UserProgress.getUserStats(req.user.id);
+    console.log('🔍 Fetching DSA stats for user:', req.user.id);
+    
+    // Convert user ID to ObjectId for MongoDB queries
+    const mongoose = require('mongoose');
+    const userObjectId = new mongoose.Types.ObjectId(req.user.id);
+    
+    const stats = await UserProgress.getUserStats(userObjectId);
+    console.log('📊 Basic user stats:', stats);
 
     // Get the actual total number of problems in the system
-    const totalProblemsInSystem = await Problem.countDocuments();
+    const totalProblemsInSystem = await Problem.countDocuments({ isActive: true });
+    console.log('📊 Total problems in system:', totalProblemsInSystem);
 
     // Get difficulty-wise stats
-    const difficultyStats = await UserProgress.aggregate([
-      { $match: { userId: req.user.id } },
+    const allProblemsByDifficulty = await Problem.aggregate([
+      { $match: { isActive: true } },
+      {
+        $group: {
+          _id: '$difficulty',
+          totalProblems: { $sum: 1 }
+        }
+      }
+    ]);
+
+    console.log('📊 All problems by difficulty:', allProblemsByDifficulty);
+
+    // Then get user progress by difficulty
+    const userProgressByDifficulty = await UserProgress.aggregate([
+      { $match: { userId: userObjectId } },
       {
         $lookup: {
           from: 'problems',
@@ -811,37 +832,124 @@ router.get('/progress/stats', authenticateJWT, async (req, res) => {
         }
       },
       { $unwind: '$problem' },
+      { $match: { 'problem.isActive': true } }, // Only count active problems
       {
         $group: {
           _id: '$problem.difficulty',
-          total: { $sum: 1 },
-          practiced: { $sum: { $cond: ['$practiced', 1, 0] } },
-          completed: { $sum: { $cond: ['$completed', 1, 0] } }
+          practiced: { $sum: { $cond: [{ $or: ['$practiced', { $eq: ['$status', 'practiced'] }, { $eq: ['$status', 'completed'] }] }, 1, 0] } },
+          completed: { $sum: { $cond: [{ $or: ['$completed', { $eq: ['$status', 'completed'] }] }, 1, 0] } }
         }
       }
     ]);
 
-    const formattedDifficultyStats = { Easy: {}, Medium: {}, Hard: {} };
-    difficultyStats.forEach(stat => {
-      formattedDifficultyStats[stat._id] = {
-        total: stat.total,
-        practiced: stat.practiced,
-        completed: stat.completed,
-        practicePercentage: stat.total > 0 ? Math.round((stat.practiced / stat.total) * 100) : 0,
-        completionPercentage: stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0
-      };
+    console.log('📊 User progress by difficulty:', userProgressByDifficulty);
+
+    // Combine the data
+    const formattedDifficultyStats = { 
+      Easy: { total: 0, practiced: 0, completed: 0 }, 
+      Medium: { total: 0, practiced: 0, completed: 0 }, 
+      Hard: { total: 0, practiced: 0, completed: 0 } 
+    };
+    
+    // Set total problems for each difficulty
+    allProblemsByDifficulty.forEach(stat => {
+      if (formattedDifficultyStats[stat._id]) {
+        formattedDifficultyStats[stat._id].total = stat.totalProblems;
+      }
     });
+    
+    // Set user progress for each difficulty
+    userProgressByDifficulty.forEach(stat => {
+      if (formattedDifficultyStats[stat._id]) {
+        formattedDifficultyStats[stat._id].practiced = stat.practiced;
+        formattedDifficultyStats[stat._id].completed = stat.completed;
+        formattedDifficultyStats[stat._id].practicePercentage = formattedDifficultyStats[stat._id].total > 0 ? 
+          Math.round((stat.practiced / formattedDifficultyStats[stat._id].total) * 100) : 0;
+        formattedDifficultyStats[stat._id].completionPercentage = formattedDifficultyStats[stat._id].total > 0 ? 
+          Math.round((stat.completed / formattedDifficultyStats[stat._id].total) * 100) : 0;
+      }
+    });
+
+    console.log('📊 Final formatted difficulty stats:', formattedDifficultyStats);
+
+    // Calculate streaks
+    let currentStreak = 0;
+    let maxStreak = 0;
+    
+    try {
+      const Activity = require('../Models/Activity');
+      const today = new Date();
+      
+      // Get activities sorted by date descending
+      const activities = await Activity.find({
+        userId: userObjectId,
+        problemsSolved: { $gt: 0 }
+      }).sort({ date: -1 });
+      
+      // Create a Set for faster lookup
+      const activityDates = new Set(activities.map(a => a.date));
+      
+      let tempStreak = 0;
+      let currentStreakFound = false;
+      
+      // Calculate streaks by going backwards from today
+      const todayStr = today.toISOString().split('T')[0];
+      let checkDate = new Date(today);
+      
+      for (let i = 0; i < 365; i++) {
+        const dateStr = checkDate.toISOString().split('T')[0];
+        const hasActivity = activityDates.has(dateStr);
+        
+        if (hasActivity) {
+          tempStreak++;
+          
+          // For current streak: only count if we haven't broken the streak yet
+          if (!currentStreakFound) {
+            currentStreak++;
+          }
+          
+          // Update max streak
+          maxStreak = Math.max(maxStreak, tempStreak);
+        } else {
+          // No activity on this date
+          if (dateStr === todayStr) {
+            // If no activity today, current streak might still continue from yesterday
+            // Don't break the streak yet, just continue to check yesterday
+          } else {
+            // This breaks the current streak if we're still calculating it
+            if (!currentStreakFound) {
+              currentStreakFound = true;
+            }
+            // Reset temp streak for max calculation
+            tempStreak = 0;
+          }
+        }
+        
+        // Move to previous day
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+    } catch (streakError) {
+      console.error('Error calculating streaks:', streakError);
+    }
+
+    const finalStats = {
+      totalProblems: totalProblemsInSystem,
+      completedProblems: stats.completedProblems || 0,
+      practicedProblems: stats.practicedProblems || 0,
+      bookmarkedProblems: stats.bookmarkedProblems || 0,
+      currentStreak,
+      maxStreak,
+      difficultyStats: formattedDifficultyStats
+    };
+
+    console.log('📊 Final stats being returned:', finalStats);
 
     res.json({
       success: true,
-      stats: {
-        ...stats,
-        totalProblems: totalProblemsInSystem, // Override with actual total
-        difficultyStats: formattedDifficultyStats
-      }
+      stats: finalStats
     });
   } catch (error) {
-    console.error('Error fetching user stats:', error);
+    console.error('❌ Error fetching user stats:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch statistics',

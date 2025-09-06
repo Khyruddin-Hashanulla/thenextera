@@ -23,7 +23,8 @@ import {
   FaDatabase,
   FaDesktop,
   FaNetworkWired,
-  FaCube
+  FaCube,
+  FaCodeBranch
 } from 'react-icons/fa';
 import logo from '../assets/logo.png';
 import api from '../utils/api';
@@ -500,6 +501,19 @@ const Navbar = () => {
                             >
                               <FaUserGraduate className="w-4 h-4" />
                               <span className="text-sm">Admin Panel</span>
+                            </button>
+                          )}
+
+                          {(isInstructor || user.role === 'Admin') && (
+                            <button
+                              onClick={() => {
+                                navigate('/dsa-management');
+                                setProfileDropdownOpen(false);
+                              }}
+                              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-all duration-300 w-full text-left group"
+                            >
+                              <FaCodeBranch className="w-4 h-4" />
+                              <span className="text-sm">DSA Management</span>
                             </button>
                           )}
 

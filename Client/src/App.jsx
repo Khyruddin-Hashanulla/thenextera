@@ -26,6 +26,7 @@ import ResetPassword from './Pages/ResetPassword';
 import RoleUpdate from './Pages/RoleUpdate';
 import AuthSuccess from './Pages/AuthSuccess';
 import Profile from './Pages/Profile';
+import InstructorPanel from './Pages/InstructorPanel';
 // Footer page imports
 import About from './Pages/About';
 import Contact from './Pages/Contact';
@@ -53,6 +54,13 @@ const AdminRoute = ({ children }) => {
   const { user, isAdmin } = useAuth();
   if (!user) return <Navigate to="/login" />;
   if (!isAdmin) return <Navigate to="/dashboard" />;
+  return children;
+};
+
+const InstructorOrAdminRoute = ({ children }) => {
+  const { user, isInstructor, isAdmin } = useAuth();
+  if (!user) return <Navigate to="/login" />;
+  if (!isInstructor && !isAdmin) return <Navigate to="/dashboard" />;
   return children;
 };
 
@@ -201,6 +209,24 @@ const AppRoutes = () => {
           <AdminRoute>
             <AdminDSA />
           </AdminRoute>
+        }
+      />
+
+      <Route
+        path="/dsa-management"
+        element={
+          <InstructorOrAdminRoute>
+            <AdminDSA />
+          </InstructorOrAdminRoute>
+        }
+      />
+
+      <Route
+        path="/instructor-panel"
+        element={
+          <InstructorRoute>
+            <InstructorPanel />
+          </InstructorRoute>
         }
       />
 
