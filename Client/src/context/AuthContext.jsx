@@ -303,6 +303,13 @@ const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUserData) => {
+    setUser(prevUser => ({
+      ...prevUser,
+      ...updatedUserData
+    }));
+  };
+
   const value = {
     user,
     login,
@@ -313,6 +320,7 @@ const AuthProvider = ({ children }) => {
     verifyOTP,
     resendOTP,
     applyInstructor,
+    updateUser,
     loading,
     error,
     isAuthenticated: !!user,

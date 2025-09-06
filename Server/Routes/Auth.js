@@ -1139,12 +1139,34 @@ router.get("/me", authenticateJWT, async (req, res) => {
       hasAuthHeader: !!req.headers.authorization
     });
 
+    // Fetch complete user data from database to include all profile fields
+    const fullUser = await User.findById(req.user.id);
+    if (!fullUser) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found" 
+      });
+    }
+
     const user = {
-      id: req.user.id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      isEmailVerified: req.user.isEmailVerified
+      id: fullUser._id,
+      name: fullUser.name,
+      email: fullUser.email,
+      role: fullUser.role,
+      profilePic: fullUser.profilePic,
+      phone: fullUser.phone,
+      location: fullUser.location,
+      bio: fullUser.bio,
+      education: fullUser.education,
+      occupation: fullUser.occupation,
+      github: fullUser.github,
+      linkedin: fullUser.linkedin,
+      twitter: fullUser.twitter,
+      website: fullUser.website,
+      isEmailVerified: fullUser.isEmailVerified,
+      createdAt: fullUser.createdAt,
+      wantsToBeInstructor: fullUser.wantsToBeInstructor,
+      instructorApplication: fullUser.instructorApplication
     };
 
     console.log(' JWT auth successful:', {
@@ -1192,6 +1214,165 @@ router.get("/test-jwt", authenticateJWT, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: "JWT test failed" 
+    });
+  }
+});
+
+// Update user profile
+router.put("/profile", authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const {
+      name,
+      phone,
+      location,
+      bio,
+      education,
+      occupation,
+      github,
+      linkedin,
+      twitter,
+      website
+    } = req.body;
+
+    // Find user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found" 
+      });
+    }
+
+    // Update user fields (excluding email and password)
+    if (name !== undefined) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (location !== undefined) user.location = location;
+    if (bio !== undefined) user.bio = bio;
+    if (education !== undefined) user.education = education;
+    if (occupation !== undefined) user.occupation = occupation;
+    if (github !== undefined) user.github = github;
+    if (linkedin !== undefined) user.linkedin = linkedin;
+    if (twitter !== undefined) user.twitter = twitter;
+    if (website !== undefined) user.website = website;
+
+    // Save updated user
+    await user.save();
+
+    // Return updated user data (excluding sensitive fields)
+    const updatedUser = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      location: user.location,
+      bio: user.bio,
+      education: user.education,
+      occupation: user.occupation,
+      github: user.github,
+      linkedin: user.linkedin,
+      twitter: user.twitter,
+      website: user.website,
+      role: user.role,
+      profilePic: user.profilePic,
+      isEmailVerified: user.isEmailVerified,
+      createdAt: user.createdAt,
+      wantsToBeInstructor: user.wantsToBeInstructor,
+      instructorApplication: user.instructorApplication
+    };
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Server error during profile update" 
+    });
+  }
+});
+
+// Upload profile picture
+router.post("/upload-profile-pic", authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found" 
+      });
+    }
+
+    // Check if file was uploaded
+    if (!req.files || !req.files.profilePic) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "No image file provided" 
+      });
+    }
+
+    const file = req.files.profilePic;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.mimetype)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid file type. Please upload a valid image file." 
+      });
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "File size too large. Please upload an image smaller than 5MB." 
+      });
+    }
+
+    // Upload to Cloudinary
+    const cloudinary = require('cloudinary').v2;
+    
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'image',
+          folder: 'nextera/profile-pics',
+          public_id: `user_${userId}_${Date.now()}`,
+          transformation: [
+            { width: 400, height: 400, crop: 'fill', gravity: 'face' },
+            { quality: 'auto', fetch_format: 'auto' }
+          ]
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(file.data);
+    });
+
+    // Update user's profile picture URL
+    user.profilePic = uploadResult.secure_url;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Profile picture updated successfully",
+      profilePicUrl: uploadResult.secure_url
+    });
+
+  } catch (error) {
+    console.error("Profile picture upload error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Server error during profile picture upload" 
     });
   }
 });

@@ -25,6 +25,7 @@ import ForgotPassword from './Pages/ForgotPassword';
 import ResetPassword from './Pages/ResetPassword';
 import RoleUpdate from './Pages/RoleUpdate';
 import AuthSuccess from './Pages/AuthSuccess';
+import Profile from './Pages/Profile';
 // Footer page imports
 import About from './Pages/About';
 import Contact from './Pages/Contact';
@@ -81,6 +82,16 @@ const AppRoutes = () => {
       <Route path="/community" element={<Community />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/terms" element={<Terms />} />
+      
+      {/* Profile Route - Private Route */}
+      <Route 
+        path="/profile" 
+        element={
+          <PrivateRoute>
+            <Profile />
+          </PrivateRoute>
+        } 
+      />
       
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/courses" element={<Courses />} />

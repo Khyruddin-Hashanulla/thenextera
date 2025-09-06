@@ -13,6 +13,21 @@ const userSchema = new Schema({
     default: 'Student' 
   },
   profilePic: { type: String, default: '' },
+  
+  // Profile Information Fields
+  phone: { type: String, default: '' },
+  location: { type: String, default: '' },
+  bio: { type: String, default: '' },
+  education: { type: String, default: '' },
+  occupation: { type: String, default: '' },
+  
+  // Social Media Links
+  github: { type: String, default: '' },
+  linkedin: { type: String, default: '' },
+  twitter: { type: String, default: '' },
+  website: { type: String, default: '' },
+  
+  // Authentication Fields
   isEmailVerified: { type: Boolean, default: false },
   emailVerificationOTP: String,
   emailVerificationExpires: Date,
@@ -22,6 +37,7 @@ const userSchema = new Schema({
   rememberMeOTP: String,
   googleId: String,
   githubId: String,
+  
   // Track user intent during registration
   wantsToBeInstructor: { type: Boolean, default: false },
   // Instructor application tracking
