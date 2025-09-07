@@ -1207,24 +1207,22 @@ const DSASheet = () => {
                                                 )}
                                               </td>
 
-                                              {/* Solution Column - Enhanced for Mobile */}
+                                              {/* Solution Column */}
                                               <td className="px-2 sm:px-3 py-4 text-center" style={{ touchAction: 'manipulation' }}>
                                                 {problem.solution && problem.solution.type && problem.solution.type !== 'none' ? (
                                                   <button 
+                                                    type="button"
                                                     onClick={(e) => {
                                                       e.preventDefault();
-                                                      e.stopPropagation();
                                                       console.log('Solution button clicked for:', problem.title);
-                                                      openYouTubeDirectly(problem);
-                                                    }}
-                                                    onTouchStart={(e) => {
-                                                      e.stopPropagation();
-                                                    }}
-                                                    onTouchEnd={(e) => {
-                                                      e.preventDefault();
-                                                      e.stopPropagation();
-                                                      console.log('Solution button touched for:', problem.title);
-                                                      openYouTubeDirectly(problem);
+                                                      
+                                                      if (problem.solution && problem.solution.type === 'youtube' && problem.solution.youtubeLink) {
+                                                        console.log('Opening YouTube link:', problem.solution.youtubeLink);
+                                                        window.open(problem.solution.youtubeLink, '_blank', 'noopener,noreferrer');
+                                                      } else {
+                                                        console.log('No valid YouTube link found');
+                                                        openProblemModal(problem);
+                                                      }
                                                     }}
                                                     className="inline-flex items-center px-1.5 sm:px-2 py-1 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700 active:bg-green-800 transition-colors touch-manipulation"
                                                     title="View Solution"

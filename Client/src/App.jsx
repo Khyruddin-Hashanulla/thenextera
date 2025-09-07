@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useState, useEffect, lazy, Suspense } from 'react';
 import LoadingScreen from './components/LoadingScreen';
+import YouTubeSubscriptionPopup from './components/YouTubeSubscriptionPopup';
 
 // Import Dashboard directly to fix black screen issue
 import Dashboard from './Pages/Dashboard';
@@ -365,6 +366,7 @@ function App() {
     <AuthProvider>
       <Router>
         <AppRoutes />
+        <YouTubeSubscriptionPopup />
       </Router>
     </AuthProvider>
   );
