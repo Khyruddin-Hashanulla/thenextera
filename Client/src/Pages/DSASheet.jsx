@@ -31,11 +31,13 @@ const DSASheet = () => {
   const [activityData, setActivityData] = useState([]);
   const [showSidebar, setShowSidebar] = useState(true);
   const [filters, setFilters] = useState({
+    search: '',
     difficulty: 'All',
     platform: 'All',
-    status: 'All',
-    search: ''
+    status: 'All'
   });
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchDebounce, setSearchDebounce] = useState(null);
   const [showDevelopmentModal, setShowDevelopmentModal] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState('');
 
@@ -73,6 +75,62 @@ const DSASheet = () => {
       console.log('Activity data with levels > 0:', activityData.filter(d => d.level > 0).length);
     }
   }, [activityData]);
+
+  useEffect(() => {
+    let pollInterval;
+    
+    const pollForUpdates = async () => {
+      try {
+        // Only poll if user is authenticated and has topics loaded
+        if (!topics.length) return;
+        
+        console.log('🔄 Polling for topic updates...');
+        
+        // Fetch latest topic counts
+        const response = await api.get('/api/dsa/topics');
+        if (response.data.success) {
+          const latestTopics = response.data.topics;
+          
+          // Check if any topic has different problem counts
+          let hasUpdates = false;
+          const updatedTopics = topics.map(currentTopic => {
+            const latestTopic = latestTopics.find(t => t.id === currentTopic.id);
+            if (latestTopic && latestTopic.totalProblems !== currentTopic.totalProblems) {
+              console.log(`📊 Topic "${currentTopic.name}" updated: ${currentTopic.totalProblems} → ${latestTopic.totalProblems} problems`);
+              hasUpdates = true;
+              return { ...currentTopic, totalProblems: latestTopic.totalProblems };
+            }
+            return currentTopic;
+          });
+          
+          // Update topics if there are changes
+          if (hasUpdates) {
+            setTopics(updatedTopics);
+            console.log('✅ Topic counts updated automatically');
+            
+            // Also refresh user stats to get updated totals
+            fetchUserStats();
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error polling for updates:', error);
+      }
+    };
+    
+    // Start polling every 30 seconds when component is active
+    if (topics.length > 0) {
+      pollInterval = setInterval(pollForUpdates, 30000); // 30 seconds
+      console.log('🔄 Started polling for topic updates every 30 seconds');
+    }
+    
+    // Cleanup interval on unmount or when topics change
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        console.log('🛑 Stopped polling for topic updates');
+      }
+    };
+  }, [topics.length]); // Only depend on topics.length to avoid excessive re-renders
 
   const fetchTopics = async () => {
     try {
@@ -298,7 +356,6 @@ const DSASheet = () => {
           });
 
           // Update today's activity immediately for real-time grid updates
-          // Use current timezone date instead of UTC
           const today = new Date();
           const todayStr = today.getFullYear() + '-' + 
                           String(today.getMonth() + 1).padStart(2, '0') + '-' + 
@@ -352,12 +409,49 @@ const DSASheet = () => {
             };
           });
         }
+
+        // Update topic progress counts in the topics list
+        if (selectedTopic && (action === 'completed' || action === 'practiced')) {
+          setTopics(prevTopics => 
+            prevTopics.map(topic => {
+              if (topic.id === selectedTopic.id) {
+                const currentProgress = topic.userProgress || { completedProblems: 0, practicedProblems: 0 };
+                let updatedProgress = { ...currentProgress };
+                
+                if (action === 'completed') {
+                  const isCompleting = response.data.progress?.status === 'completed' || 
+                                      response.data.progress?.completed === true;
+                  updatedProgress.completedProblems = isCompleting 
+                    ? (currentProgress.completedProblems || 0) + 1 
+                    : Math.max(0, (currentProgress.completedProblems || 0) - 1);
+                  
+                  // Also update practiced count if completing
+                  if (isCompleting && !currentProgress.practiced) {
+                    updatedProgress.practicedProblems = (currentProgress.practicedProblems || 0) + 1;
+                  }
+                } else if (action === 'practiced') {
+                  updatedProgress.practicedProblems = (currentProgress.practicedProblems || 0) + 1;
+                }
+                
+                console.log(`📊 Topic progress update for ${topic.name}:`, updatedProgress);
+                
+                return {
+                  ...topic,
+                  userProgress: updatedProgress
+                };
+              }
+              return topic;
+            })
+          );
+        }
         
-        // Refresh complete stats and activity data from server
+        // Refresh complete stats and activity data from server after a short delay
         setTimeout(() => {
           console.log(`🔄 Refreshing stats from server...`);
           fetchUserStats();
-        }, 500);
+          // Also refresh topics to get updated counts
+          fetchTopics();
+        }, 1000);
         
         console.log(`✅ Problem ${action} completed successfully`);
       }
@@ -415,15 +509,15 @@ const DSASheet = () => {
     const percentage = Math.round((completedProblems / totalProblems) * 100);
     
     if (percentage >= 100) {
-      return { badge: '💎', level: 'DIAMOND', color: 'text-cyan-400' };
+      return { badge: '💎', level: 'DIAMOND', color: 'text-cyan-400', unlocked: true };
     } else if (percentage >= 80) {
-      return { badge: '🏆', level: 'GOLD', color: 'text-yellow-500' };
+      return { badge: '🏆', level: 'GOLD', color: 'text-yellow-500', unlocked: true };
     } else if (percentage >= 60) {
-      return { badge: '🥈', level: 'SILVER', color: 'text-gray-400' };
+      return { badge: '🥈', level: 'SILVER', color: 'text-gray-400', unlocked: true };
     } else if (percentage >= 30) {
-      return { badge: '🥉', level: 'BRONZE', color: 'text-orange-600' };
+      return { badge: '🥉', level: 'BRONZE', color: 'text-orange-600', unlocked: true };
     } else {
-      return { badge: '</>', level: 'BEGINNER', color: 'text-blue-500' };
+      return { badge: '</>', level: 'BEGINNER', color: 'text-blue-500', unlocked: true };
     }
   };
 
@@ -585,6 +679,51 @@ const DSASheet = () => {
     return '💡 Break down the problem step by step';
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchUserStats();
+    if (selectedTopic) {
+      await fetchProblems(selectedTopic.id);
+    }
+    setRefreshing(false);
+  };
+
+  const handleFilterChange = (filterType, value) => {
+    const newFilters = { ...filters, [filterType]: value };
+    setFilters(newFilters);
+    
+    // Apply filters immediately for non-search filters
+    if (filterType !== 'search' && selectedTopic) {
+      fetchProblems(selectedTopic.id);
+    }
+  };
+
+  const handleSearchChange = (searchValue) => {
+    setFilters(prev => ({ ...prev, search: searchValue }));
+    
+    // Clear existing debounce
+    if (searchDebounce) {
+      clearTimeout(searchDebounce);
+    }
+    
+    // Set new debounce for search
+    const newDebounce = setTimeout(() => {
+      if (selectedTopic) {
+        fetchProblems(selectedTopic.id);
+      }
+    }, 500); // 500ms delay
+    
+    setSearchDebounce(newDebounce);
+  };
+
+  useEffect(() => {
+    if (searchDebounce) {
+      return () => {
+        clearTimeout(searchDebounce);
+      };
+    }
+  }, [searchDebounce]);
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
@@ -634,10 +773,22 @@ const DSASheet = () => {
                   <span>Current streak: {getCurrentStreak()}</span>
                   <span>Max streak: {getMaxStreak()}</span>
                   <button
-                    onClick={refreshActivityData}
-                    className="text-sm text-gray-200 hover:text-white transition-colors duration-200 px-2 py-1 rounded bg-white/10"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className={`text-sm transition-colors duration-200 px-3 py-1 rounded ${
+                      refreshing 
+                        ? 'text-gray-400 bg-white/5 cursor-not-allowed' 
+                        : 'text-gray-200 hover:text-white bg-white/10 hover:bg-white/20'
+                    }`}
                   >
-                    Refresh
+                    {refreshing ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                        <span>Refreshing...</span>
+                      </div>
+                    ) : (
+                      'Refresh All Data'
+                    )}
                   </button>
                 </div>
               </div>
@@ -740,37 +891,69 @@ const DSASheet = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                        userStats.completedProblems >= Math.ceil((userStats.totalProblems || 1) * 0.3) 
+                          ? 'bg-orange-500/30 ring-2 ring-orange-500/50' 
+                          : 'bg-white/10 opacity-50'
+                      }`}>
                         <span className="text-2xl">🥉</span>
                       </div>
                       <div className="text-xs text-gray-200">BRONZE</div>
-                      <div className="text-xs text-gray-300">30+ problems</div>
+                      <div className="text-xs text-gray-300">30% complete</div>
+                      {userStats.completedProblems >= Math.ceil((userStats.totalProblems || 1) * 0.3) && (
+                        <div className="text-xs text-green-400 mt-1">✓ Unlocked</div>
+                      )}
                     </div>
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                        userStats.completedProblems >= Math.ceil((userStats.totalProblems || 1) * 0.6) 
+                          ? 'bg-gray-400/30 ring-2 ring-gray-400/50' 
+                          : 'bg-white/10 opacity-50'
+                      }`}>
                         <span className="text-2xl">🥈</span>
                       </div>
                       <div className="text-xs text-gray-200">SILVER</div>
-                      <div className="text-xs text-gray-300">60+ problems</div>
+                      <div className="text-xs text-gray-300">60% complete</div>
+                      {userStats.completedProblems >= Math.ceil((userStats.totalProblems || 1) * 0.6) && (
+                        <div className="text-xs text-green-400 mt-1">✓ Unlocked</div>
+                      )}
                     </div>
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                        userStats.completedProblems >= Math.ceil((userStats.totalProblems || 1) * 0.8) 
+                          ? 'bg-yellow-500/30 ring-2 ring-yellow-500/50' 
+                          : 'bg-white/10 opacity-50'
+                      }`}>
                         <span className="text-2xl">🏆</span>
                       </div>
                       <div className="text-xs text-gray-200">GOLD</div>
-                      <div className="text-xs text-gray-300">80+ problems</div>
+                      <div className="text-xs text-gray-300">80% complete</div>
+                      {userStats.completedProblems >= Math.ceil((userStats.totalProblems || 1) * 0.8) && (
+                        <div className="text-xs text-green-400 mt-1">✓ Unlocked</div>
+                      )}
                     </div>
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-2 ${
+                        userStats.completedProblems >= userStats.totalProblems && userStats.totalProblems > 0
+                          ? 'bg-cyan-500/30 ring-2 ring-cyan-500/50' 
+                          : 'bg-white/10 opacity-50'
+                      }`}>
                         <span className="text-2xl">💎</span>
                       </div>
                       <div className="text-xs text-gray-200">DIAMOND</div>
                       <div className="text-xs text-gray-300">100% complete</div>
+                      {userStats.completedProblems >= userStats.totalProblems && userStats.totalProblems > 0 && (
+                        <div className="text-xs text-green-400 mt-1">✓ Unlocked</div>
+                      )}
                     </div>
                   </div>
 
                   <div className={`text-xs text-center mt-4 ${getBadgeInfo().color}`}>
                     Current badge: {getBadgeInfo().badge} {getBadgeInfo().level}
+                  </div>
+                  
+                  <div className="text-xs text-center mt-2 text-gray-400">
+                    Progress: {userStats.completedProblems || 0}/{userStats.totalProblems || 0} problems solved
                   </div>
                 </div>
               </div>
@@ -846,13 +1029,56 @@ const DSASheet = () => {
                           placeholder="Search problems..."
                           className="w-full pl-10 pr-4 py-3 lg:py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-base lg:text-sm text-white placeholder-gray-400"
                           value={filters.search}
-                          onChange={(e) => setFilters({...filters, search: e.target.value})}
+                          onChange={(e) => handleSearchChange(e.target.value)}
                         />
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center">
                           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Filter Bar */}
+                    <div className="space-y-4 sm:space-y-0 sm:flex sm:flex-wrap sm:gap-4 mb-6">
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-sm text-gray-300 min-w-fit">Difficulty:</span>
+                        <select
+                          value={filters.difficulty}
+                          onChange={(e) => handleFilterChange('difficulty', e.target.value)}
+                          className="flex-1 sm:flex-none px-3 py-2 text-sm text-white bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                        >
+                          <option value="All" className="bg-gray-800 text-white">All</option>
+                          <option value="Easy" className="bg-gray-800 text-white">Easy</option>
+                          <option value="Medium" className="bg-gray-800 text-white">Medium</option>
+                          <option value="Hard" className="bg-gray-800 text-white">Hard</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-sm text-gray-300 min-w-fit">Platform:</span>
+                        <select
+                          value={filters.platform}
+                          onChange={(e) => handleFilterChange('platform', e.target.value)}
+                          className="flex-1 sm:flex-none px-3 py-2 text-sm text-white bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                        >
+                          <option value="All" className="bg-gray-800 text-white">All</option>
+                          <option value="LeetCode" className="bg-gray-800 text-white">LeetCode</option>
+                          <option value="HackerRank" className="bg-gray-800 text-white">HackerRank</option>
+                          <option value="CodeForces" className="bg-gray-800 text-white">CodeForces</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-sm text-gray-300 min-w-fit">Status:</span>
+                        <select
+                          value={filters.status}
+                          onChange={(e) => handleFilterChange('status', e.target.value)}
+                          className="flex-1 sm:flex-none px-3 py-2 text-sm text-white bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                        >
+                          <option value="All" className="bg-gray-800 text-white">All</option>
+                          <option value="Completed" className="bg-gray-800 text-white">Completed</option>
+                          <option value="Practiced" className="bg-gray-800 text-white">Practiced</option>
+                          <option value="Not Started" className="bg-gray-800 text-white">Not Started</option>
+                        </select>
                       </div>
                     </div>
 

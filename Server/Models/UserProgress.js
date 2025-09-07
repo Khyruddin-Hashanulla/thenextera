@@ -220,7 +220,15 @@ userProgressSchema.statics.getTopicProgress = async function(userId, topicId) {
     const userObjectId = typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
     const topicObjectId = typeof topicId === 'string' ? new mongoose.Types.ObjectId(topicId) : topicId;
     
-    const progress = await this.aggregate([
+    // Get total problems in the topic
+    const Problem = mongoose.model('Problem');
+    const totalProblemsInTopic = await Problem.countDocuments({ 
+      topicId: topicObjectId, 
+      isActive: true 
+    });
+    
+    // Get user progress for this topic
+    const userProgress = await this.aggregate([
       { 
         $match: { 
           userId: userObjectId,
@@ -230,24 +238,59 @@ userProgressSchema.statics.getTopicProgress = async function(userId, topicId) {
       {
         $group: {
           _id: '$topicId',
-          totalProblems: { $sum: 1 },
-          practicedProblems: { $sum: { $cond: ['$practiced', 1, 0] } },
-          completedProblems: { $sum: { $cond: ['$completed', 1, 0] } }
+          completedProblems: { 
+            $sum: { 
+              $cond: [
+                { $or: ['$completed', { $eq: ['$status', 'completed'] }] }, 
+                1, 
+                0
+              ] 
+            } 
+          },
+          practicedProblems: { 
+            $sum: { 
+              $cond: [
+                { $or: ['$practiced', { $eq: ['$status', 'practiced'] }, { $eq: ['$status', 'completed'] }] }, 
+                1, 
+                0
+              ] 
+            } 
+          },
+          bookmarkedProblems: { 
+            $sum: { 
+              $cond: [
+                { $or: ['$bookmarked', '$isBookmarked'] }, 
+                1, 
+                0
+              ] 
+            } 
+          }
         }
       }
     ]);
     
-    return progress[0] || {
-      totalProblems: 0,
+    const progress = userProgress[0] || {
+      completedProblems: 0,
       practicedProblems: 0,
-      completedProblems: 0
+      bookmarkedProblems: 0
+    };
+    
+    return {
+      totalProblems: totalProblemsInTopic,
+      completedProblems: progress.completedProblems,
+      practicedProblems: progress.practicedProblems,
+      bookmarkedProblems: progress.bookmarkedProblems,
+      completionPercentage: totalProblemsInTopic > 0 ? 
+        Math.round((progress.completedProblems / totalProblemsInTopic) * 100) : 0
     };
   } catch (error) {
     console.error('Error in getTopicProgress:', error);
     return {
       totalProblems: 0,
+      completedProblems: 0,
       practicedProblems: 0,
-      completedProblems: 0
+      bookmarkedProblems: 0,
+      completionPercentage: 0
     };
   }
 };

@@ -707,12 +707,22 @@ router.post('/progress/mark', authenticateJWT, async (req, res) => {
     const { problemId, action } = req.body;
     const userId = req.user.id;
 
+    // Get problem details to ensure topicId is set
+    const problem = await Problem.findById(problemId);
+    if (!problem) {
+      return res.status(404).json({
+        success: false,
+        message: 'Problem not found'
+      });
+    }
+
     // Find or create progress record
     let progress = await UserProgress.findOne({ userId, problemId });
     if (!progress) {
       progress = new UserProgress({ 
         userId, 
-        problemId, 
+        problemId,
+        topicId: problem.topicId, // Ensure topicId is set
         status: 'not_started', 
         isBookmarked: false,
         practiced: false,
@@ -746,6 +756,11 @@ router.post('/progress/mark', authenticateJWT, async (req, res) => {
           progress.completedAt = new Date();
           progress.lastAttemptedAt = new Date();
           
+          // Set first completion time if not set
+          if (!progress.firstCompletedAt) {
+            progress.firstCompletedAt = new Date();
+          }
+          
           // Log activity for completion
           await logProblemActivity(userId, problemId);
         }
@@ -773,8 +788,11 @@ router.post('/progress/mark', authenticateJWT, async (req, res) => {
       isBookmarked: progress.isBookmarked,
       status: progress.status,
       completedAt: progress.completedAt,
-      lastAttemptAt: progress.lastAttemptAt
+      firstCompletedAt: progress.firstCompletedAt,
+      lastAttemptAt: progress.lastAttemptedAt || progress.lastAttemptedAt
     };
+
+    console.log(`✅ Progress updated for problem ${problemId}: ${action} = ${JSON.stringify(responseProgress)}`);
 
     res.json({ 
       success: true, 
@@ -1303,12 +1321,23 @@ const logProblemActivity = async (userId, problemId) => {
     if (!activity.problemIds.includes(problemId)) {
       activity.problemIds.push(problemId);
       activity.problemsSolved = activity.problemIds.length;
+      
+      // Calculate and set activity level
+      const count = activity.problemsSolved;
+      if (count === 0) activity.level = 0;
+      else if (count <= 2) activity.level = 1;
+      else if (count <= 5) activity.level = 2;
+      else if (count <= 8) activity.level = 3;
+      else activity.level = 4;
+      
       await activity.save();
+      console.log(`📊 Activity logged for ${today}: ${count} problems, level ${activity.level}`);
     }
     
     return activity;
   } catch (error) {
     console.error('Error logging problem activity:', error);
+    return null;
   }
 };
 

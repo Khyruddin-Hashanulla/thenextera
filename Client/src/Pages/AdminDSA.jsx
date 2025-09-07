@@ -16,6 +16,134 @@ const AdminDSA = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({});
   const [message, setMessage] = useState('');
+  const [formErrors, setFormErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (modalType === 'problem') {
+      // Mandatory fields for problems
+      if (!formData.topicId || formData.topicId.trim() === '') {
+        errors.topicId = 'Topic is required';
+      }
+      if (!formData.title || formData.title.trim() === '') {
+        errors.title = 'Title is required';
+      }
+      if (!formData.description || formData.description.trim() === '') {
+        errors.description = 'Description is required';
+      }
+      if (!formData.difficulty || formData.difficulty.trim() === '') {
+        errors.difficulty = 'Difficulty is required';
+      }
+      if (formData.order === undefined || formData.order === null || formData.order === '') {
+        errors.order = 'Order is required';
+      }
+    } else if (modalType === 'topic') {
+      // Mandatory fields for topics (existing validation)
+      if (!formData.name || formData.name.trim() === '') {
+        errors.name = 'Name is required';
+      }
+      if (!formData.description || formData.description.trim() === '') {
+        errors.description = 'Description is required';
+      }
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      setMessage('Please fill in all required fields');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      if (modalType === 'topic') {
+        if (editingItem) {
+          await api.put(`/api/dsa/admin/topics/${editingItem.id}`, formData);
+          setMessage('Topic updated successfully');
+        } else {
+          await api.post('/api/dsa/admin/topics', formData);
+          setMessage('Topic created successfully');
+        }
+        fetchTopics();
+      } else if (modalType === 'problem') {
+        // Structure the data properly for problem creation/update
+        const problemData = {
+          topicId: formData.topicId,
+          title: formData.title,
+          description: formData.description,
+          difficulty: formData.difficulty,
+          solution: {
+            type: formData.solutionType || 'none',
+            ...(formData.solutionType === 'youtube' && { youtubeLink: formData.youtubeLink }),
+            ...(formData.solutionType === 'text' && { textExplanation: formData.textExplanation }),
+            ...(formData.solutionType === 'code' && { 
+              codeSnippet: {
+                language: formData.codeLanguage || 'cpp',
+                code: formData.codeSnippet
+              }
+            })
+          },
+          practiceLink: {
+            platform: formData.platform,
+            url: formData.url,
+            problemId: formData.problemId || ''
+          },
+          tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
+          companies: formData.companies ? formData.companies.split(',').map(company => company.trim()).filter(company => company) : [],
+          order: parseInt(formData.order) || 0,
+          hasCodeEditor: formData.hasCodeEditor || false
+        };
+
+        console.log('Sending problem data:', JSON.stringify(problemData, null, 2));
+
+        if (editingItem) {
+          await api.put(`/api/dsa/admin/problems/${editingItem.id}`, problemData);
+          setMessage('Problem updated successfully');
+        } else {
+          await api.post('/api/dsa/admin/problems', problemData);
+          setMessage('Problem created successfully');
+        }
+        fetchProblems();
+      }
+      
+      setShowModal(false);
+      setEditingItem(null);
+      setFormData({});
+      setFormErrors({});
+    } catch (error) {
+      console.error('Error saving:', error);
+      
+      // Handle specific backend validation errors
+      if (error.response?.status === 400) {
+        const errorMessage = error.response?.data?.message || 'Validation error';
+        const backendErrors = error.response?.data?.errors || [];
+        
+        if (backendErrors.length > 0) {
+          // Map backend errors to form errors
+          const newFormErrors = {};
+          backendErrors.forEach(err => {
+            newFormErrors[err.field] = err.message;
+          });
+          setFormErrors(newFormErrors);
+          setMessage(`Validation failed: ${backendErrors.map(e => e.message).join(', ')}`);
+        } else {
+          setMessage(errorMessage);
+        }
+      } else {
+        setMessage('Error saving data. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isAdmin) {
@@ -121,70 +249,7 @@ const AdminDSA = () => {
     setShowModal(false);
     setEditingItem(null);
     setFormData({});
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      setLoading(true);
-      
-      if (modalType === 'topic') {
-        if (editingItem) {
-          await api.put(`/api/dsa/admin/topics/${editingItem.id}`, formData);
-          setMessage('Topic updated successfully');
-        } else {
-          await api.post('/api/dsa/admin/topics', formData);
-          setMessage('Topic created successfully');
-        }
-        fetchTopics();
-      } else if (modalType === 'problem') {
-        // Structure the data properly for problem creation/update
-        const problemData = {
-          topicId: formData.topicId,
-          title: formData.title,
-          description: formData.description,
-          difficulty: formData.difficulty,
-          solution: {
-            type: formData.solutionType || 'none',
-            ...(formData.solutionType === 'youtube' && { youtubeLink: formData.youtubeLink }),
-            ...(formData.solutionType === 'text' && { textExplanation: formData.textExplanation }),
-            ...(formData.solutionType === 'code' && { 
-              codeSnippet: {
-                language: formData.codeLanguage || 'cpp',
-                code: formData.codeSnippet
-              }
-            })
-          },
-          practiceLink: {
-            platform: formData.platform,
-            url: formData.url,
-            problemId: formData.problemId || ''
-          },
-          tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
-          companies: formData.companies ? formData.companies.split(',').map(company => company.trim()).filter(company => company) : [],
-          order: formData.order || 0,
-          hasCodeEditor: formData.hasCodeEditor || false
-        };
-
-        if (editingItem) {
-          await api.put(`/api/dsa/admin/problems/${editingItem.id}`, problemData);
-          setMessage('Problem updated successfully');
-        } else {
-          await api.post('/api/dsa/admin/problems', problemData);
-          setMessage('Problem created successfully');
-        }
-        fetchProblems();
-      }
-      
-      setShowModal(false);
-      setEditingItem(null);
-      setFormData({});
-    } catch (error) {
-      console.error('Error saving:', error);
-      setMessage('Error saving data');
-    } finally {
-      setLoading(false);
-    }
+    setFormErrors({});
   };
 
   const handleDelete = async (type, id) => {
@@ -499,26 +564,44 @@ const AdminDSA = () => {
                 {modalType === 'topic' ? (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Name</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Name <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="text"
                         value={formData.name || ''}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
-                        className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                        className={`w-full p-3 bg-gray-700 text-white rounded-lg border focus:outline-none text-sm md:text-base ${
+                          formErrors.name 
+                            ? 'border-red-500 focus:border-red-400' 
+                            : 'border-gray-600 focus:border-cyan-500'
+                        }`}
                         required
                         placeholder="Enter topic name"
                       />
+                      {formErrors.name && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.name}</p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Description <span className="text-red-400">*</span>
+                      </label>
                       <textarea
                         value={formData.description || ''}
                         onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        className="w-full p-3 bg-gray-700 text-white rounded-lg h-20 border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                        className={`w-full p-3 bg-gray-700 text-white rounded-lg h-20 border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base ${
+                          formErrors.description 
+                            ? 'border-red-500 focus:border-red-400' 
+                            : ''
+                        }`}
                         required
                         placeholder="Enter topic description"
                       />
+                      {formErrors.description && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.description}</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -534,16 +617,26 @@ const AdminDSA = () => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Difficulty</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Difficulty <span className="text-red-400">*</span>
+                        </label>
                         <select
                           value={formData.difficulty || 'Beginner'}
                           onChange={(e) => setFormData({...formData, difficulty: e.target.value})}
-                          className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                          className={`w-full p-3 bg-gray-700 text-white rounded-lg border focus:outline-none text-sm md:text-base ${
+                            formErrors.difficulty 
+                              ? 'border-red-500 focus:border-red-400' 
+                              : 'border-gray-600 focus:border-cyan-500'
+                          }`}
+                          required
                         >
                           <option value="Beginner">Beginner</option>
                           <option value="Intermediate">Intermediate</option>
                           <option value="Advanced">Advanced</option>
                         </select>
+                        {formErrors.difficulty && (
+                          <p className="text-red-400 text-sm mt-1">{formErrors.difficulty}</p>
+                        )}
                       </div>
                     </div>
 
@@ -589,11 +682,17 @@ const AdminDSA = () => {
                 ) : (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Topic</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Topic <span className="text-red-400">*</span>
+                      </label>
                       <select
                         value={formData.topicId || ''}
                         onChange={(e) => setFormData({...formData, topicId: e.target.value})}
-                        className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                        className={`w-full p-3 bg-gray-700 text-white rounded-lg border focus:outline-none text-sm md:text-base ${
+                          formErrors.topicId 
+                            ? 'border-red-500 focus:border-red-400' 
+                            : 'border-gray-600 focus:border-cyan-500'
+                        }`}
                         required
                       >
                         <option value="">Select Topic</option>
@@ -601,44 +700,74 @@ const AdminDSA = () => {
                           <option key={topic.id} value={topic.id}>{topic.name}</option>
                         ))}
                       </select>
+                      {formErrors.topicId && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.topicId}</p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Title</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Title <span className="text-red-400">*</span>
+                      </label>
                       <input
                         type="text"
                         value={formData.title || ''}
                         onChange={(e) => setFormData({...formData, title: e.target.value})}
-                        className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                        className={`w-full p-3 bg-gray-700 text-white rounded-lg border focus:outline-none text-sm md:text-base ${
+                          formErrors.title 
+                            ? 'border-red-500 focus:border-red-400' 
+                            : 'border-gray-600 focus:border-cyan-500'
+                        }`}
                         required
                         placeholder="Enter problem title"
                       />
+                      {formErrors.title && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.title}</p>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Description <span className="text-red-400">*</span>
+                      </label>
                       <textarea
                         value={formData.description || ''}
                         onChange={(e) => setFormData({...formData, description: e.target.value})}
-                        className="w-full p-3 bg-gray-700 text-white rounded-lg h-20 border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                        className={`w-full p-3 bg-gray-700 text-white rounded-lg h-20 border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base ${
+                          formErrors.description 
+                            ? 'border-red-500 focus:border-red-400' 
+                            : ''
+                        }`}
                         required
                         placeholder="Enter problem description"
                       />
+                      {formErrors.description && (
+                        <p className="text-red-400 text-sm mt-1">{formErrors.description}</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Difficulty</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Difficulty <span className="text-red-400">*</span>
+                        </label>
                         <select
                           value={formData.difficulty || 'Easy'}
                           onChange={(e) => setFormData({...formData, difficulty: e.target.value})}
-                          className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                          className={`w-full p-3 bg-gray-700 text-white rounded-lg border focus:outline-none text-sm md:text-base ${
+                            formErrors.difficulty 
+                              ? 'border-red-500 focus:border-red-400' 
+                              : 'border-gray-600 focus:border-cyan-500'
+                          }`}
                           required
                         >
                           <option value="Easy">Easy</option>
                           <option value="Medium">Medium</option>
                           <option value="Hard">Hard</option>
                         </select>
+                        {formErrors.difficulty && (
+                          <p className="text-red-400 text-sm mt-1">{formErrors.difficulty}</p>
+                        )}
                       </div>
 
                       <div>
@@ -647,7 +776,6 @@ const AdminDSA = () => {
                           value={formData.platform || 'LeetCode'}
                           onChange={(e) => setFormData({...formData, platform: e.target.value})}
                           className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
-                          required
                         >
                           <option value="LeetCode">LeetCode</option>
                           <option value="HackerRank">HackerRank</option>
@@ -724,14 +852,23 @@ const AdminDSA = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">Order</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Order <span className="text-red-400">*</span>
+                        </label>
                         <input
                           type="number"
                           value={formData.order || 0}
                           onChange={(e) => setFormData({...formData, order: e.target.value ? parseInt(e.target.value) : 0})}
-                          className="w-full p-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:border-cyan-500 focus:outline-none text-sm md:text-base"
+                          className={`w-full p-3 bg-gray-700 text-white rounded-lg border focus:outline-none text-sm md:text-base ${
+                            formErrors.order 
+                              ? 'border-red-500 focus:border-red-400' 
+                              : 'border-gray-600 focus:border-cyan-500'
+                          }`}
                           placeholder="0"
                         />
+                        {formErrors.order && (
+                          <p className="text-red-400 text-sm mt-1">{formErrors.order}</p>
+                        )}
                       </div>
 
                       <div>
