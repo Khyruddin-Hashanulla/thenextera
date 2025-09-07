@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 
-const InstructorApplication = () => {
+const InstructorApplication = ({ onClose }) => {
   const { user } = useAuth();
   const [applicationStatus, setApplicationStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,8 +47,16 @@ const InstructorApplication = () => {
       console.log('🔄 Refreshing application status...');
       await fetchApplicationStatus();
       
-      // Refresh user context to update role
-      window.location.reload(); // Simple way to refresh user context
+      // Show success message and close modal after a delay
+      setTimeout(() => {
+        if (window.location.pathname === '/dashboard') {
+          // If we're on dashboard, just refresh the user context without reloading
+          window.dispatchEvent(new Event('userRoleUpdated'));
+        }
+        if (onClose) {
+          onClose();
+        }
+      }, 2000);
       
     } catch (error) {
       console.error('❌ Error applying for instructor:', error);

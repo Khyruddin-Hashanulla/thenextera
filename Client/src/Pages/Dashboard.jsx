@@ -61,9 +61,31 @@ const Dashboard = () => {
     completionRate: 0,
     suggestedCourses: [],
   });
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showInstructorApp, setShowInstructorApp] = useState(false);
+  const [adminStats, setAdminStats] = useState({
+    overview: {
+      totalStudents: 0,
+      totalInstructors: 0,
+      totalCourses: 0,
+      pendingInstructorApps: 0,
+      totalEnrollments: 0,
+      avgEnrollmentsPerCourse: 0,
+    },
+    growth: {
+      newStudentsThisMonth: 0,
+      newCoursesThisMonth: 0,
+      studentGrowthRate: 0,
+    },
+    dsa: {
+      totalUsers: 0,
+      activeUsers: 0,
+      engagementRate: 0,
+    },
+    topInstructors: [],
+    recentUsers: [],
+  });
 
   const handleFocus = () => {
     fetchDashboardData();
@@ -72,29 +94,30 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    
+
     // Only fetch data once when component mounts
     const initializeData = async () => {
       try {
         await Promise.all([
           fetchDashboardData(),
           fetchDSAStats(),
-          fetchCoreSubjectsProgress()
+          fetchCoreSubjectsProgress(),
+          isAdmin && fetchAdminDashboardData(),
         ]);
       } catch (error) {
-        console.error('Error initializing dashboard data:', error);
+        console.error("Error initializing dashboard data:", error);
       }
     };
 
     initializeData();
-    
+
     // Add window focus listener for data refresh (optional)
-    window.addEventListener('focus', handleFocus);
-    
+    window.addEventListener("focus", handleFocus);
+
     return () => {
-      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener("focus", handleFocus);
     };
-  }, [user?.id]); // Only re-run if user ID changes
+  }, [user?.id, isAdmin]); // Only re-run if user ID changes
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -164,10 +187,10 @@ const Dashboard = () => {
 
     // Always use fallback data if API fails or returns no data
     const topicsMap = {
-      1: { name: "DBMS", icon: "🗄️", topics: DBMS_TOPICS },
-      2: { name: "Operating Systems", icon: "💻", topics: OS_TOPICS },
-      3: { name: "Computer Networks", icon: "🌐", topics: CN_TOPICS },
-      4: { name: "OOP Concepts", icon: "🔧", topics: OOP_TOPICS },
+      1: { name: "DBMS", icon: "", topics: DBMS_TOPICS },
+      2: { name: "Operating Systems", icon: "", topics: OS_TOPICS },
+      3: { name: "Computer Networks", icon: "", topics: CN_TOPICS },
+      4: { name: "OOP Concepts", icon: "", topics: OOP_TOPICS },
     };
 
     const progress = {};
@@ -211,11 +234,12 @@ const Dashboard = () => {
 
   const generateCareerInsights = (courses, dsaStats, coreSubjectsStats) => {
     // Calculate course completion rate
+    const userId = user._id || user.id; // Handle both possible user ID formats
     const enrolledCourses = courses.filter((course) =>
-      course.enrolledStudents?.includes(user.id)
+      course.studentsEnrolled?.includes(userId)
     ).length;
     const completedCourses = courses.filter((course) =>
-      course.completedStudents?.includes(user.id)
+      course.completedStudents?.includes(userId)
     ).length;
 
     const totalCourseProgress =
@@ -357,22 +381,44 @@ const Dashboard = () => {
       const response = await api.get("/api/courses");
       const courses = response.data;
 
+      console.log('🔍 Dashboard: Full user object:', user);
+      console.log('🔍 Dashboard: Full courses response:', courses);
+      console.log('🔍 Dashboard: First course structure:', courses[0]);
+
       // Calculate stats
       const totalCourses = courses.length;
-      const enrolledCourses = courses.filter((course) =>
-        course.enrolledStudents?.includes(user.id)
-      ).length;
+      const userId = user._id || user.id; // Handle both possible user ID formats
+      
+      console.log('🔍 Dashboard: User ID for enrollment check:', userId);
+      console.log('🔍 Dashboard: User._id:', user._id);
+      console.log('🔍 Dashboard: User.id:', user.id);
+      console.log('🔍 Dashboard: Sample course studentsEnrolled:', courses[0]?.studentsEnrolled);
+      
+      const enrolledCourses = courses.filter((course) => {
+        const isEnrolled = course.studentsEnrolled?.includes(userId);
+        console.log(`🔍 Course "${course.title}" - studentsEnrolled:`, course.studentsEnrolled, 'includes userId:', isEnrolled);
+        return isEnrolled;
+      });
+      
       const completedCourses = courses.filter((course) =>
-        course.completedStudents?.includes(user.id)
-      ).length;
+        course.completedStudents?.includes(userId)
+      );
+
+      console.log('📊 Dashboard: Enrollment stats:', { 
+        totalCourses, 
+        enrolledCoursesCount: enrolledCourses.length, 
+        completedCoursesCount: completedCourses.length,
+        enrolledCourses: enrolledCourses.map(c => c.title),
+        userId 
+      });
 
       setCourseStats({
         totalCourses,
-        enrolledCourses,
-        completedCourses,
+        enrolledCourses: enrolledCourses.length,
+        completedCourses: completedCourses.length,
         instructorCourses:
           user.role === "Instructor"
-            ? courses.filter((course) => course.instructor._id === user.id)
+            ? courses.filter((course) => course.instructor._id === userId || course.instructor === userId)
                 .length
             : 0,
       });
@@ -380,11 +426,11 @@ const Dashboard = () => {
       setStats((prev) => ({
         ...prev,
         totalCourses,
-        enrolledCourses,
-        completedCourses,
+        enrolledCourses: enrolledCourses.length,
+        completedCourses: completedCourses.length,
         instructorCourses:
           user.role === "Instructor"
-            ? courses.filter((course) => course.instructor._id === user.id)
+            ? courses.filter((course) => course.instructor._id === userId || course.instructor === userId)
                 .length
             : 0,
         recentActivity: generateRecentActivity(courses),
@@ -420,16 +466,16 @@ const Dashboard = () => {
 
   const fetchDSAStats = async () => {
     try {
-      console.log('🔍 Fetching DSA stats...');
-      
+      console.log(" Fetching DSA stats...");
+
       // Fetch DSA statistics
       const statsResponse = await api.get("/api/dsa/progress/stats");
-      console.log('📊 DSA Stats Response:', statsResponse.data);
-      
+      console.log(" DSA Stats Response:", statsResponse.data);
+
       if (statsResponse.data.success && statsResponse.data.stats) {
         const stats = statsResponse.data.stats;
-        console.log('📈 Setting DSA stats:', stats);
-        
+        console.log(" Setting DSA stats:", stats);
+
         // Ensure difficultyStats has the correct structure
         const formattedStats = {
           ...stats,
@@ -437,13 +483,13 @@ const Dashboard = () => {
             Easy: { completed: 0, total: 0 },
             Medium: { completed: 0, total: 0 },
             Hard: { completed: 0, total: 0 },
-          }
+          },
         };
-        
-        console.log('📊 Formatted DSA stats:', formattedStats);
+
+        console.log(" Formatted DSA stats:", formattedStats);
         setDsaStats(formattedStats);
       } else {
-        console.warn('⚠️ No DSA stats data received, using fallback');
+        console.warn(" No DSA stats data received, using fallback");
         throw new Error("No DSA stats data received");
       }
 
@@ -453,7 +499,7 @@ const Dashboard = () => {
         setDsaActivity(activityResponse.data.activity || []);
       }
     } catch (error) {
-      console.error("❌ Error fetching DSA stats:", error);
+      console.error(" Error fetching DSA stats:", error);
 
       // Only use fallback data if there's a real error, not just empty data
       const fallbackStats = {
@@ -469,7 +515,7 @@ const Dashboard = () => {
         },
       };
 
-      console.log('📊 Using fallback DSA stats:', fallbackStats);
+      console.log(" Using fallback DSA stats:", fallbackStats);
       setDsaStats(fallbackStats);
 
       // Generate realistic activity data for the last 49 days
@@ -530,10 +576,10 @@ const Dashboard = () => {
 
     // Always use fallback data if API fails or returns no data
     const topicsMap = {
-      1: { name: "DBMS", icon: "🗄️", topics: DBMS_TOPICS },
-      2: { name: "Operating Systems", icon: "💻", topics: OS_TOPICS },
-      3: { name: "Computer Networks", icon: "🌐", topics: CN_TOPICS },
-      4: { name: "OOP Concepts", icon: "🔧", topics: OOP_TOPICS },
+      1: { name: "DBMS", icon: "", topics: DBMS_TOPICS },
+      2: { name: "Operating Systems", icon: "", topics: OS_TOPICS },
+      3: { name: "Computer Networks", icon: "", topics: CN_TOPICS },
+      4: { name: "OOP Concepts", icon: "", topics: OOP_TOPICS },
     };
 
     const progress = {};
@@ -613,6 +659,24 @@ const Dashboard = () => {
       console.error("Error refreshing progress data:", error);
     } finally {
       setIsRefreshing(false);
+    }
+  };
+
+  const fetchAdminDashboardData = async () => {
+    try {
+      setLoading(true);
+      console.log(" Fetching admin dashboard data...");
+
+      const response = await api.get("/api/auth/admin-dashboard-stats");
+
+      if (response.data.success) {
+        console.log(" Admin stats received:", response.data.stats);
+        setAdminStats(response.data.stats);
+      }
+    } catch (error) {
+      console.error(" Error fetching admin dashboard data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -773,7 +837,7 @@ const Dashboard = () => {
         </div>
         <div className="w-full bg-gray-700 rounded-full h-2">
           <div
-            className="h-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-500"
+            className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
             style={{ width: `${progress.percentage}%` }}
           ></div>
         </div>
@@ -942,666 +1006,708 @@ const Dashboard = () => {
 
         {/* Main Stats Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            title="Total Courses"
-            value={stats.totalCourses}
-            icon="📚"
-            delay={100}
-            subtitle="Available courses"
-          />
-          <StatCard
-            title={isInstructor || isAdmin ? "Total Students" : "Enrolled"}
-            value={
-              isInstructor || isAdmin
-                ? stats.totalStudents
-                : stats.enrolledCourses
-            }
-            icon={isInstructor || isAdmin ? "👥" : "📖"}
-            delay={200}
-            subtitle={
-              isInstructor || isAdmin
-                ? "Across all courses"
-                : "Your enrollments"
-            }
-          />
-          <StatCard
-            title="Completed"
-            value={stats.completedCourses}
-            icon="✅"
-            delay={300}
-            subtitle="Finished courses"
-          />
-          <StatCard
-            title="Core Progress"
-            value={`${stats.overallCoreProgress || 0}%`}
-            icon="🧠"
-            delay={400}
-            subtitle="Overall core subjects"
-            progress={stats.overallCoreProgress || 0}
-          />
+          {isAdmin ? (
+            <>
+              <StatCard
+                title="Total Students"
+                value={adminStats.overview.totalStudents}
+                icon="👥"
+                delay={0}
+                subtitle="Registered students"
+              />
+              <StatCard
+                title="Total Instructors"
+                value={adminStats.overview.totalInstructors}
+                icon="👨‍🏫"
+                delay={100}
+                subtitle="Active instructors"
+              />
+              <StatCard
+                title="Total Courses"
+                value={adminStats.overview.totalCourses}
+                icon="📚"
+                delay={200}
+                subtitle="Available courses"
+              />
+              <StatCard
+                title="Pending Applications"
+                value={adminStats.overview.pendingInstructorApps}
+                icon="📋"
+                delay={300}
+                subtitle="Instructor applications"
+              />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Total Courses"
+                value={stats.totalCourses}
+                icon="📚"
+                delay={100}
+                subtitle="Available courses"
+              />
+              <StatCard
+                title={
+                  isInstructor || isAdmin
+                    ? "Total Students"
+                    : "Enrolled Courses"
+                }
+                value={
+                  isInstructor || isAdmin
+                    ? stats.totalStudents
+                    : stats.enrolledCourses
+                }
+                icon={isInstructor || isAdmin ? "👥" : "📖"}
+                delay={200}
+                subtitle={
+                  isInstructor || isAdmin
+                    ? "Platform students"
+                    : "Your enrollments"
+                }
+              />
+              <StatCard
+                title="Completed"
+                value={dsaStats.completedProblems}
+                icon="✅"
+                delay={300}
+                subtitle="DSA problems solved"
+              />
+              <StatCard
+                title="Core Progress"
+                value={`${stats.overallCoreProgress || 0}%`}
+                icon="🧠"
+                delay={400}
+                subtitle="Overall core subjects"
+                progress={stats.overallCoreProgress || 0}
+              />
+            </>
+          )}
         </div>
 
-        {/* Core Subjects Progress */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">
-              Core Subjects Progress
-            </h2>
-            <button
-              onClick={() => navigate("/core-subject")}
-              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-200 flex items-center space-x-1"
-            >
-              <span>View All Subjects</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
+        {/* Admin Dashboard */}
+        {isAdmin && (
+          <>
+            {/* Platform Overview */}
+            <div className="mb-6">
+              <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-pink-500/10"></div>
+                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-400 via-blue-500 to-pink-500"></div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(stats.coreSubjectsProgress || {}).map(
-              ([subjectId, progress]) => (
-                <div
-                  key={subjectId}
-                  className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-4 shadow-xl overflow-hidden hover:bg-white/15 transition-all duration-300"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10"></div>
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-white">Platform Overview</h3>
+                    <Link
+                      to="/admin"
+                      className="text-purple-400 hover:text-purple-300 text-sm font-medium transition-colors duration-200"
+                    >
+                      Admin Panel →
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-white mb-3">Growth Metrics</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">New Students This Month</span>
+                          <span className="text-sm font-medium text-green-400">
+                            +{adminStats.growth.newStudentsThisMonth}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">New Courses This Month</span>
+                          <span className="text-sm font-medium text-blue-400">
+                            +{adminStats.growth.newCoursesThisMonth}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">Student Growth Rate</span>
+                          <span className="text-sm font-medium text-purple-400">
+                            {adminStats.growth.studentGrowthRate}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white/5 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-white mb-3">DSA Engagement</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">Total DSA Users</span>
+                          <span className="text-sm font-medium text-cyan-400">
+                            {adminStats.dsa.totalUsers}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">Active DSA Users</span>
+                          <span className="text-sm font-medium text-green-400">
+                            {adminStats.dsa.activeUsers}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-300">Engagement Rate</span>
+                          <span className="text-sm font-medium text-yellow-400">
+                            {adminStats.dsa.engagementRate}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Instructors */}
+            {adminStats.topInstructors.length > 0 && (
+              <div className="mb-6">
+                <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-orange-500/5 to-red-500/10"></div>
+                  <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500"></div>
 
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-2xl">{progress.icon || ""}</span>
-                        <span className="text-sm font-medium text-white truncate">
-                          {progress.name}
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {Math.round(progress.percentage || 0)}%
-                      </span>
-                    </div>
-
-                    <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
-                      <div
-                        className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
-                        style={{ width: `${progress.percentage || 0}%` }}
-                      ></div>
-                    </div>
-
-                    <div className="flex justify-between items-center text-xs text-gray-400">
-                      <span>
-                        {progress.completed || 0}/{progress.total || 0} topics
-                      </span>
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          (progress.percentage || 0) >= 80
-                            ? "bg-green-500/20 text-green-400"
-                            : (progress.percentage || 0) >= 50
-                            ? "bg-yellow-500/20 text-yellow-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}
-                      >
-                        {(progress.percentage || 0) >= 80
-                          ? "Advanced"
-                          : (progress.percentage || 0) >= 50
-                          ? "Intermediate"
-                          : "Beginner"}
-                      </span>
+                    <h3 className="text-xl font-bold text-white mb-4">Top Instructors</h3>
+                    <div className="space-y-3">
+                      {adminStats.topInstructors.map((instructor, index) => (
+                        <div key={instructor._id} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                              {index + 1}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-white">{instructor.name}</div>
+                              <div className="text-xs text-gray-400">{instructor.email}</div>
+                            </div>
+                          </div>
+                          <div className="text-sm font-medium text-cyan-400">
+                            {instructor.courseCount} courses
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              )
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* DSA Sheet Progress Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">
-              DSA Sheet Progress
-            </h2>
-            <button
-              onClick={() => navigate("/dsa-sheet")}
-              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-200 flex items-center space-x-1"
-            >
-              <span>View Full Sheet</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
+            {/* Recent Users */}
+            {adminStats.recentUsers.length > 0 && (
+              <div className="mb-6">
+                <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-teal-500/5 to-blue-500/10"></div>
+                  <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-green-400 via-teal-500 to-blue-500"></div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* DSA Overview Stats */}
-            <div className="lg:col-span-2">
-              <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-6 shadow-xl overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-blue-500/10"></div>
+                  <div className="relative z-10">
+                    <h3 className="text-xl font-bold text-white mb-4">Recent Users</h3>
+                    <div className="space-y-3">
+                      {adminStats.recentUsers.slice(0, 5).map((user) => (
+                        <div key={user.id} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm ${
+                              user.role === 'Admin' ? 'bg-red-500' : 
+                              user.role === 'Instructor' ? 'bg-blue-500' : 'bg-green-500'
+                            }`}>
+                              {user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-white">{user.name}</div>
+                              <div className="text-xs text-gray-400">{user.email}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-xs px-2 py-1 rounded ${
+                              user.role === 'Admin' ? 'bg-red-500/20 text-red-400' : 
+                              user.role === 'Instructor' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
+                            }`}>
+                              {user.role}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              {new Date(user.joinedAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Quick Actions */}
+            <div className="mb-6">
+              <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10"></div>
+                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500"></div>
 
                 <div className="relative z-10">
-                  <h3 className="text-lg font-semibold text-white mb-4">
-                    Progress Overview
-                  </h3>
-
-                  {/* Main Progress Circle */}
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center space-x-6">
-                      <div className="relative w-20 h-20">
-                        <svg
-                          className="w-20 h-20 transform -rotate-90"
-                          viewBox="0 0 36 36"
-                        >
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="2"
-                          />
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke="url(#dsaGradient)"
-                            strokeWidth="2"
-                            strokeDasharray={`${
-                              dsaStats.totalProblems > 0
-                                ? (dsaStats.completedProblems /
-                                    dsaStats.totalProblems) *
-                                  100
-                                : 0
-                            }, 100`}
-                            strokeLinecap="round"
-                          />
-                          <defs>
-                            <linearGradient
-                              id="dsaGradient"
-                              x1="0%"
-                              y1="0%"
-                              x2="100%"
-                              y2="100%"
-                            >
-                              <stop offset="0%" stopColor="#10B981" />
-                              <stop offset="100%" stopColor="#3B82F6" />
-                            </linearGradient>
-                          </defs>
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-lg font-bold text-white">
-                            {dsaStats.totalProblems > 0
-                              ? Math.round(
-                                  (dsaStats.completedProblems /
-                                    dsaStats.totalProblems) *
-                                    100
-                                )
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="text-2xl font-bold text-white">
-                          {dsaStats.completedProblems} /{" "}
-                          {dsaStats.totalProblems}
-                        </div>
-                        <div className="text-sm text-gray-300">
-                          Problems Solved
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm">
-                          <span className="text-yellow-400">
-                            🔖 {dsaStats.bookmarkedProblems} Bookmarked
-                          </span>
-                          <span className="text-orange-400">
-                            🔥 {dsaStats.currentStreak} Day Streak
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Difficulty Breakdown */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-3 bg-white/5 rounded-lg">
-                      <div className="text-green-400 font-semibold">Easy</div>
-                      <div className="text-lg font-bold text-white">
-                        {dsaStats.difficultyStats?.Easy?.completed || 0}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        / {dsaStats.difficultyStats?.Easy?.total || 0}
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
-                        <div
-                          className="bg-green-400 h-1.5 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${
-                              dsaStats.difficultyStats?.Easy?.total > 0
-                                ? (dsaStats.difficultyStats.Easy.completed /
-                                    dsaStats.difficultyStats.Easy.total) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="text-center p-3 bg-white/5 rounded-lg">
-                      <div className="text-yellow-400 font-semibold">
-                        Medium
-                      </div>
-                      <div className="text-lg font-bold text-white">
-                        {dsaStats.difficultyStats?.Medium?.completed || 0}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        / {dsaStats.difficultyStats?.Medium?.total || 0}
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
-                        <div
-                          className="bg-yellow-400 h-1.5 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${
-                              dsaStats.difficultyStats?.Medium?.total > 0
-                                ? (dsaStats.difficultyStats.Medium.completed /
-                                    dsaStats.difficultyStats.Medium.total) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="text-center p-3 bg-white/5 rounded-lg">
-                      <div className="text-red-400 font-semibold">Hard</div>
-                      <div className="text-lg font-bold text-white">
-                        {dsaStats.difficultyStats?.Hard?.completed || 0}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        / {dsaStats.difficultyStats?.Hard?.total || 0}
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
-                        <div
-                          className="bg-red-400 h-1.5 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${
-                              dsaStats.difficultyStats?.Hard?.total > 0
-                                ? (dsaStats.difficultyStats.Hard.completed /
-                                    dsaStats.difficultyStats.Hard.total) *
-                                  100
-                                : 0
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* DSA Activity */}
-            <div className="space-y-6">
-              {/* Mini Activity Grid */}
-              <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-4 shadow-xl overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10"></div>
-
-                <div className="relative z-10">
-                  <h4 className="text-sm font-semibold text-white mb-3">
-                    Recent Activity
-                  </h4>
-
-                  {/* Mini activity grid - last 7 weeks */}
-                  <div className="space-y-1">
-                    {Array.from({ length: 7 }, (_, weekIndex) => (
-                      <div key={weekIndex} className="flex space-x-1">
-                        {Array.from({ length: 7 }, (_, dayIndex) => {
-                          const dayOffset =
-                            (6 - weekIndex) * 7 + (6 - dayIndex);
-                          const activityDay =
-                            dsaActivity[dsaActivity.length - 1 - dayOffset];
-                          const level = activityDay?.level || 0;
-
-                          return (
-                            <div
-                              key={dayIndex}
-                              className={`w-3 h-3 rounded-sm ${getActivityColor(
-                                level
-                              )}`}
-                              title={
-                                activityDay
-                                  ? `${activityDay.date}: ${activityDay.count} problems`
-                                  : "No activity"
-                              }
-                            />
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs text-gray-400">
-                    <span>Less</span>
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 rounded-sm bg-gray-600/50"></div>
-                      <div className="w-2 h-2 rounded-sm bg-green-300"></div>
-                      <div className="w-2 h-2 rounded-sm bg-green-500"></div>
-                      <div className="w-2 h-2 rounded-sm bg-green-700"></div>
-                      <div className="w-2 h-2 rounded-sm bg-green-900"></div>
-                    </div>
-                    <span>More</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Career Coach Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Career Coach</h2>
-            <button
-              onClick={() => navigate("/careers")}
-              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-200 flex items-center space-x-1"
-            >
-              <span>View Career Paths</span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Career Progress & Level */}
-            <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-6 shadow-xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10"></div>
-
-              <div className="relative z-10">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Your Career Journey
-                </h3>
-
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <div className="text-2xl font-bold text-white mb-1">
-                      {careerInsights.currentLevel}
-                    </div>
-                    <div className="text-sm text-gray-300">
-                      {careerInsights.careerPath}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                      {careerInsights.completionRate}%
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Overall Progress
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-700 rounded-full h-3 mb-4">
-                  <div
-                    className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all duration-500"
-                    style={{ width: `${careerInsights.completionRate}%` }}
-                  ></div>
-                </div>
-
-                {/* Next Milestone */}
-                <div className="bg-white/5 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-yellow-400">🎯</span>
-                    <span className="text-sm font-medium text-white">
-                      Next Milestone
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    {careerInsights.nextMilestone}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Skill Recommendations */}
-            <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-6 shadow-xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10"></div>
-
-              <div className="relative z-10">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Recommended Skills
-                </h3>
-
-                <div className="space-y-3">
-                  {careerInsights.recommendedSkills.map((skill, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-white/5 rounded-lg"
+                  <h3 className="text-xl font-bold text-white mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Link
+                      to="/admin"
+                      className="group bg-white/5 hover:bg-white/10 rounded-lg p-4 transition-all duration-200 border border-white/10 hover:border-purple-400/30"
                     >
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            skill.priority === "High"
-                              ? "bg-red-400"
-                              : skill.priority === "Medium"
-                              ? "bg-yellow-400"
-                              : "bg-green-400"
-                          }`}
-                        ></div>
-                        <span className="text-sm font-medium text-white">
-                          {skill.skill}
-                        </span>
+                      <div className="text-2xl mb-2">👥</div>
+                      <div className="text-sm font-medium text-white group-hover:text-purple-400">
+                        Manage Users
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-16 bg-gray-700 rounded-full h-1.5">
-                          <div
-                            className="bg-gradient-to-r from-indigo-400 to-purple-400 h-1.5 rounded-full transition-all duration-300"
-                            style={{ width: `${skill.progress}%` }}
-                          ></div>
-                        </div>
-                        <span className="text-xs text-gray-400">
-                          {skill.progress}%
-                        </span>
+                      <div className="text-xs text-gray-400">
+                        View and manage all users
                       </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Suggested Courses */}
-                <div>
-                  <h4 className="text-sm font-semibold text-white mb-4 mt-4">
-                    Suggested Courses
-                  </h4>
-                  <div className="space-y-2">
-                    {careerInsights.suggestedCourses.map((course, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2 bg-white/5 rounded text-sm"
-                      >
-                        <span className="text-gray-300">{course.title}</span>
-                        <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            course.difficulty === "Beginner"
-                              ? "bg-green-500/20 text-green-400"
-                              : course.difficulty === "Intermediate"
-                              ? "bg-yellow-500/20 text-yellow-400"
-                              : "bg-red-500/20 text-red-400"
-                          }`}
-                        >
-                          {course.difficulty}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Career Tips */}
-                <div className="mt-6 bg-white/5 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="text-blue-400">💡</span>
-                    <span className="text-sm font-medium text-white">
-                      Career Tip
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    {careerInsights.currentLevel === "Beginner"
-                      ? "Focus on building a strong foundation in programming fundamentals and data structures. Practice coding daily and work on small projects."
-                      : careerInsights.currentLevel === "Intermediate"
-                      ? "Start building portfolio projects and contribute to open source. Practice system design interviews."
-                      : "Focus on leadership skills, system architecture, and mentoring others. Stay updated with industry trends."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Suggested Learning Path */}
-          <div className="mt-6">
-            <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-6 shadow-xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"></div>
-
-              <div className="relative z-10">
-                <h4 className="text-lg font-semibold text-white mb-4">
-                  Personalized Learning Path
-                </h4>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {careerInsights.suggestedCourses.map((course, index) => (
-                    <div
-                      key={index}
-                      className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-all duration-200"
+                    </Link>
+                    
+                    <Link
+                      to="/admin/dsa"
+                      className="group bg-white/5 hover:bg-white/10 rounded-lg p-4 transition-all duration-200 border border-white/10 hover:border-green-400/30"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <h5 className="text-sm font-medium text-white">
-                          {course.title}
-                        </h5>
-                        <span
-                          className={`text-xs px-2 py-1 rounded ${
-                            course.difficulty === "Beginner"
-                              ? "bg-green-500/20 text-green-400"
-                              : course.difficulty === "Intermediate"
-                              ? "bg-yellow-500/20 text-yellow-400"
-                              : "bg-red-500/20 text-red-400"
-                          }`}
-                        >
-                          {course.difficulty}
-                        </span>
+                      <div className="text-2xl mb-2">🧮</div>
+                      <div className="text-sm font-medium text-white group-hover:text-green-400">
+                        DSA Management
                       </div>
-                      <p className="text-xs text-gray-400 mb-3">
-                        {course.type} Development
-                      </p>
-                      <button className="w-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 hover:from-indigo-500/30 hover:to-purple-500/30 border border-indigo-500/30 text-indigo-400 py-1.5 px-3 rounded text-xs transition-all duration-200">
-                        Start Course
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Career Tips */}
-                <div className="mt-6 bg-white/5 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <span className="text-blue-400">💡</span>
-                    <span className="text-sm font-medium text-white">
-                      Career Tip
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-300">
-                    {careerInsights.currentLevel === "Beginner"
-                      ? "Focus on building a strong foundation in programming fundamentals and data structures. Practice coding daily and work on small projects."
-                      : careerInsights.currentLevel === "Intermediate"
-                      ? "Start building portfolio projects and contribute to open source. Practice system design interviews."
-                      : "Consider mentoring others and exploring leadership opportunities. Stay updated with industry trends."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Instructor Application Section */}
-        {!isInstructor && !isAdmin && (
-          <div className="mb-6">
-            <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-4 shadow-xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10"></div>
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-lg font-semibold text-white">
-                    Become an Instructor
-                  </h3>
-                  <button
-                    onClick={() => setShowInstructorApp(true)}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
-                  >
-                    Apply Now
-                  </button>
-                </div>
-                <p className="text-sm text-gray-300 mb-3">
-                  Share your knowledge by creating courses and mentoring
-                  students.
-                </p>
-                <div className="grid grid-cols-3 gap-3 text-xs">
-                  <div className="text-center p-2 bg-white/5 rounded">
-                    <div className="text-green-400 mb-1">📚</div>
-                    <div className="text-gray-300">Create Courses</div>
-                  </div>
-                  <div className="text-center p-2 bg-white/5 rounded">
-                    <div className="text-blue-400 mb-1">👥</div>
-                    <div className="text-gray-300">Mentor Students</div>
-                  </div>
-                  <div className="text-center p-2 bg-white/5 rounded">
-                    <div className="text-yellow-400 mb-1">💰</div>
-                    <div className="text-gray-300">Earn Revenue</div>
+                      <div className="text-xs text-gray-400">
+                        Manage DSA problems
+                      </div>
+                    </Link>
+                    
+                    <Link
+                      to="/admin/subjects"
+                      className="group bg-white/5 hover:bg-white/10 rounded-lg p-4 transition-all duration-200 border border-white/10 hover:border-blue-400/30"
+                    >
+                      <div className="text-2xl mb-2">📚</div>
+                      <div className="text-sm font-medium text-white group-hover:text-blue-400">
+                        Core Subjects
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Manage core subjects
+                      </div>
+                    </Link>
+                    
+                    <Link
+                      to="/courses"
+                      className="group bg-white/5 hover:bg-white/10 rounded-lg p-4 transition-all duration-200 border border-white/10 hover:border-cyan-400/30"
+                    >
+                      <div className="text-2xl mb-2">🎓</div>
+                      <div className="text-sm font-medium text-white group-hover:text-cyan-400">
+                        Course Overview
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        View all courses
+                      </div>
+                    </Link>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </>
         )}
 
-        {showInstructorApp && (
-          <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowInstructorApp(false)}
-          >
-            <div
-              className="relative bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="sticky top-0 bg-gray-800 flex justify-end p-3 border-b border-gray-700">
+        {/* Student/Instructor Sections */}
+        {!isAdmin && (
+          <>
+            {/* Core Subjects Progress */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">
+                  Core Subjects Progress
+                </h2>
                 <button
-                  onClick={() => setShowInstructorApp(false)}
-                  className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 transition-all duration-200 shadow-lg"
+                  onClick={() => navigate("/core-subject")}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-200 flex items-center space-x-1"
                 >
+                  <span>View All Subjects</span>
                   <svg
                     className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {Object.entries(stats.coreSubjectsProgress || {}).map(
+                  ([subjectId, progress]) => (
+                    <div
+                      key={subjectId}
+                      className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-4 shadow-xl overflow-hidden hover:bg-white/15 transition-all duration-300"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-500/10"></div>
+
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-2xl">{progress.icon || ""}</span>
+                            <span className="text-sm font-medium text-white truncate">
+                              {progress.name}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-400">
+                            {Math.round(progress.percentage || 0)}%
+                          </span>
+                        </div>
+
+                        <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
+                          <div
+                            className="bg-gradient-to-r from-cyan-400 to-blue-500 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${progress.percentage || 0}%` }}
+                          ></div>
+                        </div>
+
+                        <div className="flex justify-between items-center text-xs text-gray-400">
+                          <span>
+                            {progress.completed || 0}/{progress.total || 0} topics
+                          </span>
+                          <span
+                            className={`px-2 py-1 rounded text-xs ${
+                              (progress.percentage || 0) >= 80
+                                ? "bg-green-500/20 text-green-400"
+                                : (progress.percentage || 0) >= 50
+                                ? "bg-yellow-500/20 text-yellow-400"
+                                : "bg-red-500/20 text-red-400"
+                            }`}
+                          >
+                            {(progress.percentage || 0) >= 80
+                              ? "Advanced"
+                              : (progress.percentage || 0) >= 50
+                              ? "Intermediate"
+                              : "Beginner"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* DSA Sheet Progress Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-white">
+                  DSA Sheet Progress
+                </h2>
+                <button
+                  onClick={() => navigate("/dsa-sheet")}
+                  className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors duration-200 flex items-center space-x-1"
+                >
+                  <span>View Full Sheet</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* DSA Overview Stats */}
+                <div className="lg:col-span-2">
+                  <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-6 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-blue-500/10"></div>
+
+                    <div className="relative z-10">
+                      <h3 className="text-lg font-semibold text-white mb-4">
+                        Progress Overview
+                      </h3>
+
+                      {/* Main Progress Circle */}
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-6">
+                          <div className="relative w-20 h-20">
+                            <svg
+                              className="w-20 h-20 transform -rotate-90"
+                              viewBox="0 0 36 36"
+                            >
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="rgba(255,255,255,0.1)"
+                                strokeWidth="2"
+                              />
+                              <path
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="url(#dsaGradient)"
+                                strokeWidth="2"
+                                strokeDasharray={`${
+                                  dsaStats.totalProblems > 0
+                                    ? (dsaStats.completedProblems /
+                                        dsaStats.totalProblems) *
+                                      100
+                                    : 0
+                                }, 100`}
+                                strokeLinecap="round"
+                              />
+                              <defs>
+                                <linearGradient
+                                  id="dsaGradient"
+                                  x1="0%"
+                                  y1="0%"
+                                  x2="100%"
+                                  y2="100%"
+                                >
+                                  <stop offset="0%" stopColor="#10B981" />
+                                  <stop offset="100%" stopColor="#3B82F6" />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className="text-lg font-bold text-white">
+                                {dsaStats.totalProblems > 0
+                                  ? Math.round(
+                                      (dsaStats.completedProblems /
+                                        dsaStats.totalProblems) *
+                                      100
+                                    )
+                                  : 0}
+                                %
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="text-2xl font-bold text-white">
+                              {dsaStats.completedProblems} /{" "}
+                              {dsaStats.totalProblems}
+                            </div>
+                            <div className="text-sm text-gray-300">
+                              Problems Solved
+                            </div>
+                            <div className="flex items-center space-x-4 text-sm">
+                              <span className="text-yellow-400">
+                                🔖 {dsaStats.bookmarkedProblems} Bookmarked
+                              </span>
+                              <span className="text-orange-400">
+                                🔥 {dsaStats.currentStreak} Day Streak
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Difficulty Breakdown */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="text-center p-3 bg-white/5 rounded-lg">
+                          <div className="text-green-400 font-semibold">Easy</div>
+                          <div className="text-lg font-bold text-white">
+                            {dsaStats.difficultyStats?.Easy?.completed || 0}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            / {dsaStats.difficultyStats?.Easy?.total || 0}
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                            <div
+                              className="bg-green-400 h-1.5 rounded-full transition-all duration-300"
+                              style={{
+                                width: `${
+                                  dsaStats.difficultyStats?.Easy?.total > 0
+                                    ? (dsaStats.difficultyStats.Easy.completed /
+                                        dsaStats.difficultyStats.Easy.total) *
+                                      100
+                                    : 0
+                                }%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="text-center p-3 bg-white/5 rounded-lg">
+                          <div className="text-yellow-400 font-semibold">
+                            Medium
+                          </div>
+                          <div className="text-lg font-bold text-white">
+                            {dsaStats.difficultyStats?.Medium?.completed || 0}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            / {dsaStats.difficultyStats?.Medium?.total || 0}
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                            <div
+                              className="bg-yellow-400 h-1.5 rounded-full transition-all duration-300"
+                              style={{
+                                width: `${
+                                  dsaStats.difficultyStats?.Medium?.total > 0
+                                    ? (dsaStats.difficultyStats.Medium.completed /
+                                        dsaStats.difficultyStats.Medium.total) *
+                                      100
+                                    : 0
+                                }%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+
+                        <div className="text-center p-3 bg-white/5 rounded-lg">
+                          <div className="text-red-400 font-semibold">Hard</div>
+                          <div className="text-lg font-bold text-white">
+                            {dsaStats.difficultyStats?.Hard?.completed || 0}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            / {dsaStats.difficultyStats?.Hard?.total || 0}
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                            <div
+                              className="bg-red-400 h-1.5 rounded-full transition-all duration-300"
+                              style={{
+                                width: `${
+                                  dsaStats.difficultyStats?.Hard?.total > 0
+                                    ? (dsaStats.difficultyStats.Hard.completed /
+                                        dsaStats.difficultyStats.Hard.total) *
+                                      100
+                                    : 0
+                                }%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DSA Activity */}
+                <div className="space-y-6">
+                  {/* Mini Activity Grid */}
+                  <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-4 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10"></div>
+
+                    <div className="relative z-10">
+                      <h4 className="text-sm font-semibold text-white mb-3">
+                        Recent Activity
+                      </h4>
+
+                      {/* Mini activity grid - last 7 weeks */}
+                      <div className="space-y-1">
+                        {Array.from({ length: 7 }, (_, weekIndex) => (
+                          <div key={weekIndex} className="flex space-x-1">
+                            {Array.from({ length: 7 }, (_, dayIndex) => {
+                              const dayOffset =
+                                (6 - weekIndex) * 7 + (6 - dayIndex);
+                              const activityDay =
+                                dsaActivity[dsaActivity.length - 1 - dayOffset];
+                              const level = activityDay?.level || 0;
+
+                              return (
+                                <div
+                                  key={dayIndex}
+                                  className={`w-3 h-3 rounded-sm ${getActivityColor(
+                                    level
+                                  )}`}
+                                  title={
+                                    activityDay
+                                      ? `${activityDay.date}: ${activityDay.count} problems`
+                                      : "No activity"
+                                  }
+                                />
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs text-gray-400">
+                        <span>Less</span>
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 rounded-sm bg-gray-600/50"></div>
+                          <div className="w-2 h-2 rounded-sm bg-green-300"></div>
+                          <div className="w-2 h-2 rounded-sm bg-green-500"></div>
+                          <div className="w-2 h-2 rounded-sm bg-green-700"></div>
+                          <div className="w-2 h-2 rounded-sm bg-green-900"></div>
+                        </div>
+                        <span>More</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Instructor Application Section */}
+            {!isInstructor && (
+              <div className="mb-6">
+                <div className="relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-4 shadow-xl overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-white">
+                        Become an Instructor
+                      </h3>
+                      <button
+                        onClick={() => setShowInstructorApp(true)}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                      >
+                        Apply Now
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-300 mb-3">
+                      Share your knowledge by creating courses and mentoring
+                      students.
+                    </p>
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div className="text-center p-2 bg-white/5 rounded">
+                        <div className="text-green-400 mb-1">📚</div>
+                        <div className="text-gray-300">Create Courses</div>
+                      </div>
+                      <div className="text-center p-2 bg-white/5 rounded">
+                        <div className="text-blue-400 mb-1">👥</div>
+                        <div className="text-gray-300">Mentor Students</div>
+                      </div>
+                      <div className="text-center p-2 bg-white/5 rounded">
+                        <div className="text-yellow-400 mb-1">💰</div>
+                        <div className="text-gray-300">Earn Revenue</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <Footer />
+      {showInstructorApp && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 sm:p-6"
+          onClick={() => setShowInstructorApp(false)}
+        >
+          <div
+            className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-white/10 rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header with gradient border */}
+            <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-400 via-blue-500 to-pink-500"></div>
+            
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-white/10 p-4 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
+                    Become an Instructor
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    Share your knowledge and start creating courses
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowInstructorApp(false)}
+                  className="group bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-400 hover:text-red-300 rounded-xl p-2.5 transition-all duration-200 shadow-lg hover:shadow-red-500/25"
+                >
+                  <svg
+                    className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1615,15 +1721,20 @@ const Dashboard = () => {
                   </svg>
                 </button>
               </div>
-              <div className="p-6">
-                <InstructorApplication />
+            </div>
+            
+            {/* Modal Content */}
+            <div className="overflow-y-auto max-h-[calc(95vh-120px)] p-4 sm:p-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-pink-500/5 rounded-xl"></div>
+                <div className="relative z-10">
+                  <InstructorApplication onClose={() => setShowInstructorApp(false)} />
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
-
-      <Footer />
+        </div>
+      )}
     </div>
   );
 };

@@ -1377,4 +1377,255 @@ router.post("/upload-profile-pic", authenticateJWT, async (req, res) => {
   }
 });
 
+// Get admin dashboard stats - Admin only
+router.get("/admin-dashboard-stats", authenticateJWT, async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user.role || req.user.role !== 'Admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+
+    console.log('📊 Admin dashboard stats request from:', {
+      userId: req.user.userId,
+      userRole: req.user.role
+    });
+
+    // Get comprehensive admin statistics
+    const [
+      totalStudents,
+      totalInstructors,
+      totalCourses,
+      pendingInstructorApps,
+      recentUsers,
+      courseStats
+    ] = await Promise.all([
+      User.countDocuments({ role: 'Student' }),
+      User.countDocuments({ role: { $in: ['Instructor', 'Admin'] } }),
+      Course.countDocuments(),
+      User.countDocuments({ 
+        wantsToBeInstructor: true,
+        role: 'pending_instructor',
+        'instructorApplication.status': 'pending'
+      }),
+      User.find({})
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .select('name email role createdAt'),
+      Course.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalEnrollments: { $sum: { $size: { $ifNull: ["$enrolledStudents", []] } } },
+            avgEnrollments: { $avg: { $size: { $ifNull: ["$enrolledStudents", []] } } }
+          }
+        }
+      ])
+    ]);
+
+    // Get DSA statistics
+    const dsaStats = await User.aggregate([
+      {
+        $lookup: {
+          from: 'userprogresses',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'progress'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalUsers: { $sum: 1 },
+          activeUsers: {
+            $sum: {
+              $cond: [{ $gt: [{ $size: "$progress" }, 0] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    // Calculate growth metrics (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const [newStudents, newCourses] = await Promise.all([
+      User.countDocuments({ 
+        role: 'Student',
+        createdAt: { $gte: thirtyDaysAgo }
+      }),
+      Course.countDocuments({
+        createdAt: { $gte: thirtyDaysAgo }
+      })
+    ]);
+
+    // Get top instructors by course count
+    const topInstructors = await Course.aggregate([
+      {
+        $group: {
+          _id: "$creatorId",
+          courseCount: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'instructor'
+        }
+      },
+      {
+        $unwind: "$instructor"
+      },
+      {
+        $project: {
+          name: "$instructor.name",
+          email: "$instructor.email",
+          courseCount: 1
+        }
+      },
+      {
+        $sort: { courseCount: -1 }
+      },
+      {
+        $limit: 5
+      }
+    ]);
+
+    const adminStats = {
+      overview: {
+        totalStudents,
+        totalInstructors,
+        totalCourses,
+        pendingInstructorApps,
+        totalEnrollments: courseStats[0]?.totalEnrollments || 0,
+        avgEnrollmentsPerCourse: Math.round(courseStats[0]?.avgEnrollments || 0)
+      },
+      growth: {
+        newStudentsThisMonth: newStudents,
+        newCoursesThisMonth: newCourses,
+        studentGrowthRate: totalStudents > 0 ? Math.round((newStudents / totalStudents) * 100) : 0
+      },
+      dsa: {
+        totalUsers: dsaStats[0]?.totalUsers || 0,
+        activeUsers: dsaStats[0]?.activeUsers || 0,
+        engagementRate: dsaStats[0]?.totalUsers > 0 ? 
+          Math.round((dsaStats[0].activeUsers / dsaStats[0].totalUsers) * 100) : 0
+      },
+      topInstructors,
+      recentUsers: recentUsers.map(user => ({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        joinedAt: user.createdAt
+      }))
+    };
+
+    console.log('📊 Sending admin dashboard stats:', {
+      totalStudents: adminStats.overview.totalStudents,
+      totalInstructors: adminStats.overview.totalInstructors,
+      totalCourses: adminStats.overview.totalCourses,
+      pendingApps: adminStats.overview.pendingInstructorApps
+    });
+
+    res.json({
+      success: true,
+      stats: adminStats
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching admin dashboard stats:', error);
+    res.status(500).json({ error: "Failed to fetch admin dashboard stats" });
+  }
+});
+
+// Approve or reject instructor application (Admin only)
+router.post("/manage-instructor-application", authenticateJWT, async (req, res) => {
+  try {
+    const { userId, action, reason } = req.body; // action: 'approve' or 'reject'
+    
+    // Check if user is admin
+    if (!req.user.role || req.user.role !== 'Admin') {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+
+    if (!userId || !action) {
+      return res.status(400).json({ error: "User ID and action are required" });
+    }
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ error: "Invalid action. Use 'approve' or 'reject'" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if user has a pending instructor application
+    if (!user.instructorApplication || user.instructorApplication.status !== 'pending') {
+      return res.status(400).json({ 
+        error: "User does not have a pending instructor application",
+        currentStatus: user.instructorApplication?.status || 'none',
+        userRole: user.role
+      });
+    }
+
+    console.log(' Processing instructor application:', {
+      userId: user._id,
+      userName: user.name,
+      currentRole: user.role,
+      applicationStatus: user.instructorApplication.status,
+      action: action
+    });
+
+    const adminId = req.user.userId;
+
+    if (action === 'approve') {
+      // Approve the application
+      user.role = 'Instructor';
+      user.instructorApplication.status = 'approved';
+      user.instructorApplication.adminDecision = {
+        decidedBy: adminId,
+        decisionDate: new Date(),
+        reason: reason || 'Application approved'
+      };
+    } else {
+      // Reject the application
+      user.role = 'Student';
+      user.instructorApplication.status = 'rejected';
+      user.instructorApplication.adminDecision = {
+        decidedBy: adminId,
+        decisionDate: new Date(),
+        reason: reason || 'Application rejected'
+      };
+      user.instructorApplication.resubmissionAllowed = true; // Allow resubmission by default
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Instructor application ${action}d successfully`,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        applicationStatus: user.instructorApplication.status,
+        decisionDate: user.instructorApplication.adminDecision.decisionDate
+      }
+    });
+
+    // TODO: Send email notification to user about the decision
+    // This can be implemented later using the existing email service
+
+  } catch (error) {
+    console.error("Error managing instructor application:", error);
+    res.status(500).json({ error: "Error processing instructor application" });
+  }
+});
+
 module.exports = router;

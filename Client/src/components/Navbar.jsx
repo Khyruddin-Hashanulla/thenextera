@@ -582,7 +582,7 @@ const Navbar = () => {
                             </button>
                           )}
 
-                          {(isInstructor || user.role === 'Admin') && (
+                          {user.role === 'Admin' && (
                             <button
                               onClick={() => {
                                 navigate('/dsa-management');
