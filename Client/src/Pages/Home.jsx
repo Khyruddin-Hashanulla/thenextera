@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import SEOHead from "../components/SEOHead";
 import api from "../utils/api";
 import founderImage from "../assets/founder.png";
 
@@ -194,6 +195,11 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      <SEOHead 
+        title="NextEra - Learn. Build. Earn." 
+        description="Transform your career with NextEra's cutting-edge courses, expert mentorship, and real-world experience." 
+        keywords="NextEra, coding, programming, web development, AI, machine learning, career transformation" 
+      />
       <Navbar />
 
       {/* Hero Section with Animated Code Editor */}
