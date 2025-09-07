@@ -1132,7 +1132,7 @@ const DSASheet = () => {
                                           <th className="px-3 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider min-w-[150px]">Problem</th>
                                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Difficulty</th>
                                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Platform</th>
-                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Sol</th>
+                                          <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Sol</th>
                                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-16">Tag</th>
                                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-20">Companies</th>
                                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Notes</th>
@@ -1144,32 +1144,32 @@ const DSASheet = () => {
                                           filteredProblems.map((problem, index) => (
                                             <tr key={problem.id} className="hover:bg-white/10 transition-colors duration-200 group">
                                               {/* Status Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 <input
                                                   type="checkbox"
                                                   checked={problem.userProgress?.status === 'completed' || problem.userProgress?.completed || false}
                                                   onChange={() => handleProgressMark(problem.id || problem._id, 'completed')}
-                                                  className="w-4 h-4 text-green-600 bg-gray-700 border-gray-700 rounded focus:ring-green-500 focus:ring-2"
+                                                  className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 bg-gray-700 border-gray-700 rounded focus:ring-green-500 focus:ring-2 touch-manipulation"
                                                 />
                                               </td>
 
                                               {/* Practice Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 <button
                                                   onClick={() => openCodeEditor(problem)}
-                                                  className="inline-flex items-center justify-center w-8 h-8 bg-green-500 hover:bg-green-600 text-white rounded transition-colors duration-200"
+                                                  className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white rounded transition-colors duration-200 touch-manipulation"
                                                   title="Practice in Code Editor"
                                                 >
-                                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7l10 10M17 7l-10 10" />
                                                   </svg>
                                                 </button>
                                               </td>
 
                                               {/* Problem Column */}
-                                              <td className="px-4 py-4">
-                                                <div className="flex items-center space-x-3">
-                                                  <div className="flex-shrink-0 w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-xs font-medium text-gray-300">
+                                              <td className="px-3 sm:px-4 py-4">
+                                                <div className="flex items-center space-x-2 sm:space-x-3">
+                                                  <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-gray-700 rounded-full flex items-center justify-center text-xs font-medium text-gray-300">
                                                     {index + 1}
                                                   </div>
                                                   <div className="flex-1 min-w-0">
@@ -1181,8 +1181,8 @@ const DSASheet = () => {
                                               </td>
 
                                               {/* Difficulty Column */}
-                                              <td className="px-3 py-4 text-center">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                              <td className="px-2 sm:px-3 py-4 text-center">
+                                                <span className={`inline-flex items-center px-1.5 sm:px-2 py-1 rounded-full text-xs font-medium ${
                                                   problem.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
                                                   problem.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
                                                   'bg-red-500/20 text-red-400'
@@ -1192,13 +1192,13 @@ const DSASheet = () => {
                                               </td>
 
                                               {/* Platform Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 {problem.practiceLink?.platform ? (
                                                   <a
                                                     href={problem.practiceLink.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
+                                                    className="inline-flex items-center px-1.5 sm:px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 active:bg-blue-500/40 transition-colors touch-manipulation"
                                                   >
                                                     {problem.practiceLink.platform}
                                                   </a>
@@ -1207,15 +1207,24 @@ const DSASheet = () => {
                                                 )}
                                               </td>
 
-                                              {/* Solution Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              {/* Solution Column - Enhanced for Mobile */}
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 {problem.solution && problem.solution.type && problem.solution.type !== 'none' ? (
                                                   <button 
-                                                    onClick={() => openYouTubeDirectly(problem)}
-                                                    className="inline-flex items-center justify-center w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded transition-colors duration-200"
+                                                    onClick={(e) => {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
+                                                      openYouTubeDirectly(problem);
+                                                    }}
+                                                    className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg transition-colors duration-200 touch-manipulation relative z-10"
                                                     title="View Solution"
+                                                    style={{ 
+                                                      minWidth: '40px', 
+                                                      minHeight: '40px',
+                                                      touchAction: 'manipulation'
+                                                    }}
                                                   >
-                                                    <span className="text-xs font-medium">Sol</span>
+                                                    <span className="text-xs sm:text-sm font-medium">Sol</span>
                                                   </button>
                                                 ) : (
                                                   <span className="text-gray-500 text-xs">-</span>
@@ -1223,11 +1232,11 @@ const DSASheet = () => {
                                               </td>
 
                                               {/* Resource (Tag) Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 {problem.tags && problem.tags.length > 0 ? (
                                                   <div className="flex flex-wrap gap-1 justify-center">
                                                     {problem.tags.slice(0, 2).map((tag, idx) => (
-                                                      <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-500 text-white">
+                                                      <span key={idx} className="inline-flex items-center px-1 sm:px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-500 text-white">
                                                         {tag}
                                                       </span>
                                                     ))}
@@ -1241,11 +1250,11 @@ const DSASheet = () => {
                                               </td>
 
                                               {/* Resource (Companies) Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 {problem.companies && problem.companies.length > 0 ? (
                                                   <div className="flex flex-wrap gap-1 justify-center">
                                                     {problem.companies.slice(0, 2).map((company, idx) => (
-                                                      <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-emerald-500 text-white">
+                                                      <span key={idx} className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium bg-emerald-500 text-white">
                                                         {company}
                                                       </span>
                                                     ))}
@@ -1259,30 +1268,31 @@ const DSASheet = () => {
                                               </td>
 
                                               {/* Notes Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 <button
                                                   onClick={() => openNotesModal(problem)}
-                                                  className="inline-flex items-center justify-center w-8 h-8 bg-purple-500 hover:bg-purple-600 text-white rounded transition-colors duration-200"
+                                                  className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-purple-500 hover:bg-purple-600 active:bg-purple-700 text-white rounded transition-colors duration-200 touch-manipulation"
                                                   title="View Notes"
                                                 >
-                                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                                   </svg>
                                                 </button>
                                               </td>
 
                                               {/* Revision Column */}
-                                              <td className="px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center">
                                                 <button
                                                   onClick={() => handleProgressMark(problem.id || problem._id, 'bookmark')}
-                                                  className={`inline-flex items-center justify-center w-8 h-8 rounded transition-colors duration-200 mx-auto ${
+                                                  className={`inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded transition-colors duration-200 mx-auto ${
                                                     problem.userProgress?.isBookmarked || problem.userProgress?.bookmarked 
-                                                      ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                                                      : 'bg-gray-600 hover:bg-gray-700 text-gray-300'
+                                                      ? 'bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white' 
+                                                      : 'bg-gray-600 hover:bg-gray-700 active:bg-gray-800 text-gray-300'
                                                   }`}
                                                   title={problem.userProgress?.isBookmarked || problem.userProgress?.bookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+                                                  style={{ minWidth: '40px', minHeight: '40px' }}
                                                 >
-                                                  <svg className="w-4 h-4" fill={problem.userProgress?.isBookmarked || problem.userProgress?.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill={problem.userProgress?.isBookmarked || problem.userProgress?.bookmarked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                                   </svg>
                                                 </button>
