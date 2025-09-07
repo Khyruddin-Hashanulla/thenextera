@@ -1123,8 +1123,8 @@ const DSASheet = () => {
                                     <p className="mt-2 text-gray-300">Loading problems...</p>
                                   </div>
                                 ) : (
-                                  <div className="overflow-x-auto lg:overflow-x-visible lg:scrollbar-hide">
-                                    <table className="w-full table-auto min-w-[900px] lg:min-w-0">
+                                  <div className="overflow-x-auto lg:overflow-x-visible lg:scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+                                    <table className="w-full table-auto min-w-[900px] lg:min-w-0" style={{ touchAction: 'pan-x' }}>
                                       <thead className="bg-white/10">
                                         <tr>
                                           <th className="px-2 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider w-12">Status</th>
@@ -1161,7 +1161,7 @@ const DSASheet = () => {
                                                   title="Practice in Code Editor"
                                                 >
                                                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7l10 10M17 7l-10 10" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-2M7 7l10 10M17 7l-10 10" />
                                                   </svg>
                                                 </button>
                                               </td>
@@ -1198,7 +1198,7 @@ const DSASheet = () => {
                                                     href={problem.practiceLink.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="inline-flex items-center px-1.5 sm:px-2 py-1 rounded text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 active:bg-blue-500/40 transition-colors touch-manipulation"
+                                                    className="inline-flex items-center px-1.5 sm:px-2 py-1 rounded text-xs font-medium bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800 transition-colors touch-manipulation"
                                                   >
                                                     {problem.practiceLink.platform}
                                                   </a>
@@ -1208,23 +1208,35 @@ const DSASheet = () => {
                                               </td>
 
                                               {/* Solution Column - Enhanced for Mobile */}
-                                              <td className="px-2 sm:px-3 py-4 text-center">
+                                              <td className="px-2 sm:px-3 py-4 text-center" style={{ touchAction: 'manipulation' }}>
                                                 {problem.solution && problem.solution.type && problem.solution.type !== 'none' ? (
                                                   <button 
                                                     onClick={(e) => {
                                                       e.preventDefault();
                                                       e.stopPropagation();
+                                                      console.log('Solution button clicked for:', problem.title);
                                                       openYouTubeDirectly(problem);
                                                     }}
-                                                    className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-red-500 hover:bg-red-600 active:bg-red-700 text-white rounded-lg transition-colors duration-200 touch-manipulation relative z-10"
+                                                    onTouchStart={(e) => {
+                                                      e.stopPropagation();
+                                                    }}
+                                                    onTouchEnd={(e) => {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
+                                                      console.log('Solution button touched for:', problem.title);
+                                                      openYouTubeDirectly(problem);
+                                                    }}
+                                                    className="inline-flex items-center px-1.5 sm:px-2 py-1 rounded text-xs font-medium bg-green-600 text-white hover:bg-green-700 active:bg-green-800 transition-colors touch-manipulation"
                                                     title="View Solution"
                                                     style={{ 
-                                                      minWidth: '40px', 
-                                                      minHeight: '40px',
-                                                      touchAction: 'manipulation'
+                                                      minWidth: '44px', 
+                                                      minHeight: '32px',
+                                                      touchAction: 'manipulation',
+                                                      pointerEvents: 'auto',
+                                                      WebkitTapHighlightColor: 'rgba(34, 197, 94, 0.3)'
                                                     }}
                                                   >
-                                                    <span className="text-xs sm:text-sm font-medium">Sol</span>
+                                                    <span className="pointer-events-none">Sol</span>
                                                   </button>
                                                 ) : (
                                                   <span className="text-gray-500 text-xs">-</span>
