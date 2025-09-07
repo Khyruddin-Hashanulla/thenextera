@@ -5,7 +5,12 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  email: { type: String, required: true, unique: true },
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    index: true // Add index for faster email lookups
+  },
   password: { type: String },
   role: { 
     type: String, 
@@ -58,6 +63,10 @@ const userSchema = new Schema({
 }, {
   timestamps: true
 });
+
+// Add compound index for common query patterns
+userSchema.index({ email: 1, isEmailVerified: 1 });
+userSchema.index({ role: 1, 'instructorApplication.status': 1 });
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

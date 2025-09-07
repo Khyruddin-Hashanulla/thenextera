@@ -13,12 +13,9 @@ const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        console.log('🔐 Initializing JWT authentication state...');
-        
         // Check if JWT token exists in localStorage
         const token = localStorage.getItem('authToken');
         if (!token) {
-          console.log('❌ No JWT token found');
           setLoading(false);
           return;
         }
@@ -28,16 +25,8 @@ const AuthProvider = ({ children }) => {
         
         if (response.data.success && response.data.user) {
           setUser(response.data.user);
-          console.log('✅ JWT authentication initialized:', {
-            userId: response.data.user.id,
-            name: response.data.user.name,
-            role: response.data.user.role,
-            authType: response.data.authType
-          });
-          console.log('🔍 Full response data:', response.data);
         }
       } catch (error) {
-        console.log('❌ JWT authentication initialization failed:', error.response?.status);
         // Clear invalid token
         localStorage.removeItem('authToken');
       } finally {
@@ -64,13 +53,6 @@ const AuthProvider = ({ children }) => {
         
         // Store JWT token in localStorage
         localStorage.setItem('authToken', response.data.token);
-        
-        console.log('✅ JWT login successful:', {
-          userId: response.data.user.id,
-          name: response.data.user.name,
-          role: response.data.user.role,
-          authType: response.data.authType
-        });
 
         // Return success to let the component handle navigation
         return {

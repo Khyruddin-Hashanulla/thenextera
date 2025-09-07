@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../Models/User");
-const bcrypt = require("bcryptjs");
+const { hashPassword, comparePassword } = require("../config/bcrypt");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const { sendVerificationOTP, sendPasswordResetEmail } = require("../utils/emailService");
@@ -33,7 +33,7 @@ router.post("/register", async (req, res) => {
         const emailVerificationExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
         
         // Allow update for existing user
-        const hash = await bcrypt.hash(password, 10);
+        const hash = await hashPassword(password);
         existing.role = properRole;
         existing.password = hash; // Update password to the new one provided
         existing.isEmailVerified = false; // Require re-verification for role changes
@@ -114,7 +114,7 @@ router.post("/register", async (req, res) => {
       properRole = 'pending_instructor'; // For "Teach on NextEra"
     }
 
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await hashPassword(password);
     const newUser = new User({
       name,
       email,
@@ -278,10 +278,11 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password, rememberMe } = req.body;
 
-    const user = await User.findOne({ email });
+    // Use lean() for faster query without Mongoose overhead
+    const user = await User.findOne({ email }).lean();
     if (!user) return res.status(400).json({ error: "No account found with this email address. Please check your email or sign up." });
 
-    const valid = await bcrypt.compare(password, user.password);
+    const valid = await comparePassword(password, user.password);
     if (!valid) return res.status(400).json({ error: "Incorrect password. Please try again or reset your password." });
 
     // Check if email is verified - this is now mandatory
@@ -293,18 +294,17 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Pure JWT authentication for ALL platforms
-    console.log('🔐 JWT-based login for all platforms');
-    
     // Generate JWT token with user data
+    const tokenPayload = {
+      userId: user._id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      isEmailVerified: user.isEmailVerified
+    };
+
     const token = jwt.sign(
-      {
-        userId: user._id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-        isEmailVerified: user.isEmailVerified
-      },
+      tokenPayload,
       process.env.JWT_SECRET,
       { 
         expiresIn: rememberMe ? "30d" : "7d",
@@ -313,21 +313,15 @@ router.post("/login", async (req, res) => {
       }
     );
 
-    // Handle remember me with longer token expiry (already set above)
+    // Only save to database if rememberMe is actually checked
     if (rememberMe) {
       const rememberMeToken = crypto.randomBytes(32).toString("hex");
-      user.rememberMeToken = rememberMeToken;
-      await user.save();
+      // Use updateOne for better performance than save()
+      await User.updateOne(
+        { _id: user._id },
+        { rememberMeToken: rememberMeToken }
+      );
     }
-
-    // Log the user data being sent
-    console.log('✅ JWT login successful:', {
-      userId: user._id,
-      role: user.role,
-      name: user.name,
-      email: user.email,
-      tokenExpiry: rememberMe ? "30d" : "7d"
-    });
 
     res.json({ 
       success: true,
@@ -535,7 +529,7 @@ router.post("/reset-password/:token", async (req, res) => {
     }
 
     console.log('Updating password for user:', user.email);
-    const hash = await bcrypt.hash(req.body.password, 10);
+    const hash = await hashPassword(req.body.password);
     user.password = hash;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
@@ -717,7 +711,7 @@ router.post("/apply-instructor", authenticateJWT, async (req, res) => {
         !user.instructorApplication?.resubmissionAllowed) {
       console.log(' User was rejected and resubmission not allowed');
       return res.status(400).json({ 
-        error: "Your previous instructor application was rejected and resubmission is not allowed" 
+        error: "Your previous instructor application was rejected and resubmission is not allowed." 
       });
     }
 
@@ -1373,6 +1367,40 @@ router.post("/upload-profile-pic", authenticateJWT, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: "Server error during profile picture upload" 
+    });
+  }
+});
+
+// Performance monitoring endpoint for login metrics
+router.get("/performance-stats", async (req, res) => {
+  try {
+    const stats = {
+      timestamp: new Date().toISOString(),
+      database: {
+        userCount: await User.countDocuments(),
+        indexesCreated: ['email', 'email_isEmailVerified', 'role_instructorApplication.status']
+      },
+      bcrypt: {
+        rounds: process.env.NODE_ENV === 'production' ? 8 : 10,
+        environment: process.env.NODE_ENV || 'development'
+      },
+      optimizations: {
+        leanQueries: true,
+        reducedLogging: true,
+        debouncing: true,
+        conditionalSaves: true
+      }
+    };
+    
+    res.json({
+      success: true,
+      message: "Login performance optimizations active",
+      stats
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: "Failed to fetch performance stats",
+      details: error.message 
     });
   }
 });

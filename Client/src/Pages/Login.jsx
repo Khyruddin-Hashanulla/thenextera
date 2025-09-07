@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaGoogle } from 'react-icons/fa';
@@ -16,8 +16,13 @@ const Login = () => {
   // Get the redirect path from location state or default to dashboard
   const redirectTo = location.state?.redirectTo || '/dashboard';
 
-  const handleSubmit = async (e) => {
+  // Debounced submit handler to prevent duplicate requests
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (loading) return;
+    
     setError('');
     setLoading(true);
 
@@ -32,15 +37,18 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, rememberMe, loading, login, navigate, redirectTo]);
 
-  const handleSocialLogin = (provider) => {
+  const handleSocialLogin = useCallback((provider) => {
+    // Prevent multiple clicks
+    if (loading) return;
+    
     // Store redirect path in sessionStorage for OAuth callback
     if (redirectTo !== '/dashboard') {
       sessionStorage.setItem('redirectAfterLogin', redirectTo);
     }
     window.location.href = `/api/auth/${provider}`;
-  };
+  }, [loading, redirectTo]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -129,7 +137,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -149,7 +157,8 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                disabled={loading}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
               >
                 <FaGoogle className="h-5 w-5 text-red-500" />
                 <span className="ml-2">Google</span>
