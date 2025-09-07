@@ -179,11 +179,17 @@ const AppRoutes = () => {
         } 
       />
       
-      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/dashboard" element={
+        <PrivateRoute>
+          <Dashboard />
+        </PrivateRoute>
+      } />
       <Route path="/courses" element={
-        <Suspense fallback={<LoadingScreen />}>
-          <Courses />
-        </Suspense>
+        <PrivateRoute>
+          <Suspense fallback={<LoadingScreen />}>
+            <Courses />
+          </Suspense>
+        </PrivateRoute>
       } />
       <Route 
         path="/core-subjects" 

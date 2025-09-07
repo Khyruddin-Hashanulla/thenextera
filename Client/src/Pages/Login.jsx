@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaGoogle } from 'react-icons/fa';
 
@@ -10,7 +10,11 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // Get the redirect path from location state or default to dashboard
+  const redirectTo = location.state?.redirectTo || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,7 +24,8 @@ const Login = () => {
     try {
       const result = await login(email, password, rememberMe);
       if (result && result.success) {
-        navigate('/dashboard', { replace: true });
+        // Redirect to the intended page or dashboard
+        navigate(redirectTo, { replace: true });
       }
     } catch (error) {
       setError(error.response?.data?.error || 'Login failed');
@@ -30,6 +35,10 @@ const Login = () => {
   };
 
   const handleSocialLogin = (provider) => {
+    // Store redirect path in sessionStorage for OAuth callback
+    if (redirectTo !== '/dashboard') {
+      sessionStorage.setItem('redirectAfterLogin', redirectTo);
+    }
     window.location.href = `/api/auth/${provider}`;
   };
 

@@ -176,6 +176,16 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
+  const handleDSASheetClick = (e) => {
+    e.preventDefault();
+    if (user) {
+      navigate('/dsa-sheet');
+    } else {
+      navigate('/login', { state: { redirectTo: '/dsa-sheet' } });
+    }
+    setIsOpen(false);
+  };
+
   const handleCoreSubjectClick = (e) => {
     e?.preventDefault();
     if (user) {
@@ -187,6 +197,15 @@ const Navbar = () => {
     setCoreSubjectDropdownOpen(false);
   };
 
+  const handleNavClick = (path, requiresAuth = false) => {
+    if (requiresAuth && !user) {
+      navigate('/login', { state: { redirectTo: path } });
+    } else {
+      navigate(path);
+    }
+    setIsOpen(false);
+  };
+
   const handleSubjectNavigation = (subjectId) => {
     navigate(`/subject/${subjectId}`);
     setCoreSubjectDropdownOpen(false);
@@ -195,11 +214,6 @@ const Navbar = () => {
 
   const handleCreateCourseClick = () => {
     navigate('/courses/create');
-    setIsOpen(false);
-  };
-
-  const handleNavClick = (path) => {
-    navigate(path);
     setIsOpen(false);
   };
 
@@ -216,21 +230,21 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Navigation items for authenticated users
+  // Navigation items for all users (show all items, handle auth in click handlers)
   const navItems = [
-    { path: '/', name: 'Home', icon: FaHome, color: 'from-space-cyan to-space-blue' },
+    { path: '/', name: 'Home', icon: FaHome, color: 'from-space-cyan to-space-blue', requiresAuth: false },
     { path: '/courses', name: 'Courses', icon: FaBook, requiresAuth: true, color: 'from-space-purple to-space-pink' },
     { path: '/dsa-sheet', name: 'DSA Sheet', icon: FaCode, requiresAuth: true, color: 'from-space-green to-space-teal' },
     { path: '/core-subject', name: 'Core Subject', icon: FaBookOpen, requiresAuth: true, color: 'from-space-orange to-space-red' },
-    ...(user ? [{ path: '/dashboard', name: 'Dashboard', icon: FaTachometerAlt, color: 'from-space-emerald to-space-cyan' }] : []),
+    ...(user ? [{ path: '/dashboard', name: 'Dashboard', icon: FaTachometerAlt, color: 'from-space-emerald to-space-cyan', requiresAuth: true }] : []),
   ];
 
   const mobileNavItems = [
-    { path: '/', name: 'Home', icon: FaHome, color: 'from-space-cyan to-space-blue' },
+    { path: '/', name: 'Home', icon: FaHome, color: 'from-space-cyan to-space-blue', requiresAuth: false },
     { path: '/courses', name: 'Courses', icon: FaBook, requiresAuth: true, color: 'from-space-purple to-space-pink' },
     { path: '/dsa-sheet', name: 'DSA Sheet', icon: FaCode, requiresAuth: true, color: 'from-space-green to-space-teal' },
     { path: '/core-subject', name: 'Core Subject', icon: FaBookOpen, requiresAuth: true, color: 'from-space-orange to-space-red', hasDropdown: true },
-    ...(user ? [{ path: '/dashboard', name: 'Dashboard', icon: FaTachometerAlt, color: 'from-space-emerald to-space-cyan' }] : []),
+    ...(user ? [{ path: '/dashboard', name: 'Dashboard', icon: FaTachometerAlt, color: 'from-space-emerald to-space-cyan', requiresAuth: true }] : []),
   ];
 
   return (
@@ -277,7 +291,6 @@ const Navbar = () => {
             {/* Main Navigation with enhanced styling */}
             <div className="flex items-center space-x-1">
               {navItems.map(({ path, name, icon: Icon, requiresAuth, color }) => {
-                if (requiresAuth && !user) return null;
                 const isActive = location.pathname === path;
                 
                 // Add dropdown functionality for Core Subject in desktop navbar
@@ -288,7 +301,11 @@ const Navbar = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setCoreSubjectDropdownOpen(!coreSubjectDropdownOpen);
+                          if (requiresAuth && !user) {
+                            navigate('/login', { state: { redirectTo: path } });
+                          } else {
+                            setCoreSubjectDropdownOpen(!coreSubjectDropdownOpen);
+                          }
                         }}
                         className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
                           isActive
@@ -301,7 +318,7 @@ const Navbar = () => {
                         
                         <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
                         <span className="font-medium text-sm">{name}</span>
-                        <FaChevronDown className={`w-3 h-3 transition-transform duration-200 ${coreSubjectDropdownOpen ? 'rotate-180' : ''}`} />
+                        {user && <FaChevronDown className={`w-3 h-3 transition-transform duration-200 ${coreSubjectDropdownOpen ? 'rotate-180' : ''}`} />}
                         
                         {/* Active indicator */}
                         {isActive && (
@@ -309,8 +326,8 @@ const Navbar = () => {
                         )}
                       </button>
 
-                      {/* Desktop Core Subject Dropdown */}
-                      {coreSubjectDropdownOpen && (
+                      {/* Desktop Core Subject Dropdown - Only show if user is logged in */}
+                      {coreSubjectDropdownOpen && user && (
                         <div className="absolute top-full left-0 mt-2 w-80 bg-gray-800/95 backdrop-blur-sm rounded-lg border border-white/10 shadow-xl z-[100]">
                           <div className="p-3">
                             {/* Dropdown Header */}
@@ -365,10 +382,68 @@ const Navbar = () => {
                   );
                 }
 
+                // Handle DSA Sheet navigation
+                if (name === 'DSA Sheet') {
+                  return (
+                    <button
+                      key={path}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDSASheetClick(e);
+                      }}
+                      className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
+                        isActive
+                          ? `bg-gradient-to-r ${color} text-white shadow-lg shadow-space-purple/25`
+                          : 'hover:bg-white/10 text-gray-300 hover:text-white hover:shadow-lg hover:shadow-white/10'
+                      }`}
+                    >
+                      {/* Background shimmer effect */}
+                      {!isActive && <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
+                      
+                      <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <span className="font-medium text-sm">{name}</span>
+                      
+                      {/* Active indicator */}
+                      {isActive && (
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-white rounded-full"></div>
+                      )}
+                    </button>
+                  );
+                }
+
+                // Handle Courses navigation
+                if (name === 'Courses') {
+                  return (
+                    <button
+                      key={path}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleCoursesClick(e);
+                      }}
+                      className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
+                        isActive
+                          ? `bg-gradient-to-r ${color} text-white shadow-lg shadow-space-purple/25`
+                          : 'hover:bg-white/10 text-gray-300 hover:text-white hover:shadow-lg hover:shadow-white/10'
+                      }`}
+                    >
+                      {/* Background shimmer effect */}
+                      {!isActive && <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
+                      
+                      <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <span className="font-medium text-sm">{name}</span>
+                      
+                      {/* Active indicator */}
+                      {isActive && (
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-white rounded-full"></div>
+                      )}
+                    </button>
+                  );
+                }
+
                 return (
                   <button
                     key={path}
-                    onClick={() => handleNavClick(path)}
+                    onClick={() => handleNavClick(path, requiresAuth)}
                     className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
                       isActive
                         ? `bg-gradient-to-r ${color} text-white shadow-lg shadow-space-purple/25`
@@ -579,7 +654,6 @@ const Navbar = () => {
             <div className="flex flex-col space-y-3">
               {/* Mobile Navigation Items */}
               {mobileNavItems.map(({ path, name, icon: Icon, requiresAuth, color, hasDropdown }) => {
-                if (requiresAuth && !user) return null;
                 const isActive = location.pathname === path || (hasDropdown && location.pathname.startsWith('/subject/'));
 
                 if (hasDropdown && name === 'Core Subject') {
@@ -590,7 +664,12 @@ const Navbar = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setCoreSubjectDropdownOpen(!coreSubjectDropdownOpen);
+                          if (requiresAuth && !user) {
+                            navigate('/login', { state: { redirectTo: path } });
+                            setIsOpen(false);
+                          } else {
+                            setCoreSubjectDropdownOpen(!coreSubjectDropdownOpen);
+                          }
                         }}
                         className={`flex items-center justify-between px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
                           isActive
@@ -602,11 +681,11 @@ const Navbar = () => {
                           <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
                           <span className="font-medium">{name}</span>
                         </div>
-                        <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${coreSubjectDropdownOpen ? 'rotate-180' : ''}`} />
+                        {user && <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${coreSubjectDropdownOpen ? 'rotate-180' : ''}`} />}
                       </button>
 
-                      {/* Dropdown Content */}
-                      {coreSubjectDropdownOpen && (
+                      {/* Dropdown Content - Only show if user is logged in */}
+                      {coreSubjectDropdownOpen && user && (
                         <div className="ml-4 space-y-2 border-l-2 border-space-cyan/30 pl-4">
                           {/* View All Subjects Button */}
                           <button
@@ -652,10 +731,52 @@ const Navbar = () => {
                   );
                 }
 
+                // Handle DSA Sheet in mobile
+                if (name === 'DSA Sheet') {
+                  return (
+                    <button
+                      key={path}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleDSASheetClick(e);
+                      }}
+                      className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
+                        isActive
+                          ? `bg-gradient-to-r ${color} text-white shadow-lg`
+                          : 'hover:bg-white/10 text-gray-300 hover:text-white'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <span className="font-medium">{name}</span>
+                    </button>
+                  );
+                }
+
+                // Handle Courses in mobile
+                if (name === 'Courses') {
+                  return (
+                    <button
+                      key={path}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleCoursesClick(e);
+                      }}
+                      className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
+                        isActive
+                          ? `bg-gradient-to-r ${color} text-white shadow-lg`
+                          : 'hover:bg-white/10 text-gray-300 hover:text-white'
+                      }`}
+                    >
+                      <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <span className="font-medium">{name}</span>
+                    </button>
+                  );
+                }
+
                 return (
                   <button
                     key={path}
-                    onClick={() => handleNavClick(path)}
+                    onClick={() => handleNavClick(path, requiresAuth)}
                     className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
                       isActive
                         ? `bg-gradient-to-r ${color} text-white shadow-lg`
@@ -667,88 +788,88 @@ const Navbar = () => {
                   </button>
                 );
               })}
-            </div>
 
-            {/* Mobile Create Course Button */}
-            {user && isInstructor && (
-              <button
-                onClick={handleCreateCourseClick}
-                className="flex items-center space-x-3 px-4 py-4 rounded-xl bg-gradient-to-r from-space-emerald/20 to-space-cyan/20 border border-space-emerald/30 text-space-emerald hover:from-space-emerald/30 hover:to-space-cyan/30 transition-all duration-300 group"
-              >
-                <FaPlus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-                <span className="font-medium">Create Course</span>
-                <FaRocket className="w-4 h-4 opacity-60 group-hover:opacity-100 ml-auto transition-all duration-300" />
-              </button>
-            )}
+              {/* Mobile Create Course Button */}
+              {user && isInstructor && (
+                <button
+                  onClick={handleCreateCourseClick}
+                  className="flex items-center space-x-3 px-4 py-4 rounded-xl bg-gradient-to-r from-space-emerald/20 to-space-cyan/20 border border-space-emerald/30 text-space-emerald hover:from-space-emerald/30 hover:to-space-cyan/30 transition-all duration-300 group"
+                >
+                  <FaPlus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                  <span className="font-medium">Create Course</span>
+                  <FaRocket className="w-4 h-4 opacity-60 group-hover:opacity-100 ml-auto transition-all duration-300" />
+                </button>
+              )}
 
-            {/* Mobile Auth Section */}
-            <div className="border-t border-white/20 pt-4 mt-4">
-              {user ? (
-                <div className="space-y-3">
-                  {/* Mobile User Profile */}
-                  <div className="flex items-center space-x-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10">
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-space-cyan/50">
-                        {user.profilePic ? (
-                          <img 
-                            src={user.profilePic} 
-                            alt="Profile" 
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div 
-                          className={`w-full h-full bg-gradient-to-br from-space-cyan to-space-purple flex items-center justify-center text-white font-bold text-xs ${user.profilePic ? 'hidden' : 'flex'}`}
-                        >
-                          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+              {/* Mobile Auth Section */}
+              <div className="border-t border-white/20 pt-4 mt-4">
+                {user ? (
+                  <div className="space-y-3">
+                    {/* Mobile User Profile */}
+                    <div className="flex items-center space-x-3 px-4 py-3 bg-white/5 rounded-xl border border-white/10">
+                      <div className="relative">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-space-cyan/50">
+                          {user.profilePic ? (
+                            <img 
+                              src={user.profilePic} 
+                              alt="Profile" 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className={`w-full h-full bg-gradient-to-br from-space-cyan to-space-purple flex items-center justify-center text-white font-bold text-xs ${user.profilePic ? 'hidden' : 'flex'}`}
+                          >
+                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                          </div>
+                        </div>
+                        {/* Online indicator */}
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-space-emerald rounded-full border-2 border-gray-900 animate-pulse-slow"></div>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-medium">{user.name}</p>
+                        <div className="flex items-center space-x-1">
+                          <p className={`text-xs ${user.role === 'Admin' ? 'text-red-400' : isInstructor ? 'text-space-emerald' : 'text-space-blue'}`}>
+                            {user.role === 'Admin' ? 'Admin' : isInstructor ? 'Instructor' : 'Student'}
+                          </p>
+                          {isInstructor && <FaStar className="w-3 h-3 text-yellow-400" />}
                         </div>
                       </div>
-                      {/* Online indicator */}
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-space-emerald rounded-full border-2 border-gray-900 animate-pulse-slow"></div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-white font-medium">{user.name}</p>
-                      <div className="flex items-center space-x-1">
-                        <p className={`text-xs ${user.role === 'Admin' ? 'text-red-400' : isInstructor ? 'text-space-emerald' : 'text-space-blue'}`}>
-                          {user.role === 'Admin' ? 'Admin' : isInstructor ? 'Instructor' : 'Student'}
-                        </p>
-                        {isInstructor && <FaStar className="w-3 h-3 text-yellow-400" />}
-                      </div>
-                    </div>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center space-x-3 px-4 py-4 rounded-xl hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-all duration-300 w-full text-left group border border-transparent hover:border-red-500/30"
+                    >
+                      <FaSignOutAlt className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                      <span className="font-medium">Logout</span>
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-3 px-4 py-4 rounded-xl hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-all duration-300 w-full text-left group border border-transparent hover:border-red-500/30"
-                  >
-                    <FaSignOutAlt className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                    <span className="font-medium">Logout</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <Link 
-                    to="/login" 
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-4 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-all duration-300 group"
-                  >
-                    <FaSignInAlt className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-                    <span className="font-medium">Log in</span>
-                  </Link>
-                  <Link 
-                    to="/register" 
-                    onClick={() => setIsOpen(false)}
-                    className="relative flex items-center space-x-3 px-4 py-4 rounded-lg bg-gradient-to-r from-space-blue/20 to-space-purple/20 border border-space-blue/30 text-space-cyan hover:from-space-blue/30 hover:to-space-purple/30 transition-all duration-300 group"
-                  >
-                    <FaUserPlus className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                    <span className="font-medium">Sign up</span>
-                    <FaGem className="w-4 h-4 opacity-60 group-hover:opacity-100 ml-auto transition-all duration-300" />
-                  </Link>
-                </div>
-              )}
+                ) : (
+                  <div className="space-y-3">
+                    <Link 
+                      to="/login" 
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-4 rounded-lg hover:bg-white/10 text-gray-300 hover:text-white transition-all duration-300 group"
+                    >
+                      <FaSignInAlt className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                      <span className="font-medium">Log in</span>
+                    </Link>
+                    <Link 
+                      to="/register" 
+                      onClick={() => setIsOpen(false)}
+                      className="relative flex items-center space-x-3 px-4 py-4 rounded-lg bg-gradient-to-r from-space-blue/20 to-space-purple/20 border border-space-blue/30 text-space-cyan hover:from-space-blue/30 hover:to-space-purple/30 transition-all duration-300 group"
+                    >
+                      <FaUserPlus className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                      <span className="font-medium">Sign up</span>
+                      <FaGem className="w-4 h-4 opacity-60 group-hover:opacity-100 ml-auto transition-all duration-300" />
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
