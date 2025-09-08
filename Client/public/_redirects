@@ -1,1 +1,6 @@
-/*    /index.html   200
+# API routes - proxy to backend
+/api/*  https://thenextera-backend.onrender.com/api/:splat  200
+/auth/* https://thenextera-backend.onrender.com/auth/:splat 200
+
+# SPA fallback - serve index.html for all client-side routes
+/*      /index.html   200

@@ -1,0 +1,17 @@
+Options -MultiViews
+RewriteEngine On
+
+# Handle Angular and React Router
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+
+# Cache static assets
+<filesMatch ".(css|jpg|jpeg|png|gif|js|ico|svg|woff|woff2|ttf|eot)$">
+ExpiresActive On
+ExpiresDefault "access plus 1 month"
+</filesMatch>
+
+# Security headers
+Header always set X-Frame-Options DENY
+Header always set X-Content-Type-Options nosniff

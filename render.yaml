@@ -18,14 +18,44 @@ services:
       - key: EMAIL_PASSWORD
         sync: false
 
-  # Frontend Static Site
+  # Frontend Static Site with Enhanced SPA Support
   - type: web
     name: thenextera-frontend
     env: static
     rootDir: ./Client
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
+    # Enhanced routing configuration for SPA
     routes:
+      # Handle API routes - redirect to backend
+      - type: redirect
+        source: /api/*
+        destination: https://thenextera-backend.onrender.com/api/:splat
+        status: 200
+      # Handle auth routes - redirect to backend  
+      - type: redirect
+        source: /auth/*
+        destination: https://thenextera-backend.onrender.com/auth/:splat
+        status: 200
+      # SPA fallback - serve index.html for all other routes
       - type: rewrite
         source: /*
         destination: /index.html
+    # Add headers for better SPA support
+    headers:
+      - source: /*
+        headers:
+          - key: X-Frame-Options
+            value: DENY
+          - key: X-Content-Type-Options
+            value: nosniff
+          - key: Cache-Control
+            value: public, max-age=31536000, immutable
+      - source: /index.html
+        headers:
+          - key: Cache-Control
+            value: no-cache, no-store, must-revalidate
+          - key: Pragma
+            value: no-cache
+          - key: Expires
+            value: "0"
