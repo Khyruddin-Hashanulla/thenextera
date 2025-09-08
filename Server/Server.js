@@ -260,6 +260,21 @@ try {
   });
 }
 
+try {
+  const newsletterRoutes = require("./Routes/Newsletter");
+  app.use("/api/newsletter", newsletterRoutes);
+  console.log("✅ Newsletter routes loaded successfully");
+} catch (error) {
+  console.error("❌ Newsletter routes failed to load:", error.message);
+  console.error("Full error:", error);
+  app.use("/api/newsletter", (req, res) => {
+    res.status(500).json({ 
+      error: "Newsletter routes not available", 
+      message: "Newsletter routes failed to load during server startup" 
+    });
+  });
+}
+
 // iPhone Safari Cookie Debug Endpoint
 app.get('/debug/cookies', (req, res) => {
   const userAgent = req.headers['user-agent'] || '';

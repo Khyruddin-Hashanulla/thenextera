@@ -40,6 +40,7 @@ const Privacy = lazy(() => import('./Pages/Privacy'));
 const Terms = lazy(() => import('./Pages/Terms'));
 const Careers = lazy(() => import('./Pages/Careers'));
 const Blog = lazy(() => import('./Pages/Blog'));
+const BlogPost = lazy(() => import('./components/BlogPost'));
 const Community = lazy(() => import('./Pages/Community'));
 
 // Route protection components
@@ -145,6 +146,12 @@ const AppRoutes = () => {
       <Route path="/blog" element={
         <Suspense fallback={<LoadingScreen />}>
           <Blog />
+        </Suspense>
+      } />
+      {/* Individual Blog Post Route */}
+      <Route path="/blog/:slug" element={
+        <Suspense fallback={<LoadingScreen />}>
+          <BlogPost />
         </Suspense>
       } />
       <Route path="/help" element={

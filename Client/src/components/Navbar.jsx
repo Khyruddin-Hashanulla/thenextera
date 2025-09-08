@@ -24,7 +24,8 @@ import {
   FaDesktop,
   FaNetworkWired,
   FaCube,
-  FaCodeBranch
+  FaCodeBranch,
+  FaBlog
 } from 'react-icons/fa';
 import logo from '../assets/logo.png';
 import api from '../utils/api';
@@ -233,6 +234,7 @@ const Navbar = () => {
   // Navigation items for all users (show all items, handle auth in click handlers)
   const navItems = [
     { path: '/', name: 'Home', icon: FaHome, color: 'from-space-cyan to-space-blue', requiresAuth: false },
+    { path: '/blog', name: 'Blog', icon: FaBlog, color: 'from-space-purple to-space-pink', requiresAuth: false },
     { path: '/courses', name: 'Courses', icon: FaBook, requiresAuth: true, color: 'from-space-purple to-space-pink' },
     { path: '/dsa-sheet', name: 'DSA Sheet', icon: FaCode, requiresAuth: true, color: 'from-space-green to-space-teal' },
     { path: '/core-subject', name: 'Core Subject', icon: FaBookOpen, requiresAuth: true, color: 'from-space-orange to-space-red' },
@@ -241,6 +243,7 @@ const Navbar = () => {
 
   const mobileNavItems = [
     { path: '/', name: 'Home', icon: FaHome, color: 'from-space-cyan to-space-blue', requiresAuth: false },
+    { path: '/blog', name: 'Blog', icon: FaBlog, color: 'from-space-purple to-space-pink', requiresAuth: false },
     { path: '/courses', name: 'Courses', icon: FaBook, requiresAuth: true, color: 'from-space-purple to-space-pink' },
     { path: '/dsa-sheet', name: 'DSA Sheet', icon: FaCode, requiresAuth: true, color: 'from-space-green to-space-teal' },
     { path: '/core-subject', name: 'Core Subject', icon: FaBookOpen, requiresAuth: true, color: 'from-space-orange to-space-red', hasDropdown: true },
@@ -309,20 +312,20 @@ const Navbar = () => {
                         }}
                         className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
                           isActive
-                            ? `bg-gradient-to-r ${color} text-white shadow-lg shadow-space-purple/25`
+                            ? 'text-white'
                             : 'hover:bg-white/10 text-gray-300 hover:text-white hover:shadow-lg hover:shadow-white/10'
                         }`}
                       >
                         {/* Background shimmer effect */}
                         {!isActive && <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
                         
-                        <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                        <Icon className={`w-4 h-4 group-hover:scale-110 transition-transform duration-300`} />
                         <span className="font-medium text-sm">{name}</span>
                         {user && <FaChevronDown className={`w-3 h-3 transition-transform duration-200 ${coreSubjectDropdownOpen ? 'rotate-180' : ''}`} />}
                         
                         {/* Active indicator */}
                         {isActive && (
-                          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-white rounded-full"></div>
+                          <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full"></div>
                         )}
                       </button>
 
@@ -332,20 +335,18 @@ const Navbar = () => {
                           <div className="p-3">
                             {/* Dropdown Header */}
                             <div className="px-3 py-2 border-b border-white/10 mb-3">
-                              <div className="flex items-center justify-between">
-                                <h3 className="text-white text-sm font-medium">Core Subjects</h3>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleCoreSubjectClick();
-                                    setCoreSubjectDropdownOpen(false);
-                                  }}
-                                  className="text-xs text-space-cyan hover:text-space-purple transition-colors duration-200 px-2 py-1 rounded hover:bg-white/10"
-                                >
-                                  📚 View All
-                                </button>
-                              </div>
+                              <h3 className="text-white text-sm font-medium">Core Subjects</h3>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleCoreSubjectClick();
+                                  setCoreSubjectDropdownOpen(false);
+                                }}
+                                className="text-xs text-space-cyan hover:text-space-purple transition-colors duration-200 px-2 py-1 rounded hover:bg-white/10"
+                              >
+                                📚 View All
+                              </button>
                             </div>
 
                             {/* Subjects List */}
@@ -393,19 +394,19 @@ const Navbar = () => {
                       }}
                       className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
                         isActive
-                          ? `bg-gradient-to-r ${color} text-white shadow-lg shadow-space-purple/25`
+                          ? 'text-white'
                           : 'hover:bg-white/10 text-gray-300 hover:text-white hover:shadow-lg hover:shadow-white/10'
                       }`}
                     >
                       {/* Background shimmer effect */}
                       {!isActive && <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
                       
-                      <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <Icon className={`w-4 h-4 group-hover:scale-110 transition-transform duration-300`} />
                       <span className="font-medium text-sm">{name}</span>
                       
                       {/* Active indicator */}
                       {isActive && (
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-white rounded-full"></div>
+                        <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full"></div>
                       )}
                     </button>
                   );
@@ -422,19 +423,19 @@ const Navbar = () => {
                       }}
                       className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
                         isActive
-                          ? `bg-gradient-to-r ${color} text-white shadow-lg shadow-space-purple/25`
+                          ? 'text-white'
                           : 'hover:bg-white/10 text-gray-300 hover:text-white hover:shadow-lg hover:shadow-white/10'
                       }`}
                     >
                       {/* Background shimmer effect */}
                       {!isActive && <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
                       
-                      <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <Icon className={`w-4 h-4 group-hover:scale-110 transition-transform duration-300`} />
                       <span className="font-medium text-sm">{name}</span>
                       
                       {/* Active indicator */}
                       {isActive && (
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-white rounded-full"></div>
+                        <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full"></div>
                       )}
                     </button>
                   );
@@ -446,19 +447,19 @@ const Navbar = () => {
                     onClick={() => handleNavClick(path, requiresAuth)}
                     className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 group overflow-hidden ${
                       isActive
-                        ? `bg-gradient-to-r ${color} text-white shadow-lg shadow-space-purple/25`
+                        ? 'text-white'
                         : 'hover:bg-white/10 text-gray-300 hover:text-white hover:shadow-lg hover:shadow-white/10'
                     }`}
                   >
                     {/* Background shimmer effect */}
                     {!isActive && <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>}
                     
-                    <Icon className={`w-4 h-4 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                    <Icon className={`w-4 h-4 group-hover:scale-110 transition-transform duration-300`} />
                     <span className="font-medium text-sm">{name}</span>
                     
                     {/* Active indicator */}
                     {isActive && (
-                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1/2 h-0.5 bg-white rounded-full"></div>
+                      <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full"></div>
                     )}
                   </button>
                 );
@@ -673,15 +674,20 @@ const Navbar = () => {
                         }}
                         className={`flex items-center justify-between px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
                           isActive
-                            ? `bg-gradient-to-r ${color} text-white shadow-lg`
+                            ? 'text-white'
                             : 'hover:bg-white/10 text-gray-300 hover:text-white'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                          <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'group-hover:scale-110'} transition-transform duration-300`} />
                           <span className="font-medium">{name}</span>
                         </div>
                         {user && <FaChevronDown className={`w-4 h-4 transition-transform duration-200 ${coreSubjectDropdownOpen ? 'rotate-180' : ''}`} />}
+                        
+                        {/* Active indicator */}
+                        {isActive && (
+                          <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-white rounded-full"></div>
+                        )}
                       </button>
 
                       {/* Dropdown Content - Only show if user is logged in */}
@@ -742,11 +748,11 @@ const Navbar = () => {
                       }}
                       className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
                         isActive
-                          ? `bg-gradient-to-r ${color} text-white shadow-lg`
+                          ? 'text-white'
                           : 'hover:bg-white/10 text-gray-300 hover:text-white'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'group-hover:scale-110'} transition-transform duration-300`} />
                       <span className="font-medium">{name}</span>
                     </button>
                   );
@@ -763,11 +769,11 @@ const Navbar = () => {
                       }}
                       className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
                         isActive
-                          ? `bg-gradient-to-r ${color} text-white shadow-lg`
+                          ? 'text-white'
                           : 'hover:bg-white/10 text-gray-300 hover:text-white'
                       }`}
                     >
-                      <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'group-hover:scale-110'} transition-transform duration-300`} />
                       <span className="font-medium">{name}</span>
                     </button>
                   );
@@ -779,11 +785,11 @@ const Navbar = () => {
                     onClick={() => handleNavClick(path, requiresAuth)}
                     className={`flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-300 text-left group w-full ${
                       isActive
-                        ? `bg-gradient-to-r ${color} text-white shadow-lg`
+                        ? 'text-white'
                         : 'hover:bg-white/10 text-gray-300 hover:text-white'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'} transition-transform duration-300`} />
+                    <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'group-hover:scale-110'} transition-transform duration-300`} />
                     <span className="font-medium">{name}</span>
                   </button>
                 );

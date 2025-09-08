@@ -1,251 +1,384 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SEOHead from '../components/SEOHead';
+import { getAllPublishedPosts, getFeaturedPosts, getPostsByCategory } from '../data/blogPosts';
+import api from '../utils/api';
 
 const Blog = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [email, setEmail] = useState('');
+  const [subscriptionStatus, setSubscriptionStatus] = useState('');
+  const [subscriptionMessage, setSubscriptionMessage] = useState('');
+  const [filteredPosts, setFilteredPosts] = useState([]);
+  
+  const allPosts = getAllPublishedPosts();
+  const featuredPosts = getFeaturedPosts();
+  
+  // Get unique categories
+  const categories = ['All', ...new Set(allPosts.map(post => post.category))];
 
-  const blogPosts = [
-    {
-      id: 1,
-      title: "Mastering Data Structures: A Complete Guide for Beginners",
-      excerpt: "Learn the fundamentals of data structures and how they form the backbone of efficient programming. From arrays to trees, we cover it all.",
-      category: "Programming",
-      author: "Sarah Chen",
-      date: "2024-01-15",
-      readTime: "8 min read",
-      image: "",
-      tags: ["Data Structures", "Programming", "Beginner"]
-    },
-    {
-      id: 2,
-      title: "The Future of Online Learning: AI-Powered Education",
-      excerpt: "Explore how artificial intelligence is revolutionizing education and creating personalized learning experiences for students worldwide.",
-      category: "Technology",
-      author: "Dr. Michael Rodriguez",
-      date: "2024-01-12",
-      readTime: "6 min read",
-      image: "",
-      tags: ["AI", "Education", "Technology"]
-    },
-    {
-      id: 3,
-      title: "Building Your First React Application: Step by Step",
-      excerpt: "A comprehensive tutorial for creating your first React app, covering components, state management, and best practices.",
-      category: "Programming",
-      author: "Alex Johnson",
-      date: "2024-01-10",
-      readTime: "12 min read",
-      image: "",
-      tags: ["React", "JavaScript", "Web Development"]
-    },
-    {
-      id: 4,
-      title: "Study Tips for Coding Interviews: Land Your Dream Job",
-      excerpt: "Essential strategies and techniques to ace your coding interviews at top tech companies. Practice problems and solutions included.",
-      category: "Career",
-      author: "Jennifer Park",
-      date: "2024-01-08",
-      readTime: "10 min read",
-      image: "",
-      tags: ["Interview", "Career", "Coding"]
-    },
-    {
-      id: 5,
-      title: "Understanding Big O Notation: Algorithm Efficiency Made Simple",
-      excerpt: "Demystify Big O notation and learn how to analyze algorithm efficiency. Essential knowledge for every programmer.",
-      category: "Programming",
-      author: "David Kim",
-      date: "2024-01-05",
-      readTime: "7 min read",
-      image: "",
-      tags: ["Algorithms", "Big O", "Performance"]
-    },
-    {
-      id: 6,
-      title: "The Rise of Remote Learning: Challenges and Opportunities",
-      excerpt: "Examining the shift to remote education, its impact on students and educators, and what the future holds.",
-      category: "Education",
-      author: "Lisa Thompson",
-      date: "2024-01-03",
-      readTime: "9 min read",
-      image: "",
-      tags: ["Remote Learning", "Education", "Future"]
+  useEffect(() => {
+    let posts = selectedCategory === 'All' ? allPosts : getPostsByCategory(selectedCategory);
+    
+    if (searchTerm) {
+      posts = posts.filter(post => 
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
     }
-  ];
+    
+    setFilteredPosts(posts);
+  }, [selectedCategory, searchTerm, allPosts]);
 
-  const categories = ['all', 'Programming', 'Technology', 'Career', 'Education'];
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "NextEra Blog",
+    "description": "Insights, tutorials, and stories about learning, coding, and building projects with NextEra platform",
+    "url": "https://thenextera.in/blog",
+    "publisher": {
+      "@type": "Organization",
+      "name": "NextEra",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://thenextera.in/logo.png"
+      }
+    },
+    "blogPost": allPosts.map(post => ({
+      "@type": "BlogPosting",
+      "headline": post.title,
+      "description": post.metaDescription,
+      "url": `https://thenextera.in/blog/${post.slug}`,
+      "datePublished": post.publishDate,
+      "author": {
+        "@type": "Person",
+        "name": post.author
+      }
+    }))
+  };
 
-  const filteredPosts = blogPosts.filter(post => {
-    const categoryMatch = selectedCategory === 'all' || post.category === selectedCategory;
-    const searchMatch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    return categoryMatch && searchMatch;
-  });
+  // Newsletter subscription handler
+  const handleNewsletterSubscription = async () => {
+    if (!email || subscriptionStatus === 'loading') return;
 
-  const featuredPost = blogPosts[0];
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setSubscriptionStatus('error');
+      setSubscriptionMessage('Please enter a valid email address');
+      return;
+    }
+
+    setSubscriptionStatus('loading');
+    setSubscriptionMessage('');
+
+    try {
+      const response = await api.post('/api/newsletter/subscribe', { email });
+      
+      if (response.data.success) {
+        setSubscriptionStatus('success');
+        setSubscriptionMessage(response.data.message);
+        setEmail(''); // Clear email field on success
+      } else {
+        setSubscriptionStatus('error');
+        setSubscriptionMessage(response.data.message || 'Subscription failed');
+      }
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      setSubscriptionStatus('error');
+      if (error.response?.data?.message) {
+        setSubscriptionMessage(error.response.data.message);
+      } else {
+        setSubscriptionMessage('Failed to subscribe. Please try again later.');
+      }
+    }
+
+    // Clear status after 5 seconds
+    setTimeout(() => {
+      setSubscriptionStatus('');
+      setSubscriptionMessage('');
+    }, 5000);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-900">
-      <Navbar />
-      
-      {/* Animated Background Elements - matching Home page */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500/40 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/40 rounded-full blur-xl animate-pulse" style={{ animationDelay: "1s" }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-500/30 rounded-full blur-2xl animate-ping" style={{ animationDuration: "4s" }}></div>
-      </div>
-      
-      <div className="relative z-10">
-        <div className="container mx-auto px-4 py-4 pt-32 pb-8">
-          {/* Header Section */}
-          <div className="max-w-7xl mx-auto text-center mb-16">
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-6">
-              NextEra Blog
+    <>
+      <SEOHead 
+        title="NextEra Blog - Learning, Coding & Project Building Insights"
+        description="Discover insights, tutorials, and stories about learning, coding, DSA, core subjects, and building real-world projects with NextEra platform by Khyruddin Hashanulla."
+        keywords="NextEra blog, coding tutorials, DSA learning, computer science, project building, programming insights, Khyruddin Hashanulla"
+        author="Khyruddin Hashanulla"
+        robots="index, follow"
+        canonical="https://thenextera.in/blog"
+        structuredData={structuredData}
+      />
+
+      <div className="min-h-screen bg-gray-900 flex flex-col relative overflow-hidden">
+        {/* Enhanced animated background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-32 -right-32 w-64 h-64 bg-gradient-to-br from-cyan-500/20 to-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-gradient-to-br from-purple-500/15 to-pink-600/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "2s" }}></div>
+          <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "4s" }}></div>
+
+          <div className="absolute top-20 left-20 w-2 h-2 bg-cyan-400/30 rounded-full animate-bounce"></div>
+          <div className="absolute top-40 right-32 w-1.5 h-1.5 bg-purple-400/30 rounded-full animate-bounce" style={{ animationDelay: "1s" }}></div>
+          <div className="absolute bottom-32 left-1/3 w-1 h-1 bg-blue-400/30 rounded-full animate-bounce" style={{ animationDelay: "2s" }}></div>
+        </div>
+        
+        <Navbar />
+        
+        <div className="container mx-auto px-4 py-4 pt-32 pb-8 flex-grow max-w-7xl relative z-10">
+          {/* Hero Section */}
+          <div className="text-center mb-16">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6">
+              NextEra{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                Blog
+              </span>
             </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Insights, tutorials, and stories from the world of technology and education. 
-              Stay updated with the latest trends and best practices.
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+              Insights, tutorials, and stories about learning, coding, and building projects that matter
             </p>
-          </div>
-
-          {/* Featured Post */}
-          <div className="px-4 sm:px-6 lg:px-8 mb-16">
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-3xl font-bold mb-8 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                Featured Post
-              </h2>
-              <div className="backdrop-blur-sm bg-white/5 rounded-2xl border border-white/10 p-8 hover:bg-white/10 transition-all duration-300">
-                <div className="grid lg:grid-cols-2 gap-8 items-center">
-                  <div>
-                    <div className="text-6xl mb-4">{featuredPost.image}</div>
-                    <div className="flex items-center gap-4 mb-4 text-sm text-gray-400">
-                      <span className="bg-purple-600/20 px-3 py-1 rounded-full">{featuredPost.category}</span>
-                      <span>{featuredPost.author}</span>
-                      <span>{featuredPost.date}</span>
-                      <span>{featuredPost.readTime}</span>
-                    </div>
-                    <h3 className="text-3xl font-bold mb-4 text-cyan-300">{featuredPost.title}</h3>
-                    <p className="text-gray-300 mb-6 text-lg leading-relaxed">{featuredPost.excerpt}</p>
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {featuredPost.tags.map(tag => (
-                        <span key={tag} className="bg-gray-700/50 px-3 py-1 rounded-full text-sm text-gray-300">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                    <button className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
-                      Read Full Article
-                    </button>
-                  </div>
-                  <div className="lg:text-right">
-                    <div className="text-8xl opacity-50">{featuredPost.image}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="mb-12">
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-              <div className="flex-1 max-w-md">
+            
+            {/* Search Bar */}
+            <div className="max-w-md mx-auto mb-8">
+              <div className="relative">
                 <input
                   type="text"
                   placeholder="Search articles..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                  className="w-full px-6 py-4 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none backdrop-blur-sm"
                 />
+                <svg className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {categories.map(category => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      selectedCategory === category
-                        ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white'
-                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                    }`}
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap justify-center gap-3">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    selectedCategory === category
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                      : 'bg-slate-800/50 text-gray-300 hover:bg-slate-700/50 border border-slate-700/50'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Featured Posts */}
+          {featuredPosts.length > 0 && selectedCategory === 'All' && !searchTerm && (
+            <div className="mb-16">
+              <h2 className="text-3xl font-bold text-white mb-8 text-center">Featured Articles</h2>
+              <div className="grid lg:grid-cols-2 gap-8">
+                {featuredPosts.map((post) => (
+                  <Link
+                    key={post.id}
+                    to={`/blog/${post.slug}`}
+                    className="group block bg-slate-800/30 border border-slate-700/50 rounded-2xl overflow-hidden hover:bg-slate-700/30 transition-all duration-300 backdrop-blur-sm"
                   >
-                    {category === 'all' ? 'All Posts' : category}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Blog Posts Grid */}
-          <div className="px-4 sm:px-6 lg:px-8 mb-16">
-            <div className="max-w-7xl mx-auto">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredPosts.slice(1).map(post => (
-                  <article key={post.id} className="backdrop-blur-sm bg-white/5 rounded-xl border border-white/10 p-6 hover:bg-white/10 transition-all duration-300 transform hover:scale-105">
-                    <div className="text-4xl mb-4">{post.image}</div>
-                    <div className="flex items-center gap-2 mb-3 text-sm text-gray-400">
-                      <span className="bg-purple-600/20 px-2 py-1 rounded-full">{post.category}</span>
-                      <span>{post.readTime}</span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-3 text-cyan-300 line-clamp-2">{post.title}</h3>
-                    <p className="text-gray-300 mb-4 text-sm leading-relaxed line-clamp-3">{post.excerpt}</p>
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {post.tags.slice(0, 2).map(tag => (
-                        <span key={tag} className="bg-gray-700/50 px-2 py-1 rounded-full text-xs text-gray-400">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-gray-400">
-                        <div>{post.author}</div>
-                        <div>{post.date}</div>
+                    {post.featuredImage && (
+                      <div className="aspect-video overflow-hidden">
+                        <img 
+                          src={post.featuredImage} 
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                       </div>
-                      <button className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors duration-300">
-                        Read More →
-                      </button>
+                    )}
+                    <div className="p-8">
+                      <div className="flex items-center gap-4 mb-4">
+                        <span className="px-3 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-full text-purple-300 text-sm font-medium">
+                          {post.category}
+                        </span>
+                        <span className="text-gray-400 text-sm">{post.readTime}</span>
+                      </div>
+                      <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-purple-300 transition-colors line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-gray-300 mb-6 line-clamp-3 leading-relaxed">
+                        {post.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {post.author.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-white font-medium text-sm">{post.author}</p>
+                            <p className="text-gray-400 text-xs">
+                              {new Date(post.publishDate).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {post.tags.slice(0, 2).map((tag, index) => (
+                            <span key={index} className="px-2 py-1 bg-slate-700/50 rounded text-xs text-gray-400">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </article>
+                  </Link>
                 ))}
               </div>
-
-              {filteredPosts.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-gray-400 text-lg">No articles match your search criteria.</p>
-                </div>
-              )}
             </div>
+          )}
+
+          {/* All Posts */}
+          <div>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-3xl font-bold text-white">
+                {selectedCategory === 'All' ? 'All Articles' : `${selectedCategory} Articles`}
+              </h2>
+              <span className="text-gray-400">
+                {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+
+            {filteredPosts.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-12 h-12 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-2">No articles found</h3>
+                <p className="text-gray-400 mb-6">Try adjusting your search or filter criteria</p>
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('All');
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300"
+                >
+                  Show All Articles
+                </button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredPosts.map((post) => (
+                  <Link
+                    key={post.id}
+                    to={`/blog/${post.slug}`}
+                    className="group block bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden hover:bg-slate-700/30 transition-all duration-300 backdrop-blur-sm hover:transform hover:scale-105"
+                  >
+                    {post.featuredImage && (
+                      <div className="aspect-video overflow-hidden">
+                        <img 
+                          src={post.featuredImage} 
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    )}
+                    <div className="p-6">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="px-2 py-1 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-full text-purple-300 text-xs font-medium">
+                          {post.category}
+                        </span>
+                        <span className="text-gray-400 text-xs">{post.readTime}</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-3 group-hover:text-purple-300 transition-colors line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-3 leading-relaxed">
+                        {post.excerpt}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                            {post.author.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-white font-medium text-xs">{post.author}</p>
+                            <p className="text-gray-400 text-xs">
+                              {new Date(post.publishDate).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          {post.tags.slice(0, 2).map((tag, index) => (
+                            <span key={index} className="px-2 py-1 bg-slate-700/50 rounded text-xs text-gray-400">
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Newsletter Signup */}
-          <div className="px-4 sm:px-6 lg:px-8 pb-16">
-            <div className="max-w-4xl mx-auto">
-              <div className="backdrop-blur-sm bg-white/5 rounded-2xl border border-white/10 p-8 text-center">
-                <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                  Stay Updated
-                </h2>
-                <p className="text-gray-300 mb-6 text-lg">
-                  Subscribe to our newsletter and never miss the latest insights, tutorials, and updates from NextEra.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                  <input
-                    type="email"
-                    placeholder="Enter your email"
-                    className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-                  />
-                  <button className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105">
-                    Subscribe
-                  </button>
-                </div>
-              </div>
+          {/* Newsletter Subscription */}
+          <div className="mt-20 text-center p-8 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border border-purple-500/30 rounded-2xl backdrop-blur-sm">
+            <h3 className="text-3xl font-bold text-white mb-4">Stay Updated</h3>
+            <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+              Get the latest articles, tutorials, and insights delivered straight to your inbox. 
+              Join our community of learners and builders.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto mb-6">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={subscriptionStatus === 'loading'}
+                className="flex-1 px-6 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none disabled:opacity-50"
+              />
+              <button 
+                onClick={handleNewsletterSubscription}
+                disabled={subscriptionStatus === 'loading' || !email}
+                className="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {subscriptionStatus === 'loading' ? 'Subscribing...' : 'Subscribe'}
+              </button>
             </div>
+            
+            {/* Subscription Status Messages */}
+            {subscriptionMessage && (
+              <div className={`mb-4 p-3 rounded-lg ${
+                subscriptionStatus === 'success' 
+                  ? 'bg-green-500/20 border border-green-500/30 text-green-300' 
+                  : 'bg-red-500/20 border border-red-500/30 text-red-300'
+              }`}>
+                {subscriptionMessage}
+              </div>
+            )}
+            
+            <p className="text-gray-400 text-sm">
+              No spam, unsubscribe at any time. Read our{" "}
+              <Link to="/privacy" className="text-purple-400 hover:text-purple-300 underline">
+                Privacy Policy
+              </Link>
+            </p>
           </div>
         </div>
+
+        <Footer />
       </div>
-      <Footer />
-    </div>
+    </>
   );
 };
 
